@@ -383,7 +383,7 @@ namespace Roslynator.CSharp.CodeFixes
                 return;
 
             CodeAction codeAction = CodeAction.Create(
-                $"Change accessibility to '{accessibility.GetTitle()}'",
+                $"Change accessibility to '{accessibility.GetName()}'",
                 cancellationToken => ChangeAccessibilityRefactoring.RefactorAsync(context.Document, node, accessibility, cancellationToken),
                 GetEquivalenceKey(diagnostic, accessibility.ToString()));
 

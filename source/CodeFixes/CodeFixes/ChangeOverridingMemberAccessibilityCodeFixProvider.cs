@@ -52,7 +52,7 @@ namespace Roslynator.CSharp.CodeFixes
                             Accessibility newAccessibility = overrideInfo.OverriddenSymbol.DeclaredAccessibility;
 
                             CodeAction codeAction = CodeAction.Create(
-                                $"Change accessibility to '{newAccessibility.GetTitle()}'",
+                                $"Change accessibility to '{newAccessibility.GetName()}'",
                                 cancellationToken =>
                                 {
                                     if (node.Kind() == SyntaxKind.VariableDeclarator)

@@ -41,7 +41,7 @@ namespace Roslynator
             return false;
         }
 
-        public static string GetTitle(this Accessibility accessibility)
+        public static string GetName(this Accessibility accessibility)
         {
             switch (accessibility)
             {

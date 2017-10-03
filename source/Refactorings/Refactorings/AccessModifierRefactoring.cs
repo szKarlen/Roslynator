@@ -74,7 +74,7 @@ namespace Roslynator.CSharp.Refactorings
 
         private static string GetTitle(Accessibility accessibility)
         {
-            return $"Change accessibility to '{accessibility.GetTitle()}'";
+            return $"Change accessibility to '{accessibility.GetName()}'";
         }
     }
 }
