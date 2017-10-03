@@ -9,7 +9,6 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Roslynator.CSharp.Comparers;
 using Roslynator.CSharp.Refactorings;
 
 namespace Roslynator.CSharp.CodeFixes
@@ -31,7 +30,8 @@ namespace Roslynator.CSharp.CodeFixes
                     CompilerDiagnosticIdentifiers.MemberIsAbstractButItIsContainedInNonAbstractClass,
                     CompilerDiagnosticIdentifiers.ObjectReferenceIsRequiredForNonStaticMember,
                     CompilerDiagnosticIdentifiers.StaticConstructorMustBeParameterless,
-                    CompilerDiagnosticIdentifiers.PartialMethodsMustHaveVoidReturnType);
+                    CompilerDiagnosticIdentifiers.PartialMethodsMustHaveVoidReturnType,
+                    CompilerDiagnosticIdentifiers.ExplicitInterfaceDeclarationCanOnlyBeDeclaredInClassOrStruct);
             }
         }
 
@@ -43,7 +43,8 @@ namespace Roslynator.CSharp.CodeFixes
                 && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.AddPartialModifier)
                 && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.MakeContainingClassAbstract)
                 && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.MakeMemberNonStatic)
-                && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveParametersFromStaticConstructor))
+                && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveParametersFromStaticConstructor)
+                && !Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveMemberDeclaration))
             {
                 return;
             }
@@ -187,25 +188,32 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.AddPartialModifier))
                                 break;
 
-                            CodeAction codeAction = CodeAction.Create(
-                                "Add 'partial' modifier",
-                                cancellationToken =>
-                                {
-                                    if (memberDeclaration.IsKind(SyntaxKind.MethodDeclaration)
-                                        && memberDeclaration.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration))
-                                    {
-                                        return context.Document.InsertModifierAsync(memberDeclaration.Parent, SyntaxKind.PartialKeyword, ModifierComparer.Instance, cancellationToken);
-                                    }
-                                    else if (memberDeclaration.IsKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration))
-                                    {
-                                        return context.Document.InsertModifierAsync(memberDeclaration, SyntaxKind.PartialKeyword, ModifierComparer.Instance, cancellationToken);
-                                    }
+                            SyntaxNode node = null;
 
-                                    return Task.FromResult(context.Document);
-                                },
-                                GetEquivalenceKey(diagnostic));
+                            switch (memberDeclaration.Kind())
+                            {
+                                case SyntaxKind.MethodDeclaration:
+                                    {
+                                        if (memberDeclaration.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration))
+                                            node = memberDeclaration.Parent;
 
-                            context.RegisterCodeFix(codeAction, diagnostic);
+                                        break;
+                                    }
+                                case SyntaxKind.ClassDeclaration:
+                                case SyntaxKind.StructDeclaration:
+                                case SyntaxKind.InterfaceDeclaration:
+                                    {
+                                        node = memberDeclaration;
+                                        break;
+                                    }
+                            }
+
+                            Debug.Assert(node != null, memberDeclaration.ToString());
+
+                            if (node == null)
+                                break;
+
+                            ModifiersCodeFixes.AddModifier(context, diagnostic, node, SyntaxKind.PartialKeyword);
                             break;
                         }
                     case CompilerDiagnosticIdentifiers.MemberIsAbstractButItIsContainedInNonAbstractClass:
@@ -216,12 +224,13 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!memberDeclaration.IsParentKind(SyntaxKind.ClassDeclaration))
                                 break;
 
-                            CodeAction codeAction = CodeAction.Create(
-                                "Make containing class abstract",
-                                cancellationToken => context.Document.InsertModifierAsync(memberDeclaration.Parent, SyntaxKind.AbstractKeyword, ModifierComparer.Instance, cancellationToken),
-                                GetEquivalenceKey(diagnostic));
+                            ModifiersCodeFixes.AddModifier(
+                                context,
+                                diagnostic,
+                                memberDeclaration.Parent,
+                                SyntaxKind.AbstractKeyword,
+                                title: "Make containing class abstract");
 
-                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                     case CompilerDiagnosticIdentifiers.ObjectReferenceIsRequiredForNonStaticMember:
@@ -229,19 +238,18 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.MakeMemberNonStatic))
                                 break;
 
-                            SyntaxTokenList modifiers = memberDeclaration.GetModifiers();
+                            Debug.Assert(memberDeclaration.GetModifiers().Contains(SyntaxKind.StaticKeyword), memberDeclaration.ToString());
 
-                            Debug.Assert(modifiers.Contains(SyntaxKind.StaticKeyword), memberDeclaration.ToString());
-
-                            if (!modifiers.Contains(SyntaxKind.StaticKeyword))
+                            if (!memberDeclaration.GetModifiers().Contains(SyntaxKind.StaticKeyword))
                                 break;
 
-                            CodeAction codeAction = CodeAction.Create(
-                                $"Make containing {memberDeclaration.GetTitle()} non-static",
-                                cancellationToken => context.Document.RemoveModifierAsync(memberDeclaration, SyntaxKind.StaticKeyword, cancellationToken),
-                                GetEquivalenceKey(diagnostic));
+                            ModifiersCodeFixes.RemoveModifier(
+                                context,
+                                diagnostic,
+                                memberDeclaration,
+                                SyntaxKind.StaticKeyword,
+                                title: $"Make containing {memberDeclaration.GetTitle()} non-static");
 
-                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                     case CompilerDiagnosticIdentifiers.StaticConstructorMustBeParameterless:
@@ -269,6 +277,14 @@ namespace Roslynator.CSharp.CodeFixes
                                 GetEquivalenceKey(diagnostic));
 
                             context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case CompilerDiagnosticIdentifiers.ExplicitInterfaceDeclarationCanOnlyBeDeclaredInClassOrStruct:
+                        {
+                            if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveMemberDeclaration))
+                                break;
+
+                            CodeFixRegistrator.RemoveMember(context, diagnostic, memberDeclaration);
                             break;
                         }
                 }

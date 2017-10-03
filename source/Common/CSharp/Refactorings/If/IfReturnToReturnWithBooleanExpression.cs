@@ -33,7 +33,7 @@ namespace Roslynator.CSharp.Refactorings.If
             return ReturnStatement(expression);
         }
 
-        public override Task<Document> RefactorAsync(Document document, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<Document> RefactorAsync(Document document, CancellationToken cancellationToken = default(CancellationToken))
         {
             StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(IfStatement);
 
@@ -41,10 +41,14 @@ namespace Roslynator.CSharp.Refactorings.If
 
             int index = statements.IndexOf(IfStatement);
 
+            SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+
             ExpressionSyntax expression = IfRefactoringHelper.GetBooleanExpression(
                 IfStatement.Condition,
                 Expression1,
-                Expression2);
+                Expression2,
+                semanticModel,
+                cancellationToken);
 
             StatementSyntax newStatement = CreateStatement(expression)
                 .WithLeadingTrivia(IfStatement.GetLeadingTrivia())
@@ -55,7 +59,7 @@ namespace Roslynator.CSharp.Refactorings.If
                 .RemoveAt(index)
                 .ReplaceAt(index, newStatement);
 
-            return document.ReplaceStatementsAsync(statementsInfo, newStatements, cancellationToken);
+            return await document.ReplaceStatementsAsync(statementsInfo, newStatements, cancellationToken).ConfigureAwait(false);
         }
     }
 }

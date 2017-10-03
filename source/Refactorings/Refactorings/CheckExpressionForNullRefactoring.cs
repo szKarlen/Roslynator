@@ -63,7 +63,7 @@ namespace Roslynator.CSharp.Refactorings
 
                 if (type != null)
                 {
-                    VariableDeclaratorSyntax variableDeclarator = variableDeclaration.SingleVariableOrDefault();
+                    VariableDeclaratorSyntax variableDeclarator = variableDeclaration.Variables.SingleOrDefault(throwException: false);
 
                     ExpressionSyntax value = variableDeclarator?.Initializer?.Value;
 
@@ -127,7 +127,7 @@ namespace Roslynator.CSharp.Refactorings
 
                 if (type != null)
                 {
-                    VariableDeclaratorSyntax variableDeclarator = variableDeclaration.SingleVariableOrDefault();
+                    VariableDeclaratorSyntax variableDeclarator = variableDeclaration.Variables.SingleOrDefault(throwException: false);
 
                     ExpressionSyntax value = variableDeclarator?.Initializer?.Value;
 

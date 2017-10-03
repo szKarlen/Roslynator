@@ -5,7 +5,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Roslynator.Utilities;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -227,7 +226,7 @@ namespace Roslynator.CSharp.Syntax
         {
             return expression?.IsKind(SyntaxKind.IdentifierName) == true
                 && string.Equals(((IdentifierNameSyntax)expression).Identifier.ValueText, name, StringComparison.Ordinal)
-                && SemanticUtilities.IsPropertyOfNullableOfT(expression, name, semanticModel, cancellationToken);
+                && SyntaxUtility.IsPropertyOfNullableOfT(expression, name, semanticModel, cancellationToken);
         }
 
         public override string ToString()

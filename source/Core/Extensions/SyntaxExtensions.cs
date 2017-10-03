@@ -86,6 +86,16 @@ namespace Roslynator
             return list.First().SpanOrLeadingTriviaContainsDirectives()
                 || list.Last().SpanOrTrailingTriviaContainsDirectives();
         }
+
+        internal static TNode LastButOne<TNode>(this SeparatedSyntaxList<TNode> list) where TNode : SyntaxNode
+        {
+            return list[list.Count - 2];
+        }
+
+        internal static TNode LastButOneOrDefault<TNode>(this SeparatedSyntaxList<TNode> list) where TNode : SyntaxNode
+        {
+            return (list.Count > 1) ? list.LastButOne() : default(TNode);
+        }
         #endregion SeparatedSyntaxList<T>
 
         #region SyntaxList<T>
@@ -157,6 +167,16 @@ namespace Roslynator
 
             return list.First().SpanOrLeadingTriviaContainsDirectives()
                 || list.Last().SpanOrTrailingTriviaContainsDirectives();
+        }
+
+        internal static TNode LastButOne<TNode>(this SyntaxList<TNode> list) where TNode : SyntaxNode
+        {
+            return list[list.Count - 2];
+        }
+
+        internal static TNode LastButOneOrDefault<TNode>(this SyntaxList<TNode> list) where TNode : SyntaxNode
+        {
+            return (list.Count > 1) ? list.LastButOne() : default(TNode);
         }
         #endregion SyntaxList<T>
 

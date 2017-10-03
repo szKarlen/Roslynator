@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
-using Roslynator.CSharp;
+using Roslynator.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Roslynator.CSharp.CSharpFactory;
 
@@ -16,94 +16,105 @@ namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceIfStatementWithReturnStatementRefactoring
     {
-        private static DiagnosticDescriptor FadeOutDescriptor
-        {
-            get { return DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut; }
-        }
-
         public static void Analyze(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement)
         {
-            SyntaxNode parent = ifStatement.Parent;
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(ifStatement);
 
-            if (parent?.IsKind(SyntaxKind.Block) == true)
+            if (!statementsInfo.Success)
+                return;
+
+            ReturnStatementSyntax returnStatement = GetReturnStatement(ifStatement.Statement);
+            LiteralExpressionSyntax booleanLiteral = GetBooleanLiteral(returnStatement);
+
+            if (booleanLiteral == null)
+                return;
+
+            ReturnStatementSyntax returnStatement2 = null;
+            LiteralExpressionSyntax booleanLiteral2 = null;
+
+            TextSpan span = ifStatement.Span;
+            ElseClauseSyntax elseClause = ifStatement.Else;
+
+            if (elseClause != null)
             {
-                ReturnStatementSyntax returnStatement = GetReturnStatement(ifStatement.Statement);
-                LiteralExpressionSyntax booleanLiteral = GetBooleanLiteral(returnStatement);
+                returnStatement2 = GetReturnStatement(elseClause.Statement);
+                booleanLiteral2 = GetBooleanLiteral(returnStatement2);
 
-                if (booleanLiteral != null)
+                if (booleanLiteral2 == null)
+                    return;
+            }
+            else
+            {
+                SyntaxList<StatementSyntax> statements = statementsInfo.Statements;
+
+                int index = statements.IndexOf(ifStatement);
+
+                if (index == statements.Count - 1)
+                    return;
+
+                if (index > 0
+                    && ((statements[index - 1] is IfStatementSyntax ifStatement2)
+                    && ifStatement2.Else == null
+                    && GetBooleanLiteral(ifStatement2.Statement) != null))
                 {
-                    ReturnStatementSyntax returnStatement2 = null;
-                    LiteralExpressionSyntax booleanLiteral2 = null;
-                    TextSpan span = ifStatement.Span;
-                    ElseClauseSyntax @else = ifStatement.Else;
-
-                    if (@else != null)
-                    {
-                        returnStatement2 = GetReturnStatement(@else.Statement);
-                        booleanLiteral2 = GetBooleanLiteral(returnStatement2);
-                    }
-                    else
-                    {
-                        var block = (BlockSyntax)parent;
-                        SyntaxList<StatementSyntax> statements = block.Statements;
-
-                        int index = statements.IndexOf(ifStatement);
-
-                        if (index < statements.Count - 1
-                            && (index == 0 || !IsIfStatementWithReturnStatement(statements[index - 1])))
-                        {
-                            StatementSyntax nextStatement = statements[index + 1];
-
-                            if (nextStatement.IsKind(SyntaxKind.ReturnStatement))
-                            {
-                                returnStatement2 = (ReturnStatementSyntax)nextStatement;
-                                booleanLiteral2 = GetBooleanLiteral(returnStatement2);
-
-                                if (booleanLiteral2 != null)
-                                    span = TextSpan.FromBounds(ifStatement.SpanStart, returnStatement2.Span.End);
-                            }
-                        }
-                    }
-
-                    if (booleanLiteral2 != null
-                        && IsOppositeBooleanLiteral(booleanLiteral, booleanLiteral2)
-                        && parent
-                            .DescendantTrivia(span)
-                            .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.ReplaceIfStatementWithReturnStatement,
-                            Location.Create(context.Node.SyntaxTree, span));
-
-                        context.ReportToken(FadeOutDescriptor, ifStatement.IfKeyword);
-                        context.ReportToken(FadeOutDescriptor, ifStatement.OpenParenToken);
-                        context.ReportToken(FadeOutDescriptor, ifStatement.CloseParenToken);
-                        context.ReportNode(FadeOutDescriptor, ifStatement.Statement);
-
-                        if (ifStatement.Else != null)
-                        {
-                            context.ReportNode(FadeOutDescriptor, @else);
-                        }
-                        else
-                        {
-                            context.ReportNode(FadeOutDescriptor, returnStatement2);
-                        }
-                    }
+                    return;
                 }
+
+                StatementSyntax nextStatement = statements[index + 1];
+
+                if (nextStatement.Kind() != SyntaxKind.ReturnStatement)
+                    return;
+
+                returnStatement2 = (ReturnStatementSyntax)nextStatement;
+                booleanLiteral2 = GetBooleanLiteral(returnStatement2);
+
+                if (booleanLiteral2 == null)
+                    return;
+
+                span = TextSpan.FromBounds(ifStatement.SpanStart, returnStatement2.Span.End);
+            }
+
+            if (booleanLiteral.Kind() == booleanLiteral2.Kind())
+                return;
+
+            if (!statementsInfo.Node
+                .DescendantTrivia(span)
+                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatement, ifStatement.IfKeyword);
+
+            context.ReportToken(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, ifStatement.IfKeyword);
+            context.ReportToken(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, ifStatement.OpenParenToken);
+            context.ReportToken(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, ifStatement.CloseParenToken);
+            context.ReportNode(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, ifStatement.Statement);
+
+            if (elseClause != null)
+            {
+                context.ReportNode(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, elseClause);
+            }
+            else
+            {
+                context.ReportNode(DiagnosticDescriptors.ReplaceIfStatementWithReturnStatementFadeOut, returnStatement2);
             }
         }
 
         private static LiteralExpressionSyntax GetBooleanLiteral(ReturnStatementSyntax returnStatement)
         {
-            if (returnStatement != null)
-            {
-                ExpressionSyntax expression = returnStatement.Expression;
+            if (returnStatement == null)
+                return null;
 
-                if (expression?.IsBooleanLiteralExpression() == true)
-                    return (LiteralExpressionSyntax)expression;
-            }
+            ExpressionSyntax expression = returnStatement.Expression;
 
-            return null;
+            if (expression == null)
+                return null;
+
+            if (!expression.Kind().IsBooleanLiteralExpression())
+                return null;
+
+            return (LiteralExpressionSyntax)expression;
         }
 
         private static LiteralExpressionSyntax GetBooleanLiteral(StatementSyntax statement)
@@ -113,96 +124,60 @@ namespace Roslynator.CSharp.Refactorings
 
         private static ReturnStatementSyntax GetReturnStatement(StatementSyntax statement)
         {
-            switch (statement?.Kind())
+            switch (statement)
             {
-                case SyntaxKind.Block:
-                    {
-                        StatementSyntax statement2 = ((BlockSyntax)statement).SingleStatementOrDefault();
-
-                        if (statement2?.IsKind(SyntaxKind.ReturnStatement) == true)
-                            return (ReturnStatementSyntax)statement2;
-
-                        break;
-                    }
-                case SyntaxKind.ReturnStatement:
-                    {
-                        return (ReturnStatementSyntax)statement;
-                    }
+                case BlockSyntax block:
+                    return block.Statements.SingleOrDefault(throwException: false) as ReturnStatementSyntax;
+                case ReturnStatementSyntax returnStatement:
+                    return returnStatement;
             }
 
             return null;
         }
 
-        private static bool IsOppositeBooleanLiteral(LiteralExpressionSyntax literal1, LiteralExpressionSyntax literal2)
-        {
-            if (literal1.IsKind(SyntaxKind.TrueLiteralExpression))
-            {
-                return literal2.IsKind(SyntaxKind.FalseLiteralExpression);
-            }
-            else
-            {
-                return literal2.IsKind(SyntaxKind.TrueLiteralExpression);
-            }
-        }
-
-        private static bool IsIfStatementWithReturnStatement(StatementSyntax statement)
-        {
-            if (statement.IsKind(SyntaxKind.IfStatement))
-            {
-                var ifStatement = (IfStatementSyntax)statement;
-
-                if (ifStatement.Else == null)
-                    return GetBooleanLiteral(ifStatement.Statement) != null;
-            }
-
-            return false;
-        }
-
-        public static Task<Document> RefactorAsync(
+        public static async Task<Document> RefactorAsync(
             Document document,
             IfStatementSyntax ifStatement,
             CancellationToken cancellationToken)
         {
-            ReturnStatementSyntax newReturnStatement = CreateReturnStatement(ifStatement);
+            ExpressionSyntax returnExpression = ifStatement.Condition;
+
+            if (GetBooleanLiteral(ifStatement.Statement).Kind() == SyntaxKind.FalseLiteralExpression)
+            {
+                SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+
+                returnExpression = CSharpUtility.LogicallyNegate(returnExpression, semanticModel, cancellationToken);
+            }
+
+            ReturnStatementSyntax newReturnStatement = ReturnStatement(
+                ReturnKeyword().WithTrailingTrivia(Space),
+                returnExpression,
+                SemicolonToken());
 
             if (ifStatement.Else != null)
             {
                 newReturnStatement = newReturnStatement.WithTriviaFrom(ifStatement);
 
-                return document.ReplaceNodeAsync(ifStatement, newReturnStatement, cancellationToken);
+                return await document.ReplaceNodeAsync(ifStatement, newReturnStatement, cancellationToken).ConfigureAwait(false);
             }
-            else
-            {
-                var block = (BlockSyntax)ifStatement.Parent;
-                SyntaxList<StatementSyntax> statements = block.Statements;
 
-                int index = statements.IndexOf(ifStatement);
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(ifStatement);
 
-                var returnStatement = (ReturnStatementSyntax)statements[index + 1];
+            SyntaxList<StatementSyntax> statements = statementsInfo.Statements;
 
-                newReturnStatement = newReturnStatement
-                    .WithLeadingTrivia(ifStatement.GetLeadingTrivia())
-                    .WithTrailingTrivia(returnStatement.GetTrailingTrivia());
+            int index = statements.IndexOf(ifStatement);
 
-                SyntaxList<StatementSyntax> newStatements = statements
-                    .RemoveAt(index)
-                    .ReplaceAt(index, newReturnStatement);
+            var returnStatement = (ReturnStatementSyntax)statements[index + 1];
 
-                return document.ReplaceNodeAsync(block, block.WithStatements(newStatements), cancellationToken);
-            }
-        }
+            newReturnStatement = newReturnStatement
+                .WithLeadingTrivia(ifStatement.GetLeadingTrivia())
+                .WithTrailingTrivia(returnStatement.GetTrailingTrivia());
 
-        private static ReturnStatementSyntax CreateReturnStatement(IfStatementSyntax ifStatement)
-        {
-            ExpressionSyntax expression = ifStatement.Condition;
+            SyntaxList<StatementSyntax> newStatements = statements
+                .RemoveAt(index)
+                .ReplaceAt(index, newReturnStatement);
 
-            if (GetBooleanLiteral(ifStatement.Statement).IsKind(SyntaxKind.FalseLiteralExpression))
-                expression = Negator.LogicallyNegate(expression);
-
-            return ReturnStatement(
-                ReturnKeyword().WithTrailingTrivia(Space),
-                expression,
-                SemicolonToken());
+            return await document.ReplaceStatementsAsync(statementsInfo, newStatements, cancellationToken).ConfigureAwait(false);
         }
     }
 }

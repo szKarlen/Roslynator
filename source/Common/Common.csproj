@@ -46,7 +46,12 @@
     <Compile Include="CSharp\Refactorings\GenerateBaseConstructorsRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\IntroduceFieldRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\IntroduceLocalVariableRefactoring.cs" />
-    <Compile Include="CSharp\Refactorings\ReduceIfNestingRefactoring.cs" />
+    <Compile Include="CSharp\CodeFixes\ModifiersCodeFixes.cs" />
+    <Compile Include="CSharp\Refactorings\ReduceIfNesting\ReduceIfNestingAnalysis.cs" />
+    <Compile Include="CSharp\Refactorings\ReduceIfNesting\ReduceIfNestingOptions.cs" />
+    <Compile Include="CSharp\Refactorings\ReduceIfNesting\ReduceIfNestingOptionsExtensions.cs" />
+    <Compile Include="CSharp\Refactorings\ReduceIfNesting\ReduceIfNestingRefactoring.cs" />
+    <Compile Include="CSharp\Refactorings\ReduceIfNesting\ReduceIfNestingRewriter.cs" />
     <Compile Include="CSharp\Refactorings\RefactoringHelper.cs" />
     <Compile Include="CSharp\Refactorings\CallExtensionMethodAsInstanceMethodRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\ReplaceAsWithCastRefactoring.cs" />
@@ -87,7 +92,6 @@
     <Compile Include="CSharp\Refactorings\ExpandExpressionBodyRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\ExtractTypeDeclarationToNewDocumentRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\IntroduceFieldToLockOnRefactoring.cs" />
-    <Compile Include="CSharp\Refactorings\MarkContainingClassAsAbstractRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\MergeInterpolationIntoInterpolatedStringRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\UseBitwiseOperationInsteadOfCallingHasFlagRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\CallConfigureAwaitRefactoring.cs" />

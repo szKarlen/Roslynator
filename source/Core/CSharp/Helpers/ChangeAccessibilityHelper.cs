@@ -4,7 +4,6 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Roslynator.CSharp.Comparers;
-using Roslynator.CSharp.Helpers.ModifierHelpers;
 using Roslynator.CSharp.Syntax;
 using static Roslynator.CSharp.CSharpFactory;
 
@@ -59,10 +58,10 @@ namespace Roslynator.CSharp.Helpers
 
             if (accessibility != Accessibility.NotApplicable)
             {
-                node = ModifierHelper.RemoveModifierAt(node, Math.Max(info.Index, info.SecondIndex));
+                node = Modifier.RemoveAt(node, Math.Max(info.Index, info.SecondIndex));
 
                 if (accessibility == Accessibility.ProtectedOrInternal)
-                    node = ModifierHelper.RemoveModifierAt(node, Math.Min(info.Index, info.SecondIndex));
+                    node = Modifier.RemoveAt(node, Math.Min(info.Index, info.SecondIndex));
             }
 
             if (newAccessibility != Accessibility.NotApplicable)

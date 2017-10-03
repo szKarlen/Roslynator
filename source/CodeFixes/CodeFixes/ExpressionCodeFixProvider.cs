@@ -27,7 +27,8 @@ namespace Roslynator.CSharp.CodeFixes
                     CompilerDiagnosticIdentifiers.ConstantValueCannotBeConverted,
                     CompilerDiagnosticIdentifiers.ExpressionBeingAssignedMustBeConstant,
                     CompilerDiagnosticIdentifiers.CannotConvertNullToTypeBecauseItIsNonNullableValueType,
-                    CompilerDiagnosticIdentifiers.ResultOfExpressionIsAlwaysConstantSinceValueIsNeverEqualToNull);
+                    CompilerDiagnosticIdentifiers.ResultOfExpressionIsAlwaysConstantSinceValueIsNeverEqualToNull,
+                    CompilerDiagnosticIdentifiers.CannotConvertNullToTypeParameterBecauseItCouldBeNonNullableValueType);
             }
         }
 
@@ -161,20 +162,12 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!modifiers.Contains(SyntaxKind.ConstKeyword))
                                 break;
 
-                            CodeAction codeAction = CodeAction.Create(
-                                "Remove 'const' modifier",
-                                cancellationToken =>
-                                {
-                                    LocalDeclarationStatementSyntax newNode = localDeclarationStatement.RemoveModifier(SyntaxKind.ConstKeyword);
+                            ModifiersCodeFixes.RemoveModifier(context, diagnostic, localDeclarationStatement, SyntaxKind.ConstKeyword);
 
-                                    return context.Document.ReplaceNodeAsync(localDeclarationStatement, newNode, cancellationToken);
-                                },
-                                GetEquivalenceKey(diagnostic));
-
-                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                     case CompilerDiagnosticIdentifiers.CannotConvertNullToTypeBecauseItIsNonNullableValueType:
+                    case CompilerDiagnosticIdentifiers.CannotConvertNullToTypeParameterBecauseItCouldBeNonNullableValueType:
                         {
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.ReplaceNullLiteralExpressionWithDefaultValue))
                                 break;
@@ -183,21 +176,20 @@ namespace Roslynator.CSharp.CodeFixes
 
                             ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(expression, context.CancellationToken).ConvertedType;
 
-                            if (typeSymbol?.SupportsExplicitDeclaration() == true)
-                            {
-                                CodeAction codeAction = CodeAction.Create(
-                                    "Replace 'null' with default value",
-                                    cancellationToken =>
-                                    {
-                                        ExpressionSyntax newNode = typeSymbol.ToDefaultValueSyntax(semanticModel, expression.SpanStart);
+                            if (typeSymbol?.SupportsExplicitDeclaration() != true)
+                                break;
 
-                                        return context.Document.ReplaceNodeAsync(expression, newNode, cancellationToken);
-                                    },
-                                    GetEquivalenceKey(diagnostic));
+                            CodeAction codeAction = CodeAction.Create(
+                                "Replace 'null' with default value",
+                                cancellationToken =>
+                                {
+                                    ExpressionSyntax newNode = typeSymbol.ToDefaultValueSyntax(semanticModel, expression.SpanStart);
 
-                                context.RegisterCodeFix(codeAction, diagnostic);
-                            }
+                                    return context.Document.ReplaceNodeAsync(expression, newNode, cancellationToken);
+                                },
+                                GetEquivalenceKey(diagnostic));
 
+                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                     case CompilerDiagnosticIdentifiers.ResultOfExpressionIsAlwaysConstantSinceValueIsNeverEqualToNull:

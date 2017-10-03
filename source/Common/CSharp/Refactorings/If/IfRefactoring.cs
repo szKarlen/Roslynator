@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using Roslynator.CSharp.Syntax;
-using Roslynator.Utilities;
 using static Roslynator.CSharp.Refactorings.If.IfRefactoringHelper;
 
 namespace Roslynator.CSharp.Refactorings.If
@@ -140,7 +139,7 @@ namespace Roslynator.CSharp.Refactorings.If
                 IfToReturnWithBooleanExpression ifToReturnWithBooleanExpression = null;
 
                 if (options.UseBooleanExpression
-                    && (expression1.IsBooleanLiteralExpression() || expression2.IsBooleanLiteralExpression())
+                    && (expression1.Kind().IsBooleanLiteralExpression() || expression2.Kind().IsBooleanLiteralExpression())
                     && semanticModel.GetTypeSymbol(expression1, cancellationToken)?.IsBoolean() == true
                     && semanticModel.GetTypeSymbol(expression2, cancellationToken)?.IsBoolean() == true)
                 {
@@ -150,7 +149,7 @@ namespace Roslynator.CSharp.Refactorings.If
                 IfToReturnWithConditionalExpression ifToReturnWithConditionalExpression = null;
 
                 if (options.UseConditionalExpression
-                    && (!expression1.IsBooleanLiteralExpression() || !expression2.IsBooleanLiteralExpression()))
+                    && (!expression1.Kind().IsBooleanLiteralExpression() || !expression2.Kind().IsBooleanLiteralExpression()))
                 {
                     ifToReturnWithConditionalExpression = IfToReturnWithConditionalExpression.Create(ifStatement, expression1, expression2, isYield);
                 }
@@ -180,7 +179,7 @@ namespace Roslynator.CSharp.Refactorings.If
             }
 
             if (expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
-                && SemanticUtilities.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
+                && SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
             {
                 expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
 
@@ -272,7 +271,7 @@ namespace Roslynator.CSharp.Refactorings.If
             }
 
             if (expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
-                && SemanticUtilities.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
+                && SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
             {
                 expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
 
@@ -344,7 +343,10 @@ namespace Roslynator.CSharp.Refactorings.If
             IfStatementSyntax ifStatement,
             IfAnalysisOptions options)
         {
-            VariableDeclaratorSyntax declarator = localDeclarationStatement.Declaration?.SingleVariableOrDefault();
+            VariableDeclaratorSyntax declarator = localDeclarationStatement
+                .Declaration?
+                .Variables
+                .SingleOrDefault(throwException: false);
 
             if (declarator != null)
             {

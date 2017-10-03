@@ -2,28 +2,42 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Roslynator.CSharp.CSharpFactory;
 
-namespace Roslynator.CSharp
+namespace Roslynator.CSharp.Helpers
 {
-    internal static class Negator
+    internal static class LogicalNegationHelper
     {
-        public static ExpressionSyntax LogicallyNegate(ExpressionSyntax booleanExpression)
+        public static ExpressionSyntax LogicallyNegate(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (booleanExpression == null)
-                throw new ArgumentNullException(nameof(booleanExpression));
+            if (expression == null)
+                throw new ArgumentNullException(nameof(expression));
 
-            return LogicallyNegateCore(booleanExpression)
-                .WithTriviaFrom(booleanExpression);
+            if (semanticModel == null)
+                throw new ArgumentNullException(nameof(semanticModel));
+
+            ExpressionSyntax newExpression = LogicallyNegateCore(expression, semanticModel, cancellationToken);
+
+            return newExpression.WithTriviaFrom(expression);
         }
 
-        private static ExpressionSyntax LogicallyNegateCore(ExpressionSyntax expression)
+        private static ExpressionSyntax LogicallyNegateCore(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
         {
-            switch (expression?.Kind())
+            if (expression == null)
+                return expression;
+
+            switch (expression.Kind())
             {
                 case SyntaxKind.SimpleMemberAccessExpression:
                 case SyntaxKind.InvocationExpression:
@@ -46,43 +60,43 @@ namespace Roslynator.CSharp
                     }
                 case SyntaxKind.CastExpression:
                     {
-                        return LogicalNotExpressionWithParentheses(expression);
+                        return DefaultNegate(expression);
                     }
                 case SyntaxKind.LessThanExpression:
                 case SyntaxKind.LessThanOrEqualExpression:
                 case SyntaxKind.GreaterThanExpression:
                 case SyntaxKind.GreaterThanOrEqualExpression:
                     {
-                        return NegateBinaryOperator(expression);
+                        return NegateLessThanGreaterThan((BinaryExpressionSyntax)expression, semanticModel, cancellationToken);
                     }
                 case SyntaxKind.IsExpression:
                 case SyntaxKind.AsExpression:
                 case SyntaxKind.IsPatternExpression:
                     {
-                        return LogicalNotExpressionWithParentheses(expression);
+                        return DefaultNegate(expression);
                     }
                 case SyntaxKind.EqualsExpression:
                 case SyntaxKind.NotEqualsExpression:
                     {
-                        return NegateBinaryOperator(expression);
+                        return NegateBinaryOperator((BinaryExpressionSyntax)expression);
                     }
                 case SyntaxKind.BitwiseAndExpression:
                     {
-                        return NegateBinaryExpression(expression);
+                        return NegateBinaryExpression((BinaryExpressionSyntax)expression, semanticModel, cancellationToken);
                     }
                 case SyntaxKind.ExclusiveOrExpression:
                     {
-                        return LogicalNotExpressionWithParentheses(expression);
+                        return DefaultNegate(expression);
                     }
                 case SyntaxKind.BitwiseOrExpression:
                 case SyntaxKind.LogicalOrExpression:
                 case SyntaxKind.LogicalAndExpression:
                     {
-                        return NegateBinaryExpression(expression);
+                        return NegateBinaryExpression((BinaryExpressionSyntax)expression, semanticModel, cancellationToken);
                     }
                 case SyntaxKind.ConditionalExpression:
                     {
-                        return NegateConditionalExpression((ConditionalExpressionSyntax)expression);
+                        return NegateConditionalExpression((ConditionalExpressionSyntax)expression, semanticModel, cancellationToken);
                     }
                 case SyntaxKind.SimpleAssignmentExpression:
                 case SyntaxKind.AddAssignmentExpression:
@@ -96,7 +110,7 @@ namespace Roslynator.CSharp
                 case SyntaxKind.LeftShiftAssignmentExpression:
                 case SyntaxKind.RightShiftAssignmentExpression:
                     {
-                        return LogicalNotExpressionWithParentheses(expression);
+                        return DefaultNegate(expression);
                     }
                 case SyntaxKind.TrueLiteralExpression:
                     {
@@ -110,27 +124,115 @@ namespace Roslynator.CSharp
                     {
                         var parenthesizedExpression = (ParenthesizedExpressionSyntax)expression;
 
-                        return parenthesizedExpression
-                            .WithExpression(LogicallyNegate(parenthesizedExpression.Expression));
-                    }
-                default:
-                    {
-                        if (expression != null)
-                        {
-                            Debug.Fail($"Negate {expression.Kind()}");
-                            return LogicalNotExpressionWithParentheses(expression);
-                        }
-                        else
-                        {
-                            return expression;
-                        }
+                        ExpressionSyntax expression2 = parenthesizedExpression.Expression;
+
+                        if (expression2 == null)
+                            return parenthesizedExpression;
+
+                        if (expression2.IsMissing)
+                            return parenthesizedExpression;
+
+                        ExpressionSyntax newExpression = LogicallyNegateCore(expression2, semanticModel, cancellationToken);
+
+                        newExpression = newExpression.WithTriviaFrom(expression2);
+
+                        return parenthesizedExpression.WithExpression(newExpression);
                     }
             }
+
+            Debug.Fail($"Logical negation of unknown kind '{expression.Kind()}'");
+
+            return DefaultNegate(expression);
         }
 
-        private static ExpressionSyntax NegateBinaryOperator(ExpressionSyntax expression)
+        private static ExpressionSyntax NegateLessThanGreaterThan(
+            BinaryExpressionSyntax binaryExpression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
         {
-            return NegateBinaryOperator((BinaryExpressionSyntax)expression);
+            ExpressionSyntax left = binaryExpression.Left;
+            ExpressionSyntax right = binaryExpression.Right;
+
+            if (IsConstructedFromNullableOfT(left, semanticModel, cancellationToken))
+            {
+                if (!IsConstructedFromNullableOfT(right, semanticModel, cancellationToken))
+                {
+                    return NegateLessThanGreaterThan(binaryExpression, left, right, isLeft: true);
+                }
+                else
+                {
+                    return DefaultNegate(binaryExpression);
+                }
+            }
+            else if (IsConstructedFromNullableOfT(right, semanticModel, cancellationToken))
+            {
+                if (semanticModel.GetConstantValue(left, cancellationToken).HasValue)
+                {
+                    return NegateLessThanGreaterThan(binaryExpression, right, left, isLeft: false);
+                }
+                else
+                {
+                    return DefaultNegate(binaryExpression);
+                }
+            }
+
+            return NegateBinaryOperator(binaryExpression);
+        }
+
+        private static ExpressionSyntax NegateLessThanGreaterThan(
+            BinaryExpressionSyntax binaryExpression,
+            ExpressionSyntax expression,
+            ExpressionSyntax otherExpression,
+            bool isLeft)
+        {
+            if (expression.Kind() == SyntaxKind.IdentifierName)
+            {
+                return LogicalOrExpression(
+                    EqualsExpression(expression, NullLiteralExpression()),
+                    NegateBinaryOperator(binaryExpression));
+            }
+
+            if (!(expression is ConditionalAccessExpressionSyntax conditionalAccess))
+                return DefaultNegate(binaryExpression);
+
+            if (conditionalAccess.Expression.Kind() != SyntaxKind.IdentifierName)
+                return DefaultNegate(binaryExpression);
+
+            ExpressionSyntax newExpression = TryCreateExpressionWithoutConditionalAccess(conditionalAccess);
+
+            if (newExpression == null)
+                return DefaultNegate(binaryExpression);
+
+            return LogicalOrExpression(
+                EqualsExpression(conditionalAccess.Expression, NullLiteralExpression()),
+                binaryExpression.Update(
+                    (isLeft) ? newExpression : otherExpression,
+                    NegateBinaryOperator(binaryExpression.OperatorToken),
+                    (isLeft) ? otherExpression : newExpression));
+        }
+
+        private static ExpressionSyntax TryCreateExpressionWithoutConditionalAccess(ConditionalAccessExpressionSyntax conditionalAccess)
+        {
+            switch (conditionalAccess.WhenNotNull)
+            {
+                case MemberBindingExpressionSyntax memberBinding:
+                    {
+                        return SimpleMemberAccessExpression(conditionalAccess.Expression, memberBinding.Name);
+                    }
+                case ElementBindingExpressionSyntax elementBinding:
+                    {
+                        return ElementAccessExpression(conditionalAccess.Expression, elementBinding.ArgumentList);
+                    }
+                case InvocationExpressionSyntax invocation:
+                    {
+                        if (!(invocation.Expression is MemberBindingExpressionSyntax memberBinding))
+                            return null;
+
+                        return InvocationExpression(SimpleMemberAccessExpression(conditionalAccess.Expression, memberBinding.Name), invocation.ArgumentList);
+                    }
+            }
+
+            return null;
         }
 
         private static ExpressionSyntax NegateBinaryOperator(BinaryExpressionSyntax binaryExpression)
@@ -174,20 +276,16 @@ namespace Roslynator.CSharp
                     return SyntaxKind.AmpersandAmpersandToken;
                 case SyntaxKind.AmpersandAmpersandToken:
                     return SyntaxKind.BarBarToken;
-                default:
-                    {
-                        Debug.Fail(kind.ToString());
-                        return kind;
-                    }
             }
+
+            Debug.Fail(kind.ToString());
+            return kind;
         }
 
-        private static ExpressionSyntax NegateBinaryExpression(ExpressionSyntax expression)
-        {
-            return NegateBinaryExpression((BinaryExpressionSyntax)expression);
-        }
-
-        private static ExpressionSyntax NegateBinaryExpression(BinaryExpressionSyntax binaryExpression)
+        private static ExpressionSyntax NegateBinaryExpression(
+            BinaryExpressionSyntax binaryExpression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
         {
             ExpressionSyntax left = binaryExpression.Left;
             ExpressionSyntax right = binaryExpression.Right;
@@ -195,9 +293,9 @@ namespace Roslynator.CSharp
 
             SyntaxKind kind = NegateBinaryExpressionKind(binaryExpression);
 
-            left = LogicallyNegate(left, kind);
+            left = LogicallyNegateWithParentheses(left, semanticModel, cancellationToken);
 
-            right = LogicallyNegate(right, kind);
+            right = LogicallyNegateWithParentheses(right, semanticModel, cancellationToken);
 
             BinaryExpressionSyntax newBinaryExpression = BinaryExpression(
                 kind,
@@ -232,27 +330,28 @@ namespace Roslynator.CSharp
                     return SyntaxKind.LogicalAndExpression;
                 case SyntaxKind.LogicalAndExpression:
                     return SyntaxKind.LogicalOrExpression;
-                default:
-                    {
-                        Debug.Fail(binaryExpression.Kind().ToString());
-                        return binaryExpression.Kind();
-                    }
             }
+
+            Debug.Fail(binaryExpression.Kind().ToString());
+            return binaryExpression.Kind();
         }
 
-        private static ExpressionSyntax NegateConditionalExpression(ConditionalExpressionSyntax conditionalExpression)
+        private static ExpressionSyntax NegateConditionalExpression(
+            ConditionalExpressionSyntax conditionalExpression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
         {
             ExpressionSyntax whenTrue = conditionalExpression.WhenTrue;
             ExpressionSyntax whenFalse = conditionalExpression.WhenFalse;
 
             if (whenTrue?.IsKind(SyntaxKind.ThrowExpression) == false)
             {
-                whenTrue = LogicallyNegate(whenTrue, SyntaxKind.ConditionalExpression);
+                whenTrue = LogicallyNegateWithParentheses(whenTrue, semanticModel, cancellationToken);
             }
 
             if (whenFalse?.IsKind(SyntaxKind.ThrowExpression) == false)
             {
-                whenFalse = LogicallyNegate(whenFalse, SyntaxKind.ConditionalExpression);
+                whenFalse = LogicallyNegateWithParentheses(whenFalse, semanticModel, cancellationToken);
             }
 
             ConditionalExpressionSyntax newConditionalExpression = conditionalExpression.Update(
@@ -265,33 +364,23 @@ namespace Roslynator.CSharp
             return newConditionalExpression.WithTriviaFrom(conditionalExpression);
         }
 
-        private static ExpressionSyntax LogicallyNegate(ExpressionSyntax expression, SyntaxKind kind)
+        private static ExpressionSyntax LogicallyNegateWithParentheses(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
         {
             if (expression == null)
                 return null;
 
-            return LogicallyNegate(expression)
-                .ParenthesizeIfNecessary(kind)
-                .WithTriviaFrom(expression);
+            return LogicallyNegateCore(expression, semanticModel, cancellationToken).Parenthesize();
         }
 
-        private static ExpressionSyntax ParenthesizeIfNecessary(this ExpressionSyntax expression, SyntaxKind kind)
-        {
-            if (expression != null
-                && OperatorPrecedence.GetPrecedence(expression) > OperatorPrecedence.GetPrecedence(kind))
-            {
-                expression = expression.Parenthesize(simplifiable: false);
-            }
-
-            return expression;
-        }
-
-        private static ExpressionSyntax LogicalNotExpressionWithParentheses(this ExpressionSyntax expression)
+        private static ExpressionSyntax DefaultNegate(this ExpressionSyntax expression)
         {
             if (expression?.IsMissing == false)
             {
                 if (!expression.IsKind(SyntaxKind.ParenthesizedExpression))
-                    expression = expression.Parenthesize(simplifiable: false);
+                    expression = expression.Parenthesize();
 
                 return LogicalNotExpression(expression);
             }
@@ -299,6 +388,18 @@ namespace Roslynator.CSharp
             Debug.Fail(expression.Kind().ToString());
 
             return expression;
+        }
+
+        private static bool IsConstructedFromNullableOfT(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            return expression?.IsMissing == false
+                && expression.Kind() != SyntaxKind.NumericLiteralExpression
+                && semanticModel
+                    .GetTypeSymbol(expression, cancellationToken)?
+                    .IsConstructedFrom(SpecialType.System_Nullable_T) == true;
         }
     }
 }

@@ -50,6 +50,7 @@
     <Compile Include="CSharp\Extensions\SyntaxKindExtensions.cs" />
     <Compile Include="CSharp\Helpers\DetermineParameterTypeHelper.cs" />
     <Compile Include="CSharp\Syntax\AsExpressionInfo.cs" />
+    <Compile Include="CSharp\Helpers\LogicalNegationHelper.cs" />
     <Compile Include="CSharp\OverrideInfo.cs" />
     <Compile Include="CSharp\Refactorings\RefactoringIdentifierSet.cs" />
     <Compile Include="CSharp\Refactorings\RefactoringSettings.cs" />
@@ -67,6 +68,8 @@
     <Compile Include="Diagnostics\Assert.cs" />
     <Compile Include="Extensions\ListExtensions.cs" />
     <Compile Include="Extensions\RefKindExtensions.cs" />
+    <Compile Include="Selection`1.cs" />
+    <Compile Include="SeparatedSyntaxListSelection`1.cs" />
     <Compile Include="SyntaxComparer.cs" />
     <Compile Include="SyntaxFinder.cs" />
     <Compile Include="CSharp\Syntax\TypeParameterInfo.cs" />
@@ -98,7 +101,7 @@
     <Compile Include="CSharp\StringLiteralParser.StringLiteralParseResult.cs" />
     <Compile Include="CSharp\Syntax\XmlElementInfo.cs" />
     <Compile Include="CSharp\Syntax\XmlElementKind.cs" />
-    <Compile Include="CSharp\Helpers\ModifierHelpers\ModifierHelper.cs" />
+    <Compile Include="CSharp\Modifier.cs" />
     <Compile Include="CSharp\IMemberDeclarationComparer.cs" />
     <Compile Include="CSharp\IModifierComparer.cs" />
     <Compile Include="CSharp\CSharpUtility.cs" />
@@ -130,7 +133,6 @@
     <Compile Include="CSharp\Syntax\IfStatementInfo.cs" />
     <Compile Include="CSharp\IfStatementOrElseClause.cs" />
     <Compile Include="CSharp\Comparers\MemberDeclarationSortMode.cs" />
-    <Compile Include="CSharp\Negator.cs" />
     <Compile Include="CSharp\Syntax\MemberInvocationStatementInfo.cs" />
     <Compile Include="CSharp\Syntax\SimpleAssignmentExpressionInfo.cs" />
     <Compile Include="CSharp\Syntax\SingleParameterLambdaExpressionInfo.cs" />
@@ -154,8 +156,8 @@
     <Compile Include="Utilities\FlagsUtility.cs" />
     <Compile Include="Utilities\Deferred`1.cs" />
     <Compile Include="MethodInfo.cs" />
-    <Compile Include="Utilities\SemanticUtilities.cs" />
-    <Compile Include="Utilities\SymbolUtility.cs" />
+    <Compile Include="SyntaxUtility.cs" />
+    <Compile Include="SymbolUtility.cs" />
     <Compile Include="Text\SyntaxNodeTextBuilder.cs" />
     <Compile Include="CSharp\SyntaxRewriters\CommentRemover.cs" />
     <Compile Include="CSharp\Analysis\TypeAnalysisFlags.cs" />

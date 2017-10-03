@@ -138,7 +138,7 @@ namespace Roslynator.CSharp.Refactorings
                 {
                     case SpecialType.System_Boolean:
                         {
-                            if (expression.IsBooleanLiteralExpression())
+                            if (expression.Kind().IsBooleanLiteralExpression())
                                 return true;
 
                             break;
