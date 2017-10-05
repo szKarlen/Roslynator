@@ -34,17 +34,18 @@ namespace Roslynator.CSharp.Syntax
 
         public SyntaxList<StatementSyntax> Statements { get; }
 
+        //TODO: ContainingNode
         public CSharpSyntaxNode Node
         {
             get { return Block ?? (CSharpSyntaxNode)SwitchSection; }
         }
 
-        public bool IsBlock
+        public bool IsInBlock
         {
             get { return Block != null; }
         }
 
-        public bool IsSwitchSection
+        public bool IsInSwitchSection
         {
             get { return SwitchSection != null; }
         }
@@ -113,10 +114,10 @@ namespace Roslynator.CSharp.Syntax
 
         public StatementsInfo WithStatements(SyntaxList<StatementSyntax> statements)
         {
-            if (IsBlock)
+            if (IsInBlock)
                 return new StatementsInfo(Block.WithStatements(statements));
 
-            if (IsSwitchSection)
+            if (IsInSwitchSection)
                 return new StatementsInfo(SwitchSection.WithStatements(statements));
 
             return default(StatementsInfo);
@@ -124,10 +125,10 @@ namespace Roslynator.CSharp.Syntax
 
         public StatementsInfo RemoveNode(SyntaxNode node, SyntaxRemoveOptions options)
         {
-            if (IsBlock)
+            if (IsInBlock)
                 return new StatementsInfo(Block.RemoveNode(node, options));
 
-            if (IsSwitchSection)
+            if (IsInSwitchSection)
                 return new StatementsInfo(SwitchSection.RemoveNode(node, options));
 
             return this;
@@ -135,10 +136,10 @@ namespace Roslynator.CSharp.Syntax
 
         public StatementsInfo ReplaceNode(SyntaxNode oldNode, SyntaxNode newNode)
         {
-            if (IsBlock)
+            if (IsInBlock)
                 return new StatementsInfo(Block.ReplaceNode(oldNode, newNode));
 
-            if (IsSwitchSection)
+            if (IsInSwitchSection)
                 return new StatementsInfo(SwitchSection.ReplaceNode(oldNode, newNode));
 
             return this;
