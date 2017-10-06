@@ -11,6 +11,22 @@ namespace Roslynator.CSharp.Helpers
     {
         public static bool IsAllowedAccessibility(SyntaxNode node, Accessibility accessibility)
         {
+            switch (node.Parent?.Kind())
+            {
+                case SyntaxKind.NamespaceDeclaration:
+                case SyntaxKind.CompilationUnit:
+                    {
+                        return accessibility.Is(Accessibility.Public, Accessibility.Internal);
+                    }
+                case SyntaxKind.StructDeclaration:
+                    {
+                        if (accessibility.Is(Accessibility.Protected, Accessibility.ProtectedOrInternal))
+                            return false;
+
+                        break;
+                    }
+            }
+
             switch (node.Kind())
             {
                 case SyntaxKind.ClassDeclaration:
@@ -18,12 +34,6 @@ namespace Roslynator.CSharp.Helpers
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.EnumDeclaration:
                     {
-                        if (node.IsParentKind(SyntaxKind.NamespaceDeclaration, SyntaxKind.CompilationUnit))
-                        {
-                            return accessibility == Accessibility.Public
-                                || accessibility == Accessibility.Internal;
-                        }
-
                         return true;
                     }
                 case SyntaxKind.EventDeclaration:
@@ -97,18 +107,14 @@ namespace Roslynator.CSharp.Helpers
                 case SyntaxKind.RemoveAccessorDeclaration:
                 case SyntaxKind.UnknownAccessorDeclaration:
                     {
-                        var memberDeclaration = node.Parent.Parent as MemberDeclarationSyntax;
+                        var memberDeclaration = node.Parent?.Parent as MemberDeclarationSyntax;
 
                         Debug.Assert(memberDeclaration != null, node.ToString());
 
                         if (memberDeclaration != null)
                         {
-                            if (accessibility == Accessibility.Protected
-                                || accessibility == Accessibility.ProtectedOrInternal)
-                            {
-                                if ((memberDeclaration.Parent as ClassDeclarationSyntax)?.Modifiers.ContainsAny(SyntaxKind.StaticKeyword, SyntaxKind.SealedKeyword) == true)
-                                    return false;
-                            }
+                            if (!CheckProtectedOrProtectedInternalInStaticOrSealedClass(memberDeclaration, accessibility))
+                                return false;
 
                             Accessibility declarationAccessibility = memberDeclaration.GetModifiers().GetAccessibility();
 
@@ -140,14 +146,10 @@ namespace Roslynator.CSharp.Helpers
 
         private static bool CheckProtectedOrProtectedInternalInStaticOrSealedClass(SyntaxNode node, Accessibility accessibility)
         {
-            if (accessibility == Accessibility.Protected
-                || accessibility == Accessibility.ProtectedOrInternal)
-            {
-                if ((node.Parent as ClassDeclarationSyntax)?.Modifiers.ContainsAny(SyntaxKind.StaticKeyword, SyntaxKind.SealedKeyword) == true)
-                    return false;
-            }
-
-            return true;
+            return !accessibility.Is(Accessibility.Protected, Accessibility.ProtectedOrInternal)
+                || (node.Parent as ClassDeclarationSyntax)?
+                    .Modifiers
+                    .ContainsAny(SyntaxKind.StaticKeyword, SyntaxKind.SealedKeyword) != true;
         }
 
         private static bool CheckAccessorAccessibility(AccessorListSyntax accessorList, Accessibility accessibility)

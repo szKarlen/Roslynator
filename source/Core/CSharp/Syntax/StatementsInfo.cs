@@ -104,7 +104,7 @@ namespace Roslynator.CSharp.Syntax
             return statement?
                 .Parent?
                 .Kind()
-                .IsKind(SyntaxKind.Block, SyntaxKind.SwitchSection) == true;
+                .Is(SyntaxKind.Block, SyntaxKind.SwitchSection) == true;
         }
 
         public StatementsInfo WithStatements(IEnumerable<StatementSyntax> statements)
