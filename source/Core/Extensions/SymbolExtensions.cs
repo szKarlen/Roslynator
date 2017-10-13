@@ -916,23 +916,12 @@ namespace Roslynator
             return namedTypeSymbol?.ConstructedFrom?.Equals(symbol) == true;
         }
 
-        internal static bool IsConstructedFrom(this INamedTypeSymbol namedTypeSymbol, string fullyQualifiedMetadataName, SemanticModel semanticModel)
+        internal static bool IsConstructedFromImmutableArrayOfT(this INamedTypeSymbol namedTypeSymbol, SemanticModel semanticModel)
         {
-            if (namedTypeSymbol == null)
-                throw new ArgumentNullException(nameof(namedTypeSymbol));
-
-            if (semanticModel == null)
-                throw new ArgumentNullException(nameof(semanticModel));
-
-            INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(fullyQualifiedMetadataName);
+            INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Immutable_ImmutableArray_T);
 
             return symbol != null
                 && namedTypeSymbol.ConstructedFrom.Equals(symbol);
-        }
-
-        internal static bool IsConstructedFromImmutableArrayOfT(this INamedTypeSymbol namedTypeSymbol, SemanticModel semanticModel)
-        {
-            return IsConstructedFrom(namedTypeSymbol, MetadataNames.System_Collections_Immutable_ImmutableArray_T, semanticModel);
         }
 
         public static bool IsIEnumerableOf(this INamedTypeSymbol namedTypeSymbol, ITypeSymbol typeArgument)
@@ -1266,18 +1255,37 @@ namespace Roslynator
             if (typeSymbol == null)
                 throw new ArgumentNullException(nameof(typeSymbol));
 
-            if (!typeSymbol.IsAnonymousType)
+            if (typeSymbol.IsAnonymousType)
+                return false;
+
+            switch (typeSymbol.Kind)
             {
-                switch (typeSymbol.Kind)
-                {
-                    case SymbolKind.TypeParameter:
-                    case SymbolKind.DynamicType:
+                case SymbolKind.TypeParameter:
+                case SymbolKind.DynamicType:
+                    {
                         return true;
-                    case SymbolKind.ArrayType:
+                    }
+                case SymbolKind.ArrayType:
+                    {
                         return SupportsExplicitDeclaration(((IArrayTypeSymbol)typeSymbol).ElementType);
-                    case SymbolKind.NamedType:
-                        return !IsAnyTypeArgumentAnonymousType((INamedTypeSymbol)typeSymbol);
-                }
+                    }
+                case SymbolKind.NamedType:
+                    {
+                        var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
+
+                        if (typeSymbol.IsTupleType)
+                        {
+                            foreach (IFieldSymbol tupleElement in namedTypeSymbol.TupleElements)
+                            {
+                                if (!SupportsExplicitDeclaration(tupleElement.Type))
+                                    return false;
+                            }
+
+                            return true;
+                        }
+
+                        return !IsAnyTypeArgumentAnonymousType(namedTypeSymbol);
+                    }
             }
 
             return false;
@@ -1302,25 +1310,6 @@ namespace Roslynator
         {
             return typeSymbol?.IsNamedType() == true
                 && ((INamedTypeSymbol)typeSymbol).ConstructedFrom?.Equals(symbol) == true;
-        }
-
-        internal static bool IsConstructedFrom(this ITypeSymbol typeSymbol, string fullyQualifiedMetadataName, SemanticModel semanticModel)
-        {
-            if (typeSymbol == null)
-                throw new ArgumentNullException(nameof(typeSymbol));
-
-            if (semanticModel == null)
-                throw new ArgumentNullException(nameof(semanticModel));
-
-            if (typeSymbol.IsNamedType())
-            {
-                INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(fullyQualifiedMetadataName);
-
-                return symbol != null
-                    && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(symbol);
-            }
-
-            return false;
         }
 
         internal static bool IsPredefinedValueType(this ITypeSymbol typeSymbol)
@@ -1713,8 +1702,16 @@ namespace Roslynator
 
         internal static bool IsConstructedFromImmutableArrayOfT(this ITypeSymbol typeSymbol, SemanticModel semanticModel)
         {
-            return IsConstructedFrom(typeSymbol, MetadataNames.System_Collections_Immutable_ImmutableArray_T, semanticModel);
-        }
+            if (typeSymbol.Kind == SymbolKind.NamedType)
+            {
+                INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Immutable_ImmutableArray_T);
+
+                return symbol != null
+                    && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(symbol);
+            }
+
+            return false;
+       }
 
         public static bool IsIEnumerable(this ITypeSymbol typeSymbol)
         {

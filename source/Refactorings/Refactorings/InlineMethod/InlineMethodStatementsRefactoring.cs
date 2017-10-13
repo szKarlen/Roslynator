@@ -38,6 +38,7 @@ namespace Roslynator.CSharp.Refactorings.InlineMethod
             newStatements[count - 1] = newStatements[count - 1].WithTrailingTrivia(expressionStatement.GetTrailingTrivia());
 
             StatementsInfo info = SyntaxInfo.StatementsInfo(expressionStatement);
+
             if (info.Success)
             {
                 StatementsInfo newInfo = info.WithStatements(info.Statements.ReplaceRange(expressionStatement, newStatements));
@@ -66,6 +67,7 @@ namespace Roslynator.CSharp.Refactorings.InlineMethod
                 newStatements[count - 1] = newStatements[count - 1].WithTrailingTrivia(expressionStatement.GetTrailingTrivia());
 
                 StatementsInfo info = SyntaxInfo.StatementsInfo(expressionStatement);
+
                 if (info.Success)
                 {
                     StatementsInfo newInfo = info.WithStatements(info.Statements.ReplaceRange(expressionStatement, newStatements));
