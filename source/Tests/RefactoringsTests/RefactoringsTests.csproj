@@ -36,6 +36,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="RemoveUnnecessaryElseClauseRefactoring.cs" />
     <Compile Include="ReplaceIfElseWithIfReturnRefactoring.cs" />
     <Compile Include="AddExceptionToDocumentationCommentRefactoring.cs" />
     <Compile Include="AddTypeParameterRefactoring.cs" />
@@ -71,7 +72,6 @@
     <Compile Include="RemoveStatementRefactoring.cs" />
     <Compile Include="DuplicateStatementRefactoring.cs" />
     <Compile Include="ExtractTypeDeclarationToNewFile\ExtractTypeDeclarationToNewFile.cs" />
-    <Compile Include="AddDefaultValueToReturnStatement.cs" />
     <Compile Include="AddUsingDirectiveRefactoring.cs" />
     <Compile Include="CollapseToInitializerRefactoring.cs" />
     <Compile Include="MergeAssignmentExpressionWithReturnStatementRefactoring.cs" />

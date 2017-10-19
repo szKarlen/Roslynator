@@ -60,6 +60,7 @@
     <Compile Include="RemoveRedundantAutoPropertyInitialization.cs" />
     <Compile Include="RemoveRedundantDefaultSwitchSection.cs" />
     <Compile Include="MarkFieldAsConst.cs" />
+    <Compile Include="RemoveUnnecessaryElseClause.cs" />
     <Compile Include="ReorderNamedArguments.cs" />
     <Compile Include="ReorderTypeParameterConstraints.cs" />
     <Compile Include="ReplaceCommentWithDocumentationComment.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="FormatConditionalExpressionOperatorsOnNextLine.cs" />
     <Compile Include="ImplementExceptionConstructors.cs" />
     <Compile Include="AvoidSingleLineBlock.cs" />
+    <Compile Include="ReturnTaskInsteadOfNull.cs" />
     <Compile Include="UseConstantInsteadOfField.cs" />
     <Compile Include="UseMethodGroupInsteadOfAnonymousFunction.cs" />
     <Compile Include="SimplifyBooleanExpression.cs" />

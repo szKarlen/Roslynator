@@ -320,6 +320,7 @@
     <FixableDiagnosticIds>
       <Id>CS0037</Id>
       <Id>CS0403</Id>
+      <Id>CS1750</Id>
     </FixableDiagnosticIds>
   </CodeFix>
   <CodeFix Id="RCF0059" Identifier="ReplaceVariableDeclarationWithAssignment" Title="Replace variable declaration with assignment">
@@ -376,6 +377,7 @@
   </CodeFix>
   <CodeFix Id="RCF0068" Identifier="MakeClassNonStatic" Title="Make class non-static">
     <FixableDiagnosticIds>
+      <Id>CS0713</Id>
       <Id>CS0718</Id>
     </FixableDiagnosticIds>
   </CodeFix>
@@ -444,6 +446,11 @@
       <Id>CS0201</Id>
       <Id>CS0266</Id>
       <Id>CS1997</Id>
+    </FixableDiagnosticIds>
+  </CodeFix>
+  <CodeFix Id="RCF0081" Identifier="ReturnDefaultValue" Title="Return default value">
+    <FixableDiagnosticIds>
+      <Id>CS0126</Id>
     </FixableDiagnosticIds>
   </CodeFix>
 </CodeFixes>

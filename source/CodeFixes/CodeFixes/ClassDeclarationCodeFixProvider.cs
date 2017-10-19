@@ -2,7 +2,6 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -11,13 +10,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Roslynator.CSharp.CodeFixes
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(TypeCodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ClassDeclarationCodeFixProvider))]
     [Shared]
-    public class TypeCodeFixProvider : BaseCodeFixProvider
+    public class ClassDeclarationCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(CompilerDiagnosticIdentifiers.StaticTypesCannotBeUsedAsTypeArguments); }
+            get { return ImmutableArray.Create(CompilerDiagnosticIdentifiers.StaticClassCannotDeriveFromType); }
         }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -27,34 +26,19 @@ namespace Roslynator.CSharp.CodeFixes
 
             SyntaxNode root = await context.GetSyntaxRootAsync().ConfigureAwait(false);
 
-            if (!TryFindFirstAncestorOrSelf(root, context.Span, out TypeSyntax type))
+            if (!TryFindFirstAncestorOrSelf(root, context.Span, out ClassDeclarationSyntax classDeclaration))
                 return;
 
             foreach (Diagnostic diagnostic in context.Diagnostics)
             {
                 switch (diagnostic.Id)
                 {
-                    case CompilerDiagnosticIdentifiers.StaticTypesCannotBeUsedAsTypeArguments:
+                    case CompilerDiagnosticIdentifiers.StaticClassCannotDeriveFromType:
                         {
-                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken)?.OriginalDefinition;
-
-                            if (typeSymbol == null)
-                                break;
-
-                            if (!typeSymbol.IsClass())
-                                break;
-
-                            ImmutableArray<SyntaxReference> syntaxReferences = typeSymbol.DeclaringSyntaxReferences;
-
-                            if (!syntaxReferences.Any())
-                                break;
-
                             ModifiersCodeFixRegistrator.RemoveModifier(
                                 context,
                                 diagnostic,
-                                ImmutableArray.CreateRange(syntaxReferences, f => f.GetSyntax()),
+                                classDeclaration,
                                 SyntaxKind.StaticKeyword,
                                 title: "Make class non-static");
 

@@ -4,43 +4,41 @@ using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Roslynator.CSharp.Refactorings;
 
 namespace Roslynator.CSharp.CodeFixes
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RemoveDuplicateModifierCodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RemoveElseClauseCodeFixProvider))]
     [Shared]
-    public class RemoveDuplicateModifierCodeFixProvider : BaseCodeFixProvider
+    public class RemoveElseClauseCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(CompilerDiagnosticIdentifiers.DuplicateModifier); }
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.RemoveUnnecessaryElseClause); }
         }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveDuplicateModifier))
-                return;
-
             SyntaxNode root = await context.GetSyntaxRootAsync().ConfigureAwait(false);
 
-            if (!TryFindToken(root, context.Span.Start, out SyntaxToken token))
+            if (!TryFindFirstAncestorOrSelf(root, context.Span, out ElseClauseSyntax elseClause))
                 return;
 
             foreach (Diagnostic diagnostic in context.Diagnostics)
             {
                 switch (diagnostic.Id)
                 {
-                    case CompilerDiagnosticIdentifiers.DuplicateModifier:
+                    case DiagnosticIdentifiers.RemoveUnnecessaryElseClause:
                         {
-                            ModifiersCodeFixRegistrator.RemoveModifier(
-                                context,
-                                diagnostic,
-                                token.Parent,
-                                token,
-                                additionalKey: CodeFixIdentifiers.RemoveDuplicateModifier);
+                            CodeAction codeAction = CodeAction.Create(
+                                "Remove else clause",
+                                cancellationToken => RemoveUnnecessaryElseClauseRefactoring.RefactorAsync(context.Document, elseClause, cancellationToken),
+                                GetEquivalenceKey(diagnostic));
 
+                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                 }
