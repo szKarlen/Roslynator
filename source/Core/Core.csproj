@@ -56,7 +56,6 @@
     <Compile Include="CSharp\Refactorings\RefactoringSettings.cs" />
     <Compile Include="CSharp\Syntax\BinaryExpressionInfo.cs" />
     <Compile Include="CSharp\Syntax\ConditionalExpressionInfo.cs" />
-    <Compile Include="CSharp\Syntax\EmbeddedStatementInfo.cs" />
     <Compile Include="CSharp\Syntax\GenericInfo.cs" />
     <Compile Include="CSharp\Syntax\LocalDeclarationStatementInfo.cs" />
     <Compile Include="CSharp\Syntax\NullCheckExpressionInfo.cs" />
