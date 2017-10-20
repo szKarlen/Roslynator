@@ -14,27 +14,27 @@ namespace Roslynator.CSharp.Syntax
         {
             Node = node;
             Modifiers = modifiers;
-            Index = index;
-            SecondIndex = secondIndex;
+            TokenIndex = index;
+            SecondTokenIndex = secondIndex;
         }
 
         public SyntaxNode Node { get; }
 
         public SyntaxToken Token
         {
-            get { return GetTokenOrDefault(Index); }
+            get { return GetTokenOrDefault(TokenIndex); }
         }
 
         public SyntaxToken SecondToken
         {
-            get { return GetTokenOrDefault(SecondIndex); }
+            get { return GetTokenOrDefault(SecondTokenIndex); }
         }
 
         public SyntaxTokenList Modifiers { get; }
 
-        public int Index { get; }
+        public int TokenIndex { get; }
 
-        public int SecondIndex { get; }
+        public int SecondTokenIndex { get; }
 
         public bool Success
         {
@@ -45,10 +45,10 @@ namespace Roslynator.CSharp.Syntax
         {
             get
             {
-                if (Index == -1)
+                if (TokenIndex == -1)
                     return Accessibility.NotApplicable;
 
-                if (SecondIndex == -1)
+                if (SecondTokenIndex == -1)
                 {
                     switch (Token.Kind())
                     {
@@ -65,6 +65,11 @@ namespace Roslynator.CSharp.Syntax
 
                 return Accessibility.ProtectedOrInternal;
             }
+        }
+
+        public bool CanHaveAccessibility
+        {
+            get { return Node?.Kind().CanHaveAccessibility() == true; }
         }
 
         public static AccessibilityInfo Create(SyntaxNode node)

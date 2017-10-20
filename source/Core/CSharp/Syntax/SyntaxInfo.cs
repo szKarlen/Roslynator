@@ -9,6 +9,11 @@ namespace Roslynator.CSharp.Syntax
 {
     public static class SyntaxInfo
     {
+        public static AccessibilityInfo AccessibilityInfo(SyntaxNode node)
+        {
+            return Syntax.AccessibilityInfo.Create(node);
+        }
+
         public static AsExpressionInfo AsExpressionInfo(
             SyntaxNode node,
             SyntaxInfoOptions options = null)
@@ -291,11 +296,6 @@ namespace Roslynator.CSharp.Syntax
         public static HexadecimalLiteralInfo HexadecimalLiteralInfo(LiteralExpressionSyntax literalExpression)
         {
             return Syntax.HexadecimalLiteralInfo.Create(literalExpression);
-        }
-
-        public static AccessibilityInfo AccessibilityInfo(SyntaxNode node)
-        {
-            return Syntax.AccessibilityInfo.Create(node);
         }
 
         public static StatementsInfo StatementsInfo(StatementSyntax statement)

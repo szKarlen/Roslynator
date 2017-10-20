@@ -45,8 +45,8 @@ namespace Roslynator.CSharp.Helpers
             {
                 int insertIndex = comparer.GetInsertIndex(info.Modifiers, GetKind(newAccessibility));
 
-                if (info.Index == insertIndex
-                    || info.Index == insertIndex - 1)
+                if (info.TokenIndex == insertIndex
+                    || info.TokenIndex == insertIndex - 1)
                 {
                     SyntaxToken newToken = CreateToken(newAccessibility).WithTriviaFrom(info.Token);
 
@@ -58,10 +58,10 @@ namespace Roslynator.CSharp.Helpers
 
             if (accessibility != Accessibility.NotApplicable)
             {
-                node = Modifier.RemoveAt(node, Math.Max(info.Index, info.SecondIndex));
+                node = Modifier.RemoveAt(node, Math.Max(info.TokenIndex, info.SecondTokenIndex));
 
                 if (accessibility == Accessibility.ProtectedOrInternal)
-                    node = Modifier.RemoveAt(node, Math.Min(info.Index, info.SecondIndex));
+                    node = Modifier.RemoveAt(node, Math.Min(info.TokenIndex, info.SecondTokenIndex));
             }
 
             if (newAccessibility != Accessibility.NotApplicable)
