@@ -410,15 +410,15 @@ namespace Roslynator.CSharp
             helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveEmptyStatement}", 
             customTags:         WellKnownDiagnosticTags.Unnecessary);
 
-        public static readonly DiagnosticDescriptor RemoveEmptyAttributeArgumentList = new DiagnosticDescriptor(
-            id:                 DiagnosticIdentifiers.RemoveEmptyAttributeArgumentList, 
-            title:              "Remove empty attribute argument list.", 
-            messageFormat:      "Remove empty attribute argument list.", 
+        public static readonly DiagnosticDescriptor RemoveArgumentListFromAttribute = new DiagnosticDescriptor(
+            id:                 DiagnosticIdentifiers.RemoveArgumentListFromAttribute, 
+            title:              "Remove argument list from attribute.", 
+            messageFormat:      "Remove argument list from attribute.", 
             category:           DiagnosticCategories.Redundancy, 
             defaultSeverity:    DiagnosticSeverity.Hidden, 
             isEnabledByDefault: true, 
             description:        null, 
-            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveEmptyAttributeArgumentList}", 
+            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveArgumentListFromAttribute}", 
             customTags:         WellKnownDiagnosticTags.Unnecessary);
 
         public static readonly DiagnosticDescriptor RemoveEmptyElseClause = new DiagnosticDescriptor(
@@ -537,15 +537,15 @@ namespace Roslynator.CSharp
 
         public static readonly DiagnosticDescriptor SimplifyBooleanComparisonFadeOut = SimplifyBooleanComparison.CreateFadeOut();
 
-        public static readonly DiagnosticDescriptor AddConstructorArgumentList = new DiagnosticDescriptor(
-            id:                 DiagnosticIdentifiers.AddConstructorArgumentList, 
-            title:              "Add constructor argument list.", 
-            messageFormat:      "Add constructor argument list.", 
+        public static readonly DiagnosticDescriptor AddArgumentListToObjectCreation = new DiagnosticDescriptor(
+            id:                 DiagnosticIdentifiers.AddArgumentListToObjectCreation, 
+            title:              "Add argument list to object creation expression.", 
+            messageFormat:      "Add argument list to object creation expression.", 
             category:           DiagnosticCategories.Style, 
-            defaultSeverity:    DiagnosticSeverity.Warning, 
+            defaultSeverity:    DiagnosticSeverity.Info, 
             isEnabledByDefault: false, 
             description:        null, 
-            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.AddConstructorArgumentList}", 
+            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.AddArgumentListToObjectCreation}", 
             customTags:         Array.Empty<string>());
 
         public static readonly DiagnosticDescriptor ParenthesizeConditionInConditionalExpression = new DiagnosticDescriptor(
@@ -706,15 +706,15 @@ namespace Roslynator.CSharp
             helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveEmptyFinallyClause}", 
             customTags:         WellKnownDiagnosticTags.Unnecessary);
 
-        public static readonly DiagnosticDescriptor RemoveEmptyArgumentList = new DiagnosticDescriptor(
-            id:                 DiagnosticIdentifiers.RemoveEmptyArgumentList, 
-            title:              "Remove empty argument list.", 
-            messageFormat:      "Remove empty argument list.", 
+        public static readonly DiagnosticDescriptor RemoveArgumentListFromObjectCreation = new DiagnosticDescriptor(
+            id:                 DiagnosticIdentifiers.RemoveArgumentListFromObjectCreation, 
+            title:              "Remove argument list from object creation expression.", 
+            messageFormat:      "Remove argument list from object creation expression.", 
             category:           DiagnosticCategories.Style, 
             defaultSeverity:    DiagnosticSeverity.Info, 
             isEnabledByDefault: false, 
             description:        null, 
-            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveEmptyArgumentList}", 
+            helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.RemoveArgumentListFromObjectCreation}", 
             customTags:         WellKnownDiagnosticTags.Unnecessary);
 
         public static readonly DiagnosticDescriptor SimplifyLogicalNotExpression = new DiagnosticDescriptor(
@@ -2149,8 +2149,8 @@ namespace Roslynator.CSharp
             id:                 DiagnosticIdentifiers.ReturnTaskInsteadOfNull, 
             title:              "Return Task.FromResult instead of returning null.", 
             messageFormat:      "Return Task.FromResult instead of returning null.", 
-            category:           DiagnosticCategories.Reliability, 
-            defaultSeverity:    DiagnosticSeverity.Info, 
+            category:           DiagnosticCategories.Usage, 
+            defaultSeverity:    DiagnosticSeverity.Warning, 
             isEnabledByDefault: true, 
             description:        null, 
             helpLinkUri:        $"{HelpLinkUriRoot}{DiagnosticIdentifiers.ReturnTaskInsteadOfNull}", 

@@ -370,10 +370,10 @@
     <SupportsFadeOut>true</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
   </Analyzer>
-  <Analyzer Identifier="RemoveEmptyAttributeArgumentList">
+  <Analyzer Identifier="RemoveArgumentListFromAttribute">
     <Id>RCS1039</Id>
-    <Title>Remove empty attribute argument list.</Title>
-    <MessageFormat>Remove empty attribute argument list.</MessageFormat>
+    <Title>Remove argument list from attribute.</Title>
+    <MessageFormat>Remove argument list from attribute.</MessageFormat>
     <Category>Redundancy</Category>
     <DefaultSeverity>Hidden</DefaultSeverity>
     <IsEnabledByDefault>true</IsEnabledByDefault>
@@ -480,12 +480,12 @@
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>true</SupportsFadeOutAnalyzer>
   </Analyzer>
-  <Analyzer Identifier="AddConstructorArgumentList">
+  <Analyzer Identifier="AddArgumentListToObjectCreation">
     <Id>RCS1050</Id>
-    <Title>Add constructor argument list.</Title>
-    <MessageFormat>Add constructor argument list.</MessageFormat>
+    <Title>Add argument list to object creation expression.</Title>
+    <MessageFormat>Add argument list to object creation expression.</MessageFormat>
     <Category>Style</Category>
-    <DefaultSeverity>Warning</DefaultSeverity>
+    <DefaultSeverity>Info</DefaultSeverity>
     <IsEnabledByDefault>false</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
@@ -650,10 +650,10 @@
     <SupportsFadeOut>true</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
   </Analyzer>
-  <Analyzer Identifier="RemoveEmptyArgumentList">
+  <Analyzer Identifier="RemoveArgumentListFromObjectCreation">
     <Id>RCS1067</Id>
-    <Title>Remove empty argument list.</Title>
-    <MessageFormat>Remove empty argument list.</MessageFormat>
+    <Title>Remove argument list from object creation expression.</Title>
+    <MessageFormat>Remove argument list from object creation expression.</MessageFormat>
     <Category>Style</Category>
     <DefaultSeverity>Info</DefaultSeverity>
     <IsEnabledByDefault>false</IsEnabledByDefault>
@@ -2084,8 +2084,8 @@
     <Id>RCS1210</Id>
     <Title>Return Task.FromResult instead of returning null.</Title>
     <MessageFormat>Return Task.FromResult instead of returning null.</MessageFormat>
-    <Category>Reliability</Category>
-    <DefaultSeverity>Info</DefaultSeverity>
+    <Category>Usage</Category>
+    <DefaultSeverity>Warning</DefaultSeverity>
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>

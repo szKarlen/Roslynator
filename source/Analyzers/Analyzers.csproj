@@ -233,7 +233,7 @@
     <Compile Include="Refactorings\UnusedSyntax\UnusedTypeParameterRefactoring.cs" />
     <Compile Include="Refactorings\UseConditionalAccessRefactoring.cs" />
     <Compile Include="DiagnosticAnalyzers\UseCoalesceExpressionDiagnosticAnalyzer.cs" />
-    <Compile Include="Refactorings\AddConstructorArgumentListRefactoring.cs" />
+    <Compile Include="Refactorings\AddArgumentListToObjectCreationRefactoring.cs" />
     <Compile Include="Refactorings\AddDefaultAccessModifierRefactoring.cs" />
     <Compile Include="Refactorings\AddEmptyLineAfterEmbeddedStatementRefactoring.cs" />
     <Compile Include="Refactorings\AddEmptyLineAfterLastStatementInDoStatementRefactoring.cs" />
@@ -277,8 +277,7 @@
     <Compile Include="Refactorings\MarkLocalVariableAsConstRefactoring.cs" />
     <Compile Include="Refactorings\NonAsynchronousMethodNameShouldNotEndWithAsyncRefactoring.cs" />
     <Compile Include="Refactorings\RemoveBracesRefactoring.cs" />
-    <Compile Include="Refactorings\RemoveEmptyArgumentListRefactoring.cs" />
-    <Compile Include="Refactorings\RemoveEmptyAttributeArgumentListRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveArgumentListFromObjectCreationRefactoring.cs" />
     <Compile Include="Refactorings\RemoveEmptyDestructorRefactoring.cs" />
     <Compile Include="Refactorings\RemoveEmptyElseClauseRefactoring.cs" />
     <Compile Include="Refactorings\RemoveEmptyFinallyClauseRefactoring.cs" />
@@ -338,7 +337,7 @@
     <Compile Include="Refactorings\UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.cs" />
     <Compile Include="Refactorings\ReplaceIfStatementWithReturnStatementRefactoring.cs" />
     <Compile Include="CodeFixProviders\ArgumentListCodeFixProvider.cs" />
-    <Compile Include="CodeFixProviders\AddConstructorArgumentListCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\AddArgumentListToObjectCreationCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\AddEmptyLineAfterEmbeddedStatementCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\AnonymousMethodCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\ArrowExpressionClauseCodeFixProvider.cs" />
