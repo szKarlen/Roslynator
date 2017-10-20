@@ -28,7 +28,7 @@ namespace Roslynator.CSharp.Syntax
 
         public ParameterListSyntax ParameterList
         {
-            get { return (IsParenthesized) ? (ParameterListSyntax)Parameter.Parent : null; }
+            get { return (IsParenthesizedLambda) ? (ParameterListSyntax)Parameter.Parent : null; }
         }
 
         public string ParameterName
@@ -36,14 +36,14 @@ namespace Roslynator.CSharp.Syntax
             get { return Parameter?.Identifier.ValueText; }
         }
 
-        public bool IsSimple
+        public bool IsSimpleLambda
         {
-            get { return LambdaExpression?.IsKind(SyntaxKind.SimpleLambdaExpression) == true; }
+            get { return LambdaExpression?.Kind() == SyntaxKind.SimpleLambdaExpression; }
         }
 
-        public bool IsParenthesized
+        public bool IsParenthesizedLambda
         {
-            get { return LambdaExpression?.IsKind(SyntaxKind.ParenthesizedLambdaExpression) == true; }
+            get { return LambdaExpression?.Kind() == SyntaxKind.ParenthesizedLambdaExpression; }
         }
 
         public bool Success

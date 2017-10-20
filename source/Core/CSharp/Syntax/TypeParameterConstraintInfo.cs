@@ -14,14 +14,12 @@ namespace Roslynator.CSharp.Syntax
         private TypeParameterConstraintInfo(
             TypeParameterConstraintSyntax constraint,
             TypeParameterConstraintClauseSyntax constraintClause,
-            IdentifierNameSyntax name,
             SyntaxNode declaration,
             TypeParameterListSyntax typeParameterList,
             SyntaxList<TypeParameterConstraintClauseSyntax> constraintClauses)
         {
             Constraint = constraint;
             ConstraintClause = constraintClause;
-            Name = name;
             Declaration = declaration;
             TypeParameterList = typeParameterList;
             ConstraintClauses = constraintClauses;
@@ -36,7 +34,10 @@ namespace Roslynator.CSharp.Syntax
             get { return ConstraintClause?.Constraints ?? default(SeparatedSyntaxList<TypeParameterConstraintSyntax>); }
         }
 
-        public IdentifierNameSyntax Name { get; }
+        public IdentifierNameSyntax Name
+        {
+            get { return ConstraintClause?.Name; }
+        }
 
         public string NameText
         {
@@ -68,11 +69,6 @@ namespace Roslynator.CSharp.Syntax
             }
         }
 
-        public GenericInfo GenericInfo()
-        {
-            return SyntaxInfo.GenericInfo(Declaration);
-        }
-
         public bool Success
         {
             get { return Constraint != null; }
@@ -82,8 +78,31 @@ namespace Roslynator.CSharp.Syntax
         {
             get
             {
-                return Constraint != null
-                    && IsDuplicateConstraintHelper(Constraint, Constraints);
+                if (Constraint == null)
+                    return false;
+
+                SeparatedSyntaxList<TypeParameterConstraintSyntax> constraints = Constraints;
+
+                int index = constraints.IndexOf(Constraint);
+
+                SyntaxKind kind = Constraint.Kind();
+
+                switch (kind)
+                {
+                    case SyntaxKind.ClassConstraint:
+                    case SyntaxKind.StructConstraint:
+                        {
+                            for (int i = 0; i < index; i++)
+                            {
+                                if (constraints[i].Kind() == kind)
+                                    return true;
+                            }
+
+                            break;
+                        }
+                }
+
+                return false;
             }
         }
 
@@ -112,7 +131,7 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, classDeclaration, typeParameterList, classDeclaration.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, classDeclaration, typeParameterList, classDeclaration.ConstraintClauses);
                     }
                 case SyntaxKind.DelegateDeclaration:
                     {
@@ -123,7 +142,7 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, delegateDeclaration, typeParameterList, delegateDeclaration.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, delegateDeclaration, typeParameterList, delegateDeclaration.ConstraintClauses);
                     }
                 case SyntaxKind.InterfaceDeclaration:
                     {
@@ -134,7 +153,7 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, interfaceDeclaration, interfaceDeclaration.TypeParameterList, interfaceDeclaration.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, interfaceDeclaration, interfaceDeclaration.TypeParameterList, interfaceDeclaration.ConstraintClauses);
                     }
                 case SyntaxKind.LocalFunctionStatement:
                     {
@@ -145,7 +164,7 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, localFunctionStatement, typeParameterList, localFunctionStatement.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, localFunctionStatement, typeParameterList, localFunctionStatement.ConstraintClauses);
                     }
                 case SyntaxKind.MethodDeclaration:
                     {
@@ -156,7 +175,7 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, methodDeclaration, typeParameterList, methodDeclaration.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, methodDeclaration, typeParameterList, methodDeclaration.ConstraintClauses);
                     }
                 case SyntaxKind.StructDeclaration:
                     {
@@ -167,37 +186,11 @@ namespace Roslynator.CSharp.Syntax
                         if (!options.Check(typeParameterList))
                             return Default;
 
-                        return new TypeParameterConstraintInfo(constraint, constraintClause, name, structDeclaration, typeParameterList, structDeclaration.ConstraintClauses);
+                        return new TypeParameterConstraintInfo(constraint, constraintClause, structDeclaration, typeParameterList, structDeclaration.ConstraintClauses);
                     }
             }
 
             return Default;
-        }
-
-        private static bool IsDuplicateConstraintHelper(
-            TypeParameterConstraintSyntax constraint,
-            SeparatedSyntaxList<TypeParameterConstraintSyntax> constraints)
-        {
-            int index = constraints.IndexOf(constraint);
-
-            SyntaxKind kind = constraint.Kind();
-
-            switch (kind)
-            {
-                case SyntaxKind.ClassConstraint:
-                case SyntaxKind.StructConstraint:
-                    {
-                        for (int i = 0; i < index; i++)
-                        {
-                            if (constraints[i].Kind() == kind)
-                                return true;
-                        }
-
-                        break;
-                    }
-            }
-
-            return false;
         }
 
         public override string ToString()

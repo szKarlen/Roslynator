@@ -11,17 +11,16 @@ namespace Roslynator.CSharp.Syntax
         private static SingleLocalDeclarationStatementInfo Default { get; } = new SingleLocalDeclarationStatementInfo();
 
         private SingleLocalDeclarationStatementInfo(
+            LocalDeclarationStatementSyntax statement,
             VariableDeclarationSyntax declaration,
             VariableDeclaratorSyntax declarator)
         {
+            Statement = statement;
             Declaration = declaration;
             Declarator = declarator;
         }
 
-        public LocalDeclarationStatementSyntax Statement
-        {
-            get { return (LocalDeclarationStatementSyntax)Declaration?.Parent; }
-        }
+        public LocalDeclarationStatementSyntax Statement { get; }
 
         public VariableDeclarationSyntax Declaration { get; }
 
@@ -83,7 +82,7 @@ namespace Roslynator.CSharp.Syntax
             if (variable == null)
                 return Default;
 
-            return new SingleLocalDeclarationStatementInfo(variableDeclaration, variable);
+            return new SingleLocalDeclarationStatementInfo(localDeclarationStatement, variableDeclaration, variable);
         }
 
         internal static SingleLocalDeclarationStatementInfo Create(
@@ -103,13 +102,13 @@ namespace Roslynator.CSharp.Syntax
             if (!(declarator.Parent is VariableDeclarationSyntax declaration))
                 return Default;
 
-            if (!declaration.IsParentKind(SyntaxKind.LocalDeclarationStatement))
-                return Default;
-
             if (declaration.Variables.Count != 1)
                 return Default;
 
-            return new SingleLocalDeclarationStatementInfo(declaration, declarator);
+            if (!(declaration.Parent is LocalDeclarationStatementSyntax localDeclarationStatement))
+                return Default;
+
+            return new SingleLocalDeclarationStatementInfo(localDeclarationStatement, declaration, declarator);
         }
 
         public override string ToString()

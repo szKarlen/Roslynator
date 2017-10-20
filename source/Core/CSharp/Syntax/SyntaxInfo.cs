@@ -84,9 +84,78 @@ namespace Roslynator.CSharp.Syntax
                 options);
         }
 
+        public static GenericInfo GenericInfo(TypeParameterConstraintSyntax typeParameterConstraint)
+        {
+            return Syntax.GenericInfo.Create(typeParameterConstraint);
+        }
+
+        public static GenericInfo GenericInfo(TypeParameterConstraintClauseSyntax constraintClause)
+        {
+            return Syntax.GenericInfo.Create(constraintClause);
+        }
+
+        public static GenericInfo GenericInfo(SyntaxNode declaration)
+        {
+            return Syntax.GenericInfo.Create(declaration);
+        }
+
+        public static GenericInfo GenericInfo(ClassDeclarationSyntax classDeclaration)
+        {
+            return Syntax.GenericInfo.Create(classDeclaration);
+        }
+
+        public static GenericInfo GenericInfo(DelegateDeclarationSyntax delegateDeclaration)
+        {
+            return Syntax.GenericInfo.Create(delegateDeclaration);
+        }
+
+        public static GenericInfo GenericInfo(InterfaceDeclarationSyntax interfaceDeclaration)
+        {
+            return Syntax.GenericInfo.Create(interfaceDeclaration);
+        }
+
+        public static GenericInfo GenericInfo(LocalFunctionStatementSyntax localFunctionStatement)
+        {
+            return Syntax.GenericInfo.Create(localFunctionStatement);
+        }
+
+        public static GenericInfo GenericInfo(MethodDeclarationSyntax methodDeclaration)
+        {
+            return Syntax.GenericInfo.Create(methodDeclaration);
+        }
+
+        public static GenericInfo GenericInfo(StructDeclarationSyntax structDeclaration)
+        {
+            return Syntax.GenericInfo.Create(structDeclaration);
+        }
+
+        public static HexadecimalLiteralInfo HexadecimalLiteralInfo(SyntaxNode node, SyntaxInfoOptions options = null)
+        {
+            return Syntax.HexadecimalLiteralInfo.Create(node, options);
+        }
+
+        public static HexadecimalLiteralInfo HexadecimalLiteralInfo(LiteralExpressionSyntax literalExpression)
+        {
+            return Syntax.HexadecimalLiteralInfo.Create(literalExpression);
+        }
+
         public static IfStatementInfo IfStatementInfo(IfStatementSyntax ifStatement)
         {
             return Syntax.IfStatementInfo.Create(ifStatement);
+        }
+
+        public static LocalDeclarationStatementInfo LocalDeclarationStatementInfo(
+            LocalDeclarationStatementSyntax localDeclarationStatement,
+            SyntaxInfoOptions options = null)
+        {
+            return Syntax.LocalDeclarationStatementInfo.Create(localDeclarationStatement, options);
+        }
+
+        public static LocalDeclarationStatementInfo LocalDeclarationStatementInfo(
+            ExpressionSyntax expression,
+            SyntaxInfoOptions options = null)
+        {
+            return Syntax.LocalDeclarationStatementInfo.Create(expression, options);
         }
 
         public static MemberInvocationExpressionInfo MemberInvocationExpressionInfo(
@@ -217,6 +286,21 @@ namespace Roslynator.CSharp.Syntax
             return Syntax.SingleParameterLambdaExpressionInfo.Create(lambdaExpression, options);
         }
 
+        public static StatementsInfo StatementsInfo(StatementSyntax statement)
+        {
+            return Syntax.StatementsInfo.Create(statement);
+        }
+
+        internal static StatementsInfo StatementsInfo(BlockSyntax block)
+        {
+            return Syntax.StatementsInfo.Create(block);
+        }
+
+        internal static StatementsInfo StatementsInfo(SwitchSectionSyntax switchSection)
+        {
+            return Syntax.StatementsInfo.Create(switchSection);
+        }
+
         public static StringConcatenationExpressionInfo StringConcatenationExpressionInfo(
             BinaryExpressionSyntax binaryExpression,
             SemanticModel semanticModel,
@@ -233,84 +317,19 @@ namespace Roslynator.CSharp.Syntax
             return Syntax.StringConcatenationExpressionInfo.Create(binaryExpressionSelection, semanticModel, cancellationToken);
         }
 
-        public static TypeParameterInfo TypeParameterInfo(TypeParameterSyntax typeParameter)
-        {
-            return Syntax.TypeParameterInfo.Create(typeParameter);
-        }
-
         public static TypeParameterConstraintInfo TypeParameterConstraintInfo(TypeParameterConstraintSyntax constraint)
         {
             return Syntax.TypeParameterConstraintInfo.Create(constraint);
         }
 
-        public static GenericInfo GenericInfo(TypeParameterConstraintSyntax typeParameterConstraint)
+        public static TypeParameterInfo TypeParameterInfo(TypeParameterSyntax typeParameter)
         {
-            return Syntax.GenericInfo.Create(typeParameterConstraint);
-        }
-
-        public static GenericInfo GenericInfo(TypeParameterConstraintClauseSyntax constraintClause)
-        {
-            return Syntax.GenericInfo.Create(constraintClause);
-        }
-
-        public static GenericInfo GenericInfo(SyntaxNode declaration)
-        {
-            return Syntax.GenericInfo.Create(declaration);
-        }
-
-        public static GenericInfo GenericInfo(ClassDeclarationSyntax classDeclaration)
-        {
-            return Syntax.GenericInfo.Create(classDeclaration);
-        }
-
-        public static GenericInfo GenericInfo(DelegateDeclarationSyntax delegateDeclaration)
-        {
-            return Syntax.GenericInfo.Create(delegateDeclaration);
-        }
-
-        public static GenericInfo GenericInfo(InterfaceDeclarationSyntax interfaceDeclaration)
-        {
-            return Syntax.GenericInfo.Create(interfaceDeclaration);
-        }
-
-        public static GenericInfo GenericInfo(LocalFunctionStatementSyntax localFunctionStatement)
-        {
-            return Syntax.GenericInfo.Create(localFunctionStatement);
-        }
-
-        public static GenericInfo GenericInfo(MethodDeclarationSyntax methodDeclaration)
-        {
-            return Syntax.GenericInfo.Create(methodDeclaration);
-        }
-
-        public static GenericInfo GenericInfo(StructDeclarationSyntax structDeclaration)
-        {
-            return Syntax.GenericInfo.Create(structDeclaration);
+            return Syntax.TypeParameterInfo.Create(typeParameter);
         }
 
         public static XmlElementInfo XmlElementInfo(XmlNodeSyntax xmlNode)
         {
             return Syntax.XmlElementInfo.Create(xmlNode);
-        }
-
-        public static HexadecimalLiteralInfo HexadecimalLiteralInfo(LiteralExpressionSyntax literalExpression)
-        {
-            return Syntax.HexadecimalLiteralInfo.Create(literalExpression);
-        }
-
-        public static StatementsInfo StatementsInfo(StatementSyntax statement)
-        {
-            return Syntax.StatementsInfo.Create(statement);
-        }
-
-        internal static StatementsInfo StatementsInfo(BlockSyntax block)
-        {
-            return Syntax.StatementsInfo.Create(block);
-        }
-
-        internal static StatementsInfo StatementsInfo(SwitchSectionSyntax switchSection)
-        {
-            return Syntax.StatementsInfo.Create(switchSection);
         }
     }
 }

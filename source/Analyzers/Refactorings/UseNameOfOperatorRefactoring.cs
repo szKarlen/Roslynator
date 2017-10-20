@@ -220,7 +220,6 @@ namespace Roslynator.CSharp.Refactorings
             return document.ReplaceNodeAsync(invocationExpression, newNode, cancellationToken);
         }
 
-        //TODO: Roslynator.CSharp.Syntax
         private struct ParameterInfo
         {
             public static ParameterInfo Empty { get; } = new ParameterInfo();

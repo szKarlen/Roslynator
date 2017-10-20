@@ -18,7 +18,6 @@ namespace Roslynator.CSharp.Syntax
             SyntaxList<TypeParameterConstraintClauseSyntax> constraintClauses)
         {
             TypeParameter = typeParameter;
-            Name = typeParameter.Identifier.ValueText;
             Declaration = declaration;
             TypeParameterList = typeParameterList;
             ConstraintClauses = constraintClauses;
@@ -26,7 +25,10 @@ namespace Roslynator.CSharp.Syntax
 
         public TypeParameterSyntax TypeParameter { get; }
 
-        public string Name { get; }
+        public string Name
+        {
+            get { return TypeParameter?.Identifier.ValueText; }
+        }
 
         public SyntaxNode Declaration { get; }
 
@@ -43,19 +45,16 @@ namespace Roslynator.CSharp.Syntax
         {
             get
             {
+                string name = Name;
+
                 foreach (TypeParameterConstraintClauseSyntax constraintClause in ConstraintClauses)
                 {
-                    if (string.Equals(Name, constraintClause.NameText(), StringComparison.Ordinal))
+                    if (string.Equals(name, constraintClause.NameText(), StringComparison.Ordinal))
                         return constraintClause;
                 }
 
                 return null;
             }
-        }
-
-        public GenericInfo GenericInfo()
-        {
-            return SyntaxInfo.GenericInfo(Declaration);
         }
 
         public bool Success

@@ -121,6 +121,9 @@ namespace Roslynator.CSharp.Syntax
             if (binaryExpression?.Kind() != SyntaxKind.AddExpression)
                 return Default;
 
+            if (semanticModel == null)
+                throw new ArgumentNullException(nameof(semanticModel));
+
             List<ExpressionSyntax> expressions = GetExpressions(binaryExpression, semanticModel, cancellationToken);
 
             if (expressions == null)
@@ -140,6 +143,9 @@ namespace Roslynator.CSharp.Syntax
 
             if (binaryExpression?.Kind() != SyntaxKind.AddExpression)
                 return Default;
+
+            if (semanticModel == null)
+                throw new ArgumentNullException(nameof(semanticModel));
 
             ImmutableArray<ExpressionSyntax> expressions = binaryExpressionSelection.Expressions;
 
@@ -167,6 +173,7 @@ namespace Roslynator.CSharp.Syntax
                 .IsString() == true;
         }
 
+        //TODO: SyntaxInfoOptions
         private static List<ExpressionSyntax> GetExpressions(
             BinaryExpressionSyntax binaryExpression,
             SemanticModel semanticModel,
@@ -176,8 +183,7 @@ namespace Roslynator.CSharp.Syntax
 
             while (true)
             {
-                MethodInfo methodInfo;
-                if (semanticModel.TryGetMethodInfo(binaryExpression, out methodInfo, cancellationToken)
+                if (semanticModel.TryGetMethodInfo(binaryExpression, out MethodInfo methodInfo, cancellationToken)
                     && methodInfo.MethodKind == MethodKind.BuiltinOperator
                     && methodInfo.Name == WellKnownMemberNames.AdditionOperatorName
                     && methodInfo.IsContainingType(SpecialType.System_String))

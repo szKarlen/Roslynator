@@ -45,7 +45,7 @@ namespace Roslynator.CSharp.CodeFixes
                                 $"Remove type parameter '{typeParameterInfo.Name}'",
                                 cancellationToken =>
                                 {
-                                    GenericInfo genericInfo = typeParameterInfo.GenericInfo();
+                                    GenericInfo genericInfo = SyntaxInfo.GenericInfo(typeParameterInfo.Declaration);
 
                                     GenericInfo newGenericInfo = genericInfo.RemoveTypeParameter(typeParameter);
 

@@ -71,6 +71,7 @@ namespace Roslynator.CSharp.Syntax
             return new BinaryExpressionChainInfo(binaryExpression, kind, expressions);
         }
 
+        //TODO: SyntaxInfoOptions
         private static List<ExpressionSyntax> GetExpressions(
             BinaryExpressionSyntax binaryExpression,
             SyntaxKind kind)
