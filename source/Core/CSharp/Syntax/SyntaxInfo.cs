@@ -36,18 +36,16 @@ namespace Roslynator.CSharp.Syntax
                 allowMissing);
         }
 
-        public static BinaryExpressionChainInfo BinaryExpressionChainInfo(
+        internal static BinaryExpressionChainInfo BinaryExpressionChainInfo(
             SyntaxNode node,
-            SyntaxKind kind,
             bool walkDownParentheses = true)
         {
             return Syntax.BinaryExpressionChainInfo.Create(
                 node,
-                kind,
                 walkDownParentheses);
         }
 
-        public static BinaryExpressionChainInfo BinaryExpressionChainInfo(BinaryExpressionSyntax binaryExpression)
+        internal static BinaryExpressionChainInfo BinaryExpressionChainInfo(BinaryExpressionSyntax binaryExpression)
         {
             return Syntax.BinaryExpressionChainInfo.Create(binaryExpression);
         }

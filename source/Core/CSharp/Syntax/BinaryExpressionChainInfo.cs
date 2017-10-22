@@ -9,7 +9,7 @@ using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
-    public struct BinaryExpressionChainInfo
+    internal struct BinaryExpressionChainInfo
     {
         private static BinaryExpressionChainInfo Default { get; } = new BinaryExpressionChainInfo();
 
@@ -36,18 +36,9 @@ namespace Roslynator.CSharp.Syntax
 
         internal static BinaryExpressionChainInfo Create(
             SyntaxNode node,
-            SyntaxKind kind,
             bool walkDownParentheses = true)
         {
-            var binaryExpression = Walk(node, walkDownParentheses) as BinaryExpressionSyntax;
-
-            if (binaryExpression == null)
-                return Default;
-
-            if (binaryExpression.Kind() != kind)
-                return Default;
-
-            return CreateCore(binaryExpression, kind);
+            return Create(Walk(node, walkDownParentheses) as BinaryExpressionSyntax);
         }
 
         internal static BinaryExpressionChainInfo Create(BinaryExpressionSyntax binaryExpression)

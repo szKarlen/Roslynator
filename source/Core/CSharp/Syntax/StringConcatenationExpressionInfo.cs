@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -149,8 +148,11 @@ namespace Roslynator.CSharp.Syntax
 
             ImmutableArray<ExpressionSyntax> expressions = binaryExpressionSelection.Expressions;
 
-            if (expressions.Any(expression => !IsStringExpression(expression, semanticModel, cancellationToken)))
-                return Default;
+            foreach (ExpressionSyntax expression in expressions)
+            {
+                if (!IsStringExpression(expression, semanticModel, cancellationToken))
+                    return Default;
+            }
 
             return new StringConcatenationExpressionInfo(binaryExpression, expressions, binaryExpressionSelection.Span);
         }
