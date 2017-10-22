@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -68,13 +69,11 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SingleLocalDeclarationStatementInfo Create(
             LocalDeclarationStatementSyntax localDeclarationStatement,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             VariableDeclarationSyntax variableDeclaration = localDeclarationStatement?.Declaration;
 
-            if (!options.Check(variableDeclaration))
+            if (!Check(variableDeclaration, allowMissing))
                 return Default;
 
             VariableDeclaratorSyntax variable = variableDeclaration.Variables.SingleOrDefault(throwException: false);
@@ -85,12 +84,8 @@ namespace Roslynator.CSharp.Syntax
             return new SingleLocalDeclarationStatementInfo(localDeclarationStatement, variableDeclaration, variable);
         }
 
-        internal static SingleLocalDeclarationStatementInfo Create(
-            ExpressionSyntax value,
-            SyntaxInfoOptions options = null)
+        internal static SingleLocalDeclarationStatementInfo Create(ExpressionSyntax value)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             SyntaxNode node = value?.WalkUpParentheses().Parent;
 
             if (node?.Kind() != SyntaxKind.EqualsValueClause)

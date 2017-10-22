@@ -5,6 +5,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -46,7 +47,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static NullCheckExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null,
+            bool allowMissing = false,
+            bool walkDownParentheses = true,
             NullCheckKind allowedKinds = NullCheckKind.All,
             SemanticModel semanticModel = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -57,9 +59,7 @@ namespace Roslynator.CSharp.Syntax
                 return Default;
             }
 
-            options = options ?? SyntaxInfoOptions.Default;
-
-            ExpressionSyntax expression = options.WalkAndCheck(node);
+            ExpressionSyntax expression = WalkAndCheck(node, allowMissing, walkDownParentheses);
 
             if (expression == null)
                 return Default;
@@ -73,17 +73,17 @@ namespace Roslynator.CSharp.Syntax
                     {
                         var binaryExpression = (BinaryExpressionSyntax)expression;
 
-                        ExpressionSyntax left = options.WalkAndCheck(binaryExpression.Left);
+                        ExpressionSyntax left = WalkAndCheck(binaryExpression.Left, allowMissing, walkDownParentheses);
 
                         if (left == null)
                             break;
 
-                        ExpressionSyntax right = options.WalkAndCheck(binaryExpression.Right);
+                        ExpressionSyntax right = WalkAndCheck(binaryExpression.Right, allowMissing, walkDownParentheses);
 
                         if (right == null)
                             break;
 
-                        NullCheckExpressionInfo info = Create(binaryExpression, kind, left, right, options, allowedKinds, semanticModel, cancellationToken);
+                        NullCheckExpressionInfo info = Create(binaryExpression, kind, left, right, allowMissing, allowedKinds, semanticModel, cancellationToken);
 
                         if (info.Success)
                         {
@@ -91,7 +91,7 @@ namespace Roslynator.CSharp.Syntax
                         }
                         else
                         {
-                            return Create(binaryExpression, kind, right, left, options, allowedKinds, semanticModel, cancellationToken);
+                            return Create(binaryExpression, kind, right, left, allowMissing, allowedKinds, semanticModel, cancellationToken);
                         }
                     }
                 case SyntaxKind.SimpleMemberAccessExpression:
@@ -113,7 +113,7 @@ namespace Roslynator.CSharp.Syntax
 
                         var logicalNotExpression = (PrefixUnaryExpressionSyntax)expression;
 
-                        ExpressionSyntax operand = options.WalkAndCheck(logicalNotExpression.Operand);
+                        ExpressionSyntax operand = WalkAndCheck(logicalNotExpression.Operand, allowMissing, walkDownParentheses);
 
                         if (!(operand is MemberAccessExpressionSyntax memberAccessExpression))
                             break;
@@ -136,7 +136,7 @@ namespace Roslynator.CSharp.Syntax
             SyntaxKind binaryExpressionKind,
             ExpressionSyntax expression1,
             ExpressionSyntax expression2,
-            SyntaxInfoOptions options,
+            bool allowMissing,
             NullCheckKind allowedKinds,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
@@ -163,7 +163,7 @@ namespace Roslynator.CSharp.Syntax
                             binaryExpression,
                             expression2,
                             kind,
-                            options,
+                            allowMissing,
                             allowedKinds,
                             semanticModel,
                             cancellationToken);
@@ -176,7 +176,7 @@ namespace Roslynator.CSharp.Syntax
                             binaryExpression,
                             expression2,
                             kind,
-                            options,
+                            allowMissing,
                             allowedKinds,
                             semanticModel,
                             cancellationToken);
@@ -190,7 +190,7 @@ namespace Roslynator.CSharp.Syntax
             BinaryExpressionSyntax binaryExpression,
             ExpressionSyntax expression,
             NullCheckKind kind,
-            SyntaxInfoOptions options,
+            bool allowMissing,
             NullCheckKind allowedKinds,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
@@ -212,7 +212,7 @@ namespace Roslynator.CSharp.Syntax
 
             ExpressionSyntax expression2 = memberAccessExpression.Expression;
 
-            if (!options.Check(expression2))
+            if (!Check(expression2, allowMissing))
                 return Default;
 
             return new NullCheckExpressionInfo(binaryExpression, expression2, kind);

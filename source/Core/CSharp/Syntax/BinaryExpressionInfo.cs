@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -38,37 +39,39 @@ namespace Roslynator.CSharp.Syntax
 
         internal static BinaryExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             return CreateCore(
-                options.Walk(node) as BinaryExpressionSyntax,
-                options);
+                Walk(node, walkDownParentheses) as BinaryExpressionSyntax,
+                allowMissing,
+                walkDownParentheses);
         }
 
         internal static BinaryExpressionInfo Create(
             BinaryExpressionSyntax binaryExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            return CreateCore(binaryExpression, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(binaryExpression, allowMissing, walkDownParentheses);
         }
 
         internal static BinaryExpressionInfo CreateCore(
             BinaryExpressionSyntax binaryExpression,
-            SyntaxInfoOptions options)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
             if (binaryExpression == null)
                 return Default;
 
-            ExpressionSyntax left = options.Walk(binaryExpression.Left);
+            ExpressionSyntax left = Walk(binaryExpression.Left, walkDownParentheses);
 
-            if (!options.Check(left))
+            if (!Check(left, allowMissing))
                 return Default;
 
-            ExpressionSyntax right = options.Walk(binaryExpression.Right);
+            ExpressionSyntax right = Walk(binaryExpression.Right, walkDownParentheses);
 
-            if (!options.Check(right))
+            if (!Check(right, allowMissing))
                 return Default;
 
             return new BinaryExpressionInfo(binaryExpression, left, right);

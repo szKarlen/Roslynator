@@ -62,7 +62,7 @@
     <Compile Include="CSharp\Syntax\NullCheckKind.cs" />
     <Compile Include="CSharp\Syntax\SimpleIfElseInfo.cs" />
     <Compile Include="CSharp\Syntax\SyntaxInfo.cs" />
-    <Compile Include="CSharp\Syntax\SyntaxInfoOptions.cs" />
+    <Compile Include="CSharp\Syntax\SyntaxInfoHelpers.cs" />
     <Compile Include="CSharp\Syntax\TypeParameterConstraintInfo.cs" />
     <Compile Include="DocumentReferenceInfo.cs" />
     <Compile Include="Diagnostics\Assert.cs" />

@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -36,11 +37,9 @@ namespace Roslynator.CSharp.Syntax
         internal static BinaryExpressionChainInfo Create(
             SyntaxNode node,
             SyntaxKind kind,
-            SyntaxInfoOptions options = null)
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
-            var binaryExpression = options.Walk(node) as BinaryExpressionSyntax;
+            var binaryExpression = Walk(node, walkDownParentheses) as BinaryExpressionSyntax;
 
             if (binaryExpression == null)
                 return Default;

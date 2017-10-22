@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -38,14 +39,15 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
             switch (node)
             {
                 case ExpressionStatementSyntax expressionStatement:
-                    return Create(expressionStatement, options);
+                    return Create(expressionStatement, allowMissing, walkDownParentheses);
                 case AssignmentExpressionSyntax assignmentExpression:
-                    return Create(assignmentExpression, options);
+                    return Create(assignmentExpression, allowMissing, walkDownParentheses);
             }
 
             return Default;
@@ -53,13 +55,12 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             ExpressionStatementSyntax expressionStatement,
-            SyntaxInfoOptions options)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             ExpressionSyntax expression = expressionStatement?.Expression;
 
-            if (!options.Check(expression))
+            if (!Check(expression, allowMissing))
                 return Default;
 
             if (expression?.Kind() != SyntaxKind.SimpleAssignmentExpression)
@@ -67,12 +68,12 @@ namespace Roslynator.CSharp.Syntax
 
             var assignmentExpression = (AssignmentExpressionSyntax)expression;
 
-            ExpressionSyntax left = options.WalkAndCheck(assignmentExpression.Left);
+            ExpressionSyntax left = WalkAndCheck(assignmentExpression.Left, allowMissing, walkDownParentheses);
 
             if (left == null)
                 return Default;
 
-            ExpressionSyntax right = options.WalkAndCheck(assignmentExpression.Right);
+            ExpressionSyntax right = WalkAndCheck(assignmentExpression.Right, allowMissing, walkDownParentheses);
 
             if (right == null)
                 return Default;
@@ -82,7 +83,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             AssignmentExpressionSyntax assignmentExpression,
-            SyntaxInfoOptions options)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
             if (assignmentExpression?.Kind() != SyntaxKind.SimpleAssignmentExpression)
                 return Default;
@@ -90,14 +92,12 @@ namespace Roslynator.CSharp.Syntax
             if (!(assignmentExpression.Parent is ExpressionStatementSyntax expressionStatement))
                 return Default;
 
-            options = options ?? SyntaxInfoOptions.Default;
-
-            ExpressionSyntax left = options.WalkAndCheck(assignmentExpression.Left);
+            ExpressionSyntax left = WalkAndCheck(assignmentExpression.Left, allowMissing, walkDownParentheses);
 
             if (left == null)
                 return Default;
 
-            ExpressionSyntax right = options.WalkAndCheck(assignmentExpression.Right);
+            ExpressionSyntax right = WalkAndCheck(assignmentExpression.Right, allowMissing, walkDownParentheses);
 
             if (right == null)
                 return Default;

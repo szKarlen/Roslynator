@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -53,23 +54,22 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SingleParameterLambdaExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
-            return CreateCore(options.Walk(node) as LambdaExpressionSyntax, options);
+            return CreateCore(Walk(node, walkDownParentheses) as LambdaExpressionSyntax, allowMissing);
         }
 
         internal static SingleParameterLambdaExpressionInfo Create(
             LambdaExpressionSyntax lambdaExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
-            return CreateCore(lambdaExpression, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(lambdaExpression, allowMissing);
         }
 
         internal static SingleParameterLambdaExpressionInfo CreateCore(
             LambdaExpressionSyntax lambdaExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
             switch (lambdaExpression?.Kind())
             {
@@ -79,12 +79,12 @@ namespace Roslynator.CSharp.Syntax
 
                         ParameterSyntax parameter = simpleLambda.Parameter;
 
-                        if (!options.Check(parameter))
+                        if (!Check(parameter, allowMissing))
                             break;
 
                         CSharpSyntaxNode body = simpleLambda.Body;
 
-                        if (!options.Check(body))
+                        if (!Check(body, allowMissing))
                             break;
 
                         return new SingleParameterLambdaExpressionInfo(simpleLambda, parameter, body);
@@ -98,12 +98,12 @@ namespace Roslynator.CSharp.Syntax
                             .Parameters
                             .SingleOrDefault(throwException: false);
 
-                        if (!options.Check(parameter))
+                        if (!Check(parameter, allowMissing))
                             break;
 
                         CSharpSyntaxNode body = parenthesizedLambda.Body;
 
-                        if (!options.Check(body))
+                        if (!Check(body, allowMissing))
                             break;
 
                         return new SingleParameterLambdaExpressionInfo(parenthesizedLambda, parameter, body);

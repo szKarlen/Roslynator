@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -58,25 +59,24 @@ namespace Roslynator.CSharp.Syntax
 
         internal static MemberInvocationExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             return CreateCore(
-                options.Walk(node) as InvocationExpressionSyntax,
-                options);
+                Walk(node, walkDownParentheses) as InvocationExpressionSyntax,
+                allowMissing);
         }
 
         internal static MemberInvocationExpressionInfo Create(
             InvocationExpressionSyntax invocationExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
-            return CreateCore(invocationExpression, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(invocationExpression, allowMissing);
         }
 
         private static MemberInvocationExpressionInfo CreateCore(
             InvocationExpressionSyntax invocationExpression,
-            SyntaxInfoOptions options)
+            bool allowMissing = false)
         {
             if (!(invocationExpression?.Expression is MemberAccessExpressionSyntax memberAccessExpression))
                 return Default;
@@ -86,12 +86,12 @@ namespace Roslynator.CSharp.Syntax
 
             ExpressionSyntax expression = memberAccessExpression.Expression;
 
-            if (!options.Check(expression))
+            if (!Check(expression, allowMissing))
                 return Default;
 
             SimpleNameSyntax name = memberAccessExpression.Name;
 
-            if (!options.Check(name))
+            if (!Check(name, allowMissing))
                 return Default;
 
             ArgumentListSyntax argumentList = invocationExpression.ArgumentList;

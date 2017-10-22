@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -33,37 +34,39 @@ namespace Roslynator.CSharp.Syntax
 
         internal static AsExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             return CreateCore(
-                options.Walk(node) as BinaryExpressionSyntax,
-                options);
+                Walk(node, walkDownParentheses) as BinaryExpressionSyntax,
+                allowMissing,
+                walkDownParentheses);
         }
 
         internal static AsExpressionInfo Create(
             BinaryExpressionSyntax binaryExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            return CreateCore(binaryExpression, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(binaryExpression, allowMissing, walkDownParentheses);
         }
 
         internal static AsExpressionInfo CreateCore(
             BinaryExpressionSyntax binaryExpression,
-            SyntaxInfoOptions options)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
             if (binaryExpression?.Kind() != SyntaxKind.AsExpression)
                 return Default;
 
-            ExpressionSyntax expression = options.Walk(binaryExpression.Left);
+            ExpressionSyntax expression = Walk(binaryExpression.Left, walkDownParentheses);
 
-            if (!options.Check(expression))
+            if (!Check(expression, allowMissing))
                 return Default;
 
             var type = binaryExpression.Right as TypeSyntax;
 
-            if (!options.Check(type))
+            if (!Check(type, allowMissing))
                 return Default;
 
             return new AsExpressionInfo(binaryExpression, expression, type);

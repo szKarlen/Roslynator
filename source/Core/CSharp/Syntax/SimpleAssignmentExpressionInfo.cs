@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -33,33 +34,34 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentExpressionInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
-            return CreateCore(options.Walk(node) as AssignmentExpressionSyntax, options);
+            return CreateCore(Walk(node, walkDownParentheses) as AssignmentExpressionSyntax, allowMissing, walkDownParentheses);
         }
 
         internal static SimpleAssignmentExpressionInfo Create(
             AssignmentExpressionSyntax assignmentExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            return CreateCore(assignmentExpression, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(assignmentExpression, allowMissing, walkDownParentheses);
         }
 
         internal static SimpleAssignmentExpressionInfo CreateCore(
             AssignmentExpressionSyntax assignmentExpression,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
             if (assignmentExpression?.Kind() != SyntaxKind.SimpleAssignmentExpression)
                 return Default;
 
-            ExpressionSyntax left = options.WalkAndCheck(assignmentExpression.Left);
+            ExpressionSyntax left = WalkAndCheck(assignmentExpression.Left, allowMissing, walkDownParentheses);
 
             if (left == null)
                 return Default;
 
-            ExpressionSyntax right = options.WalkAndCheck(assignmentExpression.Right);
+            ExpressionSyntax right = WalkAndCheck(assignmentExpression.Right, allowMissing, walkDownParentheses);
 
             if (right == null)
                 return Default;

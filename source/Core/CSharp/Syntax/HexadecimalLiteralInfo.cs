@@ -4,6 +4,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -92,11 +93,9 @@ namespace Roslynator.CSharp.Syntax
             get { return LiteralExpression != null; }
         }
 
-        public static HexadecimalLiteralInfo Create(SyntaxNode node, SyntaxInfoOptions options = null)
+        public static HexadecimalLiteralInfo Create(SyntaxNode node, bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
-            return Create(options.Walk(node) as LiteralExpressionSyntax);
+            return Create(Walk(node, walkDownParentheses) as LiteralExpressionSyntax);
         }
 
         public static HexadecimalLiteralInfo Create(LiteralExpressionSyntax literalExpression)

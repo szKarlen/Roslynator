@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -57,21 +58,21 @@ namespace Roslynator.CSharp.Syntax
 
         internal static MemberInvocationStatementInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
-            return Create(node as ExpressionStatementSyntax, options);
+            return Create(node as ExpressionStatementSyntax, allowMissing);
         }
 
         internal static MemberInvocationStatementInfo Create(
             ExpressionStatementSyntax expressionStatement,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false)
         {
-            return CreateCore(expressionStatement, options ?? SyntaxInfoOptions.Default);
+            return CreateCore(expressionStatement, allowMissing);
         }
 
         internal static MemberInvocationStatementInfo CreateCore(
             ExpressionStatementSyntax expressionStatement,
-            SyntaxInfoOptions options)
+            bool allowMissing = false)
         {
             if (!(expressionStatement?.Expression is InvocationExpressionSyntax invocationExpression))
                 return Default;
@@ -84,12 +85,12 @@ namespace Roslynator.CSharp.Syntax
 
             ExpressionSyntax expression = memberAccessExpression.Expression;
 
-            if (!options.Check(expression))
+            if (!Check(expression, allowMissing))
                 return Default;
 
             SimpleNameSyntax name = memberAccessExpression.Name;
 
-            if (!options.Check(name))
+            if (!Check(name, allowMissing))
                 return Default;
 
             ArgumentListSyntax argumentList = invocationExpression.ArgumentList;

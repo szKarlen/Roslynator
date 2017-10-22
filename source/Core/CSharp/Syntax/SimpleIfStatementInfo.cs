@@ -2,6 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -32,28 +33,28 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleIfStatementInfo Create(
             SyntaxNode node,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            return Create(node as IfStatementSyntax, options);
+            return Create(node as IfStatementSyntax, allowMissing, walkDownParentheses);
         }
 
         internal static SimpleIfStatementInfo Create(
             IfStatementSyntax ifStatement,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             if (ifStatement?.IsSimpleIf() != true)
                 return Default;
 
-            ExpressionSyntax condition = options.WalkAndCheck(ifStatement.Condition);
+            ExpressionSyntax condition = WalkAndCheck(ifStatement.Condition, allowMissing, walkDownParentheses);
 
             if (condition == null)
                 return Default;
 
             StatementSyntax statement = ifStatement.Statement;
 
-            if (!options.Check(statement))
+            if (!Check(statement, allowMissing))
                 return Default;
 
             return new SimpleIfStatementInfo(ifStatement, condition, statement);

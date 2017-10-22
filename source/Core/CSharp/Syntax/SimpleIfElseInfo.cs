@@ -3,6 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Syntax.SyntaxInfoHelpers;
 
 namespace Roslynator.CSharp.Syntax
 {
@@ -32,16 +33,15 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleIfElseInfo Create(
             IfStatementSyntax ifStatement,
-            SyntaxInfoOptions options = null)
+            bool allowMissing = false,
+            bool walkDownParentheses = true)
         {
-            options = options ?? SyntaxInfoOptions.Default;
-
             if (ifStatement?.IsParentKind(SyntaxKind.ElseClause) != false)
                 return Default;
 
             StatementSyntax whenFalse = ifStatement.Else?.Statement;
 
-            if (!options.Check(whenFalse))
+            if (!Check(whenFalse, allowMissing))
                 return Default;
 
             if (whenFalse.IsKind(SyntaxKind.IfStatement))
@@ -49,10 +49,10 @@ namespace Roslynator.CSharp.Syntax
 
             StatementSyntax whenTrue = ifStatement.Statement;
 
-            if (!options.Check(whenTrue))
+            if (!Check(whenTrue, allowMissing))
                 return Default;
 
-            ExpressionSyntax condition = options.WalkAndCheck(ifStatement.Condition);
+            ExpressionSyntax condition = WalkAndCheck(ifStatement.Condition, allowMissing, walkDownParentheses);
 
             if (condition == null)
                 return Default;
