@@ -34,27 +34,27 @@ namespace Roslynator.CSharp.Syntax
 
         internal static AsExpressionInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return CreateCore(
                 Walk(node, walkDownParentheses) as BinaryExpressionSyntax,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         internal static AsExpressionInfo Create(
             BinaryExpressionSyntax binaryExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return CreateCore(binaryExpression, allowMissing, walkDownParentheses);
+            return CreateCore(binaryExpression, walkDownParentheses, allowMissing);
         }
 
         internal static AsExpressionInfo CreateCore(
             BinaryExpressionSyntax binaryExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (binaryExpression?.Kind() != SyntaxKind.AsExpression)
                 return Default;

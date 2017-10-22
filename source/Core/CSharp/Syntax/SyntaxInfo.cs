@@ -16,24 +16,24 @@ namespace Roslynator.CSharp.Syntax
 
         public static AsExpressionInfo AsExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.AsExpressionInfo.Create(
                 node,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static AsExpressionInfo AsExpressionInfo(
             BinaryExpressionSyntax binaryExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.AsExpressionInfo.Create(
                 binaryExpression,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static BinaryExpressionChainInfo BinaryExpressionChainInfo(
@@ -54,46 +54,46 @@ namespace Roslynator.CSharp.Syntax
 
         public static BinaryExpressionInfo BinaryExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.BinaryExpressionInfo.Create(
                 node,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static BinaryExpressionInfo BinaryExpressionInfo(
             BinaryExpressionSyntax binaryExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.BinaryExpressionInfo.Create(
                 binaryExpression,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static ConditionalExpressionInfo ConditionalExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.ConditionalExpressionInfo.Create(
                 node,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static ConditionalExpressionInfo ConditionalExpressionInfo(
             ConditionalExpressionSyntax conditionalExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.ConditionalExpressionInfo.Create(
                 conditionalExpression,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static GenericInfo GenericInfo(TypeParameterConstraintSyntax typeParameterConstraint)
@@ -174,13 +174,13 @@ namespace Roslynator.CSharp.Syntax
 
         public static MemberInvocationExpressionInfo MemberInvocationExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return Syntax.MemberInvocationExpressionInfo.Create(
                 node,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         public static MemberInvocationExpressionInfo MemberInvocationExpressionInfo(
@@ -212,75 +212,75 @@ namespace Roslynator.CSharp.Syntax
 
         public static NullCheckExpressionInfo NullCheckExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true,
             NullCheckKind allowedKinds = NullCheckKind.All,
+            bool walkDownParentheses = true,
+            bool allowMissing = false,
             SemanticModel semanticModel = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return Syntax.NullCheckExpressionInfo.Create(
                 node,
-                allowMissing,
-                walkDownParentheses,
                 allowedKinds,
+                walkDownParentheses,
+                allowMissing,
                 semanticModel,
                 cancellationToken);
         }
 
         public static SimpleAssignmentExpressionInfo SimpleAssignmentExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleAssignmentExpressionInfo.Create(node, allowMissing, walkDownParentheses);
+            return Syntax.SimpleAssignmentExpressionInfo.Create(node, walkDownParentheses, allowMissing);
         }
 
         public static SimpleAssignmentExpressionInfo SimpleAssignmentExpressionInfo(
             AssignmentExpressionSyntax assignmentExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleAssignmentExpressionInfo.Create(assignmentExpression, allowMissing, walkDownParentheses);
+            return Syntax.SimpleAssignmentExpressionInfo.Create(assignmentExpression, walkDownParentheses, allowMissing);
         }
 
         public static SimpleAssignmentStatementInfo SimpleAssignmentStatementInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleAssignmentStatementInfo.Create(node, allowMissing, walkDownParentheses);
+            return Syntax.SimpleAssignmentStatementInfo.Create(node, walkDownParentheses, allowMissing);
         }
 
         public static SimpleAssignmentStatementInfo SimpleAssignmentStatementInfo(
             ExpressionStatementSyntax expressionStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleAssignmentStatementInfo.Create(expressionStatement, allowMissing, walkDownParentheses);
+            return Syntax.SimpleAssignmentStatementInfo.Create(expressionStatement, walkDownParentheses, allowMissing);
         }
 
         public static SimpleIfElseInfo SimpleIfElseInfo(
             IfStatementSyntax ifStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleIfElseInfo.Create(ifStatement, allowMissing, walkDownParentheses);
+            return Syntax.SimpleIfElseInfo.Create(ifStatement, walkDownParentheses, allowMissing);
         }
 
         public static SimpleIfStatementInfo SimpleIfStatementInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleIfStatementInfo.Create(node, allowMissing, walkDownParentheses);
+            return Syntax.SimpleIfStatementInfo.Create(node, walkDownParentheses, allowMissing);
         }
 
         public static SimpleIfStatementInfo SimpleIfStatementInfo(
             IfStatementSyntax ifStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SimpleIfStatementInfo.Create(ifStatement, allowMissing, walkDownParentheses);
+            return Syntax.SimpleIfStatementInfo.Create(ifStatement, walkDownParentheses, allowMissing);
         }
 
         public static SingleLocalDeclarationStatementInfo SingleLocalDeclarationStatementInfo(
@@ -297,10 +297,10 @@ namespace Roslynator.CSharp.Syntax
 
         public static SingleParameterLambdaExpressionInfo SingleParameterLambdaExpressionInfo(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Syntax.SingleParameterLambdaExpressionInfo.Create(node, allowMissing, walkDownParentheses);
+            return Syntax.SingleParameterLambdaExpressionInfo.Create(node, walkDownParentheses, allowMissing);
         }
 
         public static SingleParameterLambdaExpressionInfo SingleParameterLambdaExpressionInfo(
@@ -341,9 +341,9 @@ namespace Roslynator.CSharp.Syntax
             return Syntax.StringConcatenationExpressionInfo.Create(binaryExpressionSelection, semanticModel, cancellationToken);
         }
 
-        public static TypeParameterConstraintInfo TypeParameterConstraintInfo(TypeParameterConstraintSyntax constraint)
+        public static TypeParameterConstraintInfo TypeParameterConstraintInfo(TypeParameterConstraintSyntax constraint, bool allowMissing = false)
         {
-            return Syntax.TypeParameterConstraintInfo.Create(constraint);
+            return Syntax.TypeParameterConstraintInfo.Create(constraint, allowMissing);
         }
 
         public static TypeParameterInfo TypeParameterInfo(TypeParameterSyntax typeParameter)

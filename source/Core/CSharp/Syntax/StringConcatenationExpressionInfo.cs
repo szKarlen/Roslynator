@@ -173,7 +173,6 @@ namespace Roslynator.CSharp.Syntax
                 .IsString() == true;
         }
 
-        //TODO: SyntaxInfoOptions
         private static List<ExpressionSyntax> GetExpressions(
             BinaryExpressionSyntax binaryExpression,
             SemanticModel semanticModel,

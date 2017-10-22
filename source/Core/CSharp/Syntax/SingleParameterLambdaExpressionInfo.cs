@@ -54,8 +54,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SingleParameterLambdaExpressionInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return CreateCore(Walk(node, walkDownParentheses) as LambdaExpressionSyntax, allowMissing);
         }

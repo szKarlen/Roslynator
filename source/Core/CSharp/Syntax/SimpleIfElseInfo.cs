@@ -33,8 +33,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleIfElseInfo Create(
             IfStatementSyntax ifStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (ifStatement?.IsParentKind(SyntaxKind.ElseClause) != false)
                 return Default;

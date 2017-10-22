@@ -39,15 +39,15 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             switch (node)
             {
                 case ExpressionStatementSyntax expressionStatement:
-                    return Create(expressionStatement, allowMissing, walkDownParentheses);
+                    return Create(expressionStatement, walkDownParentheses, allowMissing);
                 case AssignmentExpressionSyntax assignmentExpression:
-                    return Create(assignmentExpression, allowMissing, walkDownParentheses);
+                    return Create(assignmentExpression, walkDownParentheses, allowMissing);
             }
 
             return Default;
@@ -55,8 +55,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             ExpressionStatementSyntax expressionStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             ExpressionSyntax expression = expressionStatement?.Expression;
 
@@ -83,8 +83,8 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentStatementInfo Create(
             AssignmentExpressionSyntax assignmentExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (assignmentExpression?.Kind() != SyntaxKind.SimpleAssignmentExpression)
                 return Default;

@@ -33,16 +33,16 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleIfStatementInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return Create(node as IfStatementSyntax, allowMissing, walkDownParentheses);
+            return Create(node as IfStatementSyntax, walkDownParentheses, allowMissing);
         }
 
         internal static SimpleIfStatementInfo Create(
             IfStatementSyntax ifStatement,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (ifStatement?.IsSimpleIf() != true)
                 return Default;

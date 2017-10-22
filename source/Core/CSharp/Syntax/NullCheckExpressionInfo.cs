@@ -14,17 +14,16 @@ namespace Roslynator.CSharp.Syntax
         private static NullCheckExpressionInfo Default { get; } = new NullCheckExpressionInfo();
 
         private NullCheckExpressionInfo(
-            ExpressionSyntax node,
+            ExpressionSyntax containingExpression,
             ExpressionSyntax expression,
             NullCheckKind kind)
         {
-            Node = node;
+            ContainingExpression = containingExpression;
             Expression = expression;
             Kind = kind;
         }
 
-        //TODO: 
-        public ExpressionSyntax Node { get; }
+        public ExpressionSyntax ContainingExpression { get; }
 
         public ExpressionSyntax Expression { get; }
 
@@ -47,9 +46,9 @@ namespace Roslynator.CSharp.Syntax
 
         internal static NullCheckExpressionInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true,
             NullCheckKind allowedKinds = NullCheckKind.All,
+            bool walkDownParentheses = true,
+            bool allowMissing = false,
             SemanticModel semanticModel = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -83,7 +82,7 @@ namespace Roslynator.CSharp.Syntax
                         if (right == null)
                             break;
 
-                        NullCheckExpressionInfo info = Create(binaryExpression, kind, left, right, allowMissing, allowedKinds, semanticModel, cancellationToken);
+                        NullCheckExpressionInfo info = Create(binaryExpression, kind, left, right, allowedKinds, allowMissing, semanticModel, cancellationToken);
 
                         if (info.Success)
                         {
@@ -91,7 +90,7 @@ namespace Roslynator.CSharp.Syntax
                         }
                         else
                         {
-                            return Create(binaryExpression, kind, right, left, allowMissing, allowedKinds, semanticModel, cancellationToken);
+                            return Create(binaryExpression, kind, right, left, allowedKinds, allowMissing, semanticModel, cancellationToken);
                         }
                     }
                 case SyntaxKind.SimpleMemberAccessExpression:
@@ -136,8 +135,8 @@ namespace Roslynator.CSharp.Syntax
             SyntaxKind binaryExpressionKind,
             ExpressionSyntax expression1,
             ExpressionSyntax expression2,
-            bool allowMissing,
             NullCheckKind allowedKinds,
+            bool allowMissing,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
@@ -163,8 +162,8 @@ namespace Roslynator.CSharp.Syntax
                             binaryExpression,
                             expression2,
                             kind,
-                            allowMissing,
                             allowedKinds,
+                            allowMissing,
                             semanticModel,
                             cancellationToken);
                     }
@@ -176,8 +175,8 @@ namespace Roslynator.CSharp.Syntax
                             binaryExpression,
                             expression2,
                             kind,
-                            allowMissing,
                             allowedKinds,
+                            allowMissing,
                             semanticModel,
                             cancellationToken);
                     }
@@ -190,8 +189,8 @@ namespace Roslynator.CSharp.Syntax
             BinaryExpressionSyntax binaryExpression,
             ExpressionSyntax expression,
             NullCheckKind kind,
-            bool allowMissing,
             NullCheckKind allowedKinds,
+            bool allowMissing,
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
@@ -231,7 +230,7 @@ namespace Roslynator.CSharp.Syntax
 
         public override string ToString()
         {
-            return Node?.ToString() ?? base.ToString();
+            return ContainingExpression?.ToString() ?? base.ToString();
         }
     }
 }

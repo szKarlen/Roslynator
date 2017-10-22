@@ -38,27 +38,27 @@ namespace Roslynator.CSharp.Syntax
 
         internal static ConditionalExpressionInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             return CreateCore(
                 Walk(node, walkDownParentheses) as ConditionalExpressionSyntax,
-                allowMissing,
-                walkDownParentheses);
+                walkDownParentheses,
+                allowMissing);
         }
 
         internal static ConditionalExpressionInfo Create(
             ConditionalExpressionSyntax conditionalExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return CreateCore(conditionalExpression, allowMissing, walkDownParentheses);
+            return CreateCore(conditionalExpression, walkDownParentheses, allowMissing);
         }
 
         internal static ConditionalExpressionInfo CreateCore(
             ConditionalExpressionSyntax conditionalExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (conditionalExpression == null)
                 return Default;

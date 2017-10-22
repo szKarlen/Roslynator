@@ -34,7 +34,6 @@ namespace Roslynator.CSharp.Syntax
 
         public SyntaxList<StatementSyntax> Statements { get; }
 
-        //TODO: ContainingNode
         public CSharpSyntaxNode Node
         {
             get { return Block ?? (CSharpSyntaxNode)SwitchSection; }

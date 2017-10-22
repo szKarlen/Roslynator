@@ -34,24 +34,24 @@ namespace Roslynator.CSharp.Syntax
 
         internal static SimpleAssignmentExpressionInfo Create(
             SyntaxNode node,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return CreateCore(Walk(node, walkDownParentheses) as AssignmentExpressionSyntax, allowMissing, walkDownParentheses);
+            return CreateCore(Walk(node, walkDownParentheses) as AssignmentExpressionSyntax, walkDownParentheses, allowMissing);
         }
 
         internal static SimpleAssignmentExpressionInfo Create(
             AssignmentExpressionSyntax assignmentExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
-            return CreateCore(assignmentExpression, allowMissing, walkDownParentheses);
+            return CreateCore(assignmentExpression, walkDownParentheses, allowMissing);
         }
 
         internal static SimpleAssignmentExpressionInfo CreateCore(
             AssignmentExpressionSyntax assignmentExpression,
-            bool allowMissing = false,
-            bool walkDownParentheses = true)
+            bool walkDownParentheses = true,
+            bool allowMissing = false)
         {
             if (assignmentExpression?.Kind() != SyntaxKind.SimpleAssignmentExpression)
                 return Default;

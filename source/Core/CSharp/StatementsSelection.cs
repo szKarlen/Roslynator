@@ -16,7 +16,6 @@ namespace Roslynator.CSharp
             Info = info;
         }
 
-        //TODO: 
         public StatementsInfo Info { get; }
 
         public SyntaxList<StatementSyntax> Statements
