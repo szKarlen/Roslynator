@@ -94,17 +94,17 @@ namespace Roslynator.CSharp.Syntax
             get { return Declaration != null; }
         }
 
-        public static GenericInfo Create(TypeParameterConstraintSyntax typeParameterConstraint)
+        internal static GenericInfo Create(TypeParameterConstraintSyntax typeParameterConstraint)
         {
             return Create(typeParameterConstraint?.Parent as TypeParameterConstraintClauseSyntax);
         }
 
-        public static GenericInfo Create(TypeParameterConstraintClauseSyntax constraintClause)
+        internal static GenericInfo Create(TypeParameterConstraintClauseSyntax constraintClause)
         {
             return Create(constraintClause?.Parent);
         }
 
-        public static GenericInfo Create(SyntaxNode declaration)
+        internal static GenericInfo Create(SyntaxNode declaration)
         {
             switch (declaration?.Kind())
             {
@@ -143,7 +143,7 @@ namespace Roslynator.CSharp.Syntax
             return Default;
         }
 
-        public static GenericInfo Create(TypeParameterListSyntax typeParameterList)
+        internal static GenericInfo Create(TypeParameterListSyntax typeParameterList)
         {
             if (typeParameterList == null)
                 return Default;
@@ -187,7 +187,7 @@ namespace Roslynator.CSharp.Syntax
             return Default;
         }
 
-        public static GenericInfo Create(ClassDeclarationSyntax classDeclaration)
+        internal static GenericInfo Create(ClassDeclarationSyntax classDeclaration)
         {
             if (classDeclaration == null)
                 return Default;
@@ -195,7 +195,7 @@ namespace Roslynator.CSharp.Syntax
             return new GenericInfo(classDeclaration);
         }
 
-        public static GenericInfo Create(DelegateDeclarationSyntax delegateDeclaration)
+        internal static GenericInfo Create(DelegateDeclarationSyntax delegateDeclaration)
         {
             if (delegateDeclaration == null)
                 return Default;
@@ -203,7 +203,7 @@ namespace Roslynator.CSharp.Syntax
             return new GenericInfo(delegateDeclaration);
         }
 
-        public static GenericInfo Create(InterfaceDeclarationSyntax interfaceDeclaration)
+        internal static GenericInfo Create(InterfaceDeclarationSyntax interfaceDeclaration)
         {
             if (interfaceDeclaration == null)
                 return Default;
@@ -211,7 +211,7 @@ namespace Roslynator.CSharp.Syntax
             return new GenericInfo(interfaceDeclaration);
         }
 
-        public static GenericInfo Create(LocalFunctionStatementSyntax localFunctionStatement)
+        internal static GenericInfo Create(LocalFunctionStatementSyntax localFunctionStatement)
         {
             if (localFunctionStatement == null)
                 return Default;
@@ -219,7 +219,7 @@ namespace Roslynator.CSharp.Syntax
             return new GenericInfo(localFunctionStatement);
         }
 
-        public static GenericInfo Create(MethodDeclarationSyntax methodDeclaration)
+        internal static GenericInfo Create(MethodDeclarationSyntax methodDeclaration)
         {
             if (methodDeclaration == null)
                 return Default;
@@ -227,7 +227,7 @@ namespace Roslynator.CSharp.Syntax
             return new GenericInfo(methodDeclaration);
         }
 
-        public static GenericInfo Create(StructDeclarationSyntax structDeclaration)
+        internal static GenericInfo Create(StructDeclarationSyntax structDeclaration)
         {
             if (structDeclaration == null)
                 return Default;

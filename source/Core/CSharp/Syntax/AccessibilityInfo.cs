@@ -72,7 +72,7 @@ namespace Roslynator.CSharp.Syntax
             get { return Node?.Kind().CanHaveAccessibility() == true; }
         }
 
-        public static AccessibilityInfo Create(SyntaxNode node)
+        internal static AccessibilityInfo Create(SyntaxNode node)
         {
             if (node == null)
                 return Default;

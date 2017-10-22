@@ -93,12 +93,12 @@ namespace Roslynator.CSharp.Syntax
             get { return LiteralExpression != null; }
         }
 
-        public static HexadecimalLiteralInfo Create(SyntaxNode node, bool walkDownParentheses = true)
+        internal static HexadecimalLiteralInfo Create(SyntaxNode node, bool walkDownParentheses = true)
         {
             return Create(Walk(node, walkDownParentheses) as LiteralExpressionSyntax);
         }
 
-        public static HexadecimalLiteralInfo Create(LiteralExpressionSyntax literalExpression)
+        internal static HexadecimalLiteralInfo Create(LiteralExpressionSyntax literalExpression)
         {
             if (literalExpression == null)
                 return Default;

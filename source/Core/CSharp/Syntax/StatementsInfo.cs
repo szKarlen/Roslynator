@@ -80,7 +80,7 @@ namespace Roslynator.CSharp.Syntax
             return new StatementsInfo(switchSection);
         }
 
-        public static StatementsInfo Create(StatementSyntax statement)
+        internal static StatementsInfo Create(StatementSyntax statement)
         {
             if (statement == null)
                 return Default;

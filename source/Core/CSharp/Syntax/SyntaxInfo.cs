@@ -325,7 +325,7 @@ namespace Roslynator.CSharp.Syntax
             return Syntax.StatementsInfo.Create(switchSection);
         }
 
-        public static StringConcatenationExpressionInfo StringConcatenationExpressionInfo(
+        internal static StringConcatenationExpressionInfo StringConcatenationExpressionInfo(
             BinaryExpressionSyntax binaryExpression,
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))

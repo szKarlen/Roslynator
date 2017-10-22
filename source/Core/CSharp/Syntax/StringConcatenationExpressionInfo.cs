@@ -15,7 +15,7 @@ using Roslynator.Utilities;
 
 namespace Roslynator.CSharp.Syntax
 {
-    public struct StringConcatenationExpressionInfo
+    internal struct StringConcatenationExpressionInfo
     {
         private static StringConcatenationExpressionInfo Default { get; } = new StringConcatenationExpressionInfo();
 

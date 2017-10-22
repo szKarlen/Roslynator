@@ -62,7 +62,7 @@ namespace Roslynator.CSharp.Syntax
             get { return TypeParameter != null; }
         }
 
-        public static TypeParameterInfo Create(TypeParameterSyntax typeParameter)
+        internal static TypeParameterInfo Create(TypeParameterSyntax typeParameter)
         {
             if (!(typeParameter.Parent is TypeParameterListSyntax typeParameterList))
                 return Default;
@@ -106,7 +106,7 @@ namespace Roslynator.CSharp.Syntax
             return Default;
         }
 
-        public static TypeParameterInfo Create(SyntaxNode declaration, string name)
+        internal static TypeParameterInfo Create(SyntaxNode declaration, string name)
         {
             switch (declaration?.Kind())
             {

@@ -107,7 +107,7 @@ namespace Roslynator.CSharp.Syntax
             }
         }
 
-        public static TypeParameterConstraintInfo Create(
+        internal static TypeParameterConstraintInfo Create(
             TypeParameterConstraintSyntax constraint,
             bool allowMissing = false)
         {
