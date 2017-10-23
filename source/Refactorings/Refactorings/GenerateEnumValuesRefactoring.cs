@@ -19,39 +19,49 @@ namespace Roslynator.CSharp.Refactorings
 
             INamedTypeSymbol enumSymbol = semanticModel.GetDeclaredSymbol(enumDeclaration, context.CancellationToken);
 
-            if (enumSymbol.IsEnumWithFlagsAttribute(semanticModel))
+            if (!enumSymbol.IsEnumWithFlagsAttribute(semanticModel))
             {
-                SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
-
-                if (members.Any(f => f.EqualsValue == null))
-                {
-                    SpecialType specialType = enumSymbol.EnumUnderlyingType.SpecialType;
-
-                    List<object> values = GetExplicitValues(enumDeclaration, semanticModel, context.CancellationToken);
-
-                    Optional<object> optional = FlagsUtility.GetUniquePowerOfTwo(specialType, values);
-
-                    if (optional.HasValue)
-                    {
-                        context.RegisterRefactoring(
-                            "Generate enum values",
-                            cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, startFromHighestExistingValue: false, cancellationToken: cancellationToken));
-
-                        if (members.Any(f => f.EqualsValue != null))
-                        {
-                            Optional<object> optional2 = FlagsUtility.GetUniquePowerOfTwo(specialType, values, startFromHighestExistingValue: true);
-
-                            if (optional2.HasValue
-                                && !optional.Value.Equals(optional2.Value))
-                            {
-                                context.RegisterRefactoring(
-                                    $"Generate enum values (starting from {optional2.Value})",
-                                    cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, startFromHighestExistingValue: true, cancellationToken: cancellationToken));
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
+
+            if (!members.Any(f => f.EqualsValue == null))
+            {
+                return;
+            }
+
+            SpecialType specialType = enumSymbol.EnumUnderlyingType.SpecialType;
+
+            List<object> values = GetExplicitValues(enumDeclaration, semanticModel, context.CancellationToken);
+
+            Optional<object> optional = FlagsUtility.GetUniquePowerOfTwo(specialType, values);
+
+            if (!optional.HasValue)
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Generate enum values",
+                cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, startFromHighestExistingValue: false, cancellationToken: cancellationToken));
+
+            if (!members.Any(f => f.EqualsValue != null))
+            {
+                return;
+            }
+
+            Optional<object> optional2 = FlagsUtility.GetUniquePowerOfTwo(specialType, values, startFromHighestExistingValue: true);
+
+            if (!optional2.HasValue
+                || optional.Value.Equals(optional2.Value))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                $"Generate enum values (starting from {optional2.Value})",
+                cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, startFromHighestExistingValue: true, cancellationToken: cancellationToken));
         }
 
         private static async Task<Document> RefactorAsync(

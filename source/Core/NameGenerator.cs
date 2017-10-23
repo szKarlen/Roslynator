@@ -267,13 +267,15 @@ namespace Roslynator
             bool isCaseSensitive = true,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (typeSymbol != null)
+            if (typeSymbol == null)
             {
-                string name = CreateName(typeSymbol, firstCharToLower: true);
-
-                if (name != null)
-                    return EnsureUniqueLocalName(name, semanticModel, position, isCaseSensitive, cancellationToken);
+                return null;
             }
+
+            string name = CreateName(typeSymbol, firstCharToLower: true);
+
+            if (name != null)
+                return EnsureUniqueLocalName(name, semanticModel, position, isCaseSensitive, cancellationToken);
 
             return null;
         }
@@ -288,14 +290,16 @@ namespace Roslynator
         {
             string newName = CreateName(typeSymbol, firstCharToLower: true);
 
-            if (newName != null
-                && !string.Equals(oldName, newName, StringComparison.Ordinal))
+            if (newName == null
+                || string.Equals(oldName, newName, StringComparison.Ordinal))
             {
-                string uniqueName = EnsureUniqueLocalName(newName, semanticModel, position, isCaseSensitive, cancellationToken);
-
-                if (!IsChangeOnlyInSuffix(oldName, newName, uniqueName))
-                    return uniqueName;
+                return null;
             }
+
+            string uniqueName = EnsureUniqueLocalName(newName, semanticModel, position, isCaseSensitive, cancellationToken);
+
+            if (!IsChangeOnlyInSuffix(oldName, newName, uniqueName))
+                return uniqueName;
 
             return null;
         }
@@ -309,14 +313,16 @@ namespace Roslynator
         {
             string newName = CreateName(parameterSymbol.Type, firstCharToLower: true);
 
-            if (newName != null
-                && !string.Equals(oldName, newName, StringComparison.Ordinal))
+            if (newName == null
+                || string.Equals(oldName, newName, StringComparison.Ordinal))
             {
-                string uniqueName = EnsureUniqueParameterName(newName, parameterSymbol.ContainingSymbol, semanticModel, isCaseSensitive, cancellationToken);
-
-                if (!IsChangeOnlyInSuffix(oldName, newName, uniqueName))
-                    return uniqueName;
+                return null;
             }
+
+            string uniqueName = EnsureUniqueParameterName(newName, parameterSymbol.ContainingSymbol, semanticModel, isCaseSensitive, cancellationToken);
+
+            if (!IsChangeOnlyInSuffix(oldName, newName, uniqueName))
+                return uniqueName;
 
             return null;
         }

@@ -18,21 +18,25 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, WhileStatementSyntax whileStatement)
         {
-            if (whileStatement.Condition?.IsKind(SyntaxKind.TrueLiteralExpression) == true)
+            if (whileStatement.Condition?.IsKind(SyntaxKind.TrueLiteralExpression) != true)
             {
-                TextSpan span = TextSpan.FromBounds(
-                    whileStatement.OpenParenToken.Span.End,
-                    whileStatement.CloseParenToken.Span.Start);
-
-                if (whileStatement
-                    .DescendantTrivia(span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AvoidUsageOfWhileStatementToCreateInfiniteLoop,
-                        whileStatement.WhileKeyword);
-                }
+                return;
             }
+
+            TextSpan span = TextSpan.FromBounds(
+                whileStatement.OpenParenToken.Span.End,
+                whileStatement.CloseParenToken.Span.Start);
+
+            if (!whileStatement
+                .DescendantTrivia(span)
+                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AvoidUsageOfWhileStatementToCreateInfiniteLoop,
+                whileStatement.WhileKeyword);
         }
 
         public static Task<Document> RefactorAsync(

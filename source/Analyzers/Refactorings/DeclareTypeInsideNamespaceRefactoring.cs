@@ -16,23 +16,25 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol symbol)
         {
-            if (symbol.ContainingNamespace?.IsGlobalNamespace == true)
+            if (symbol.ContainingNamespace?.IsGlobalNamespace != true)
             {
-                foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
+                return;
+            }
+
+            foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
+            {
+                SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+
+                if (node != null)
                 {
-                    SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+                    SyntaxToken identifier = GetDeclarationIdentifier(symbol, node);
 
-                    if (node != null)
+                    if (!identifier.IsKind(SyntaxKind.None))
                     {
-                        SyntaxToken identifier = GetDeclarationIdentifier(symbol, node);
-
-                        if (!identifier.IsKind(SyntaxKind.None))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.DeclareTypeInsideNamespace,
-                                identifier,
-                                identifier.ValueText);
-                        }
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.DeclareTypeInsideNamespace,
+                            identifier,
+                            identifier.ValueText);
                     }
                 }
             }

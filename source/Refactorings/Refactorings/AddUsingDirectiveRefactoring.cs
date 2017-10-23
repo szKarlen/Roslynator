@@ -39,14 +39,16 @@ namespace Roslynator.CSharp.Refactorings
 
             node = prevNode;
 
-            if (node?.IsParentKind(SyntaxKind.QualifiedName, SyntaxKind.AliasQualifiedName, SyntaxKind.SimpleMemberAccessExpression) == true
-                && !node.IsDescendantOf(SyntaxKind.UsingDirective)
-                && !CSharpUtility.IsNamespaceInScope(node, namespaceSymbol, semanticModel, context.CancellationToken))
+            if (node?.IsParentKind(SyntaxKind.QualifiedName, SyntaxKind.AliasQualifiedName, SyntaxKind.SimpleMemberAccessExpression) != true
+                || node.IsDescendantOf(SyntaxKind.UsingDirective)
+                || CSharpUtility.IsNamespaceInScope(node, namespaceSymbol, semanticModel, context.CancellationToken))
             {
-                context.RegisterRefactoring(
-                    $"using {namespaceSymbol};",
-                    cancellationToken => RefactorAsync(context.Document, node, namespaceSymbol, cancellationToken));
+                return;
             }
+
+            context.RegisterRefactoring(
+                $"using {namespaceSymbol};",
+                cancellationToken => RefactorAsync(context.Document, node, namespaceSymbol, cancellationToken));
         }
 
         private static async Task<Document> RefactorAsync(

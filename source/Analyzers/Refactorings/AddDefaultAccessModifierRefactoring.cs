@@ -23,18 +23,22 @@ namespace Roslynator.CSharp.Refactorings
 
             Accessibility accessibility = GetAccessibility(context, declaration, modifiers);
 
-            if (accessibility != Accessibility.NotApplicable)
+            if (accessibility == Accessibility.NotApplicable)
             {
-                Location location = GetLocation(declaration);
-
-                if (location != null)
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AddDefaultAccessModifier,
-                        location,
-                        ImmutableDictionary.CreateRange(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>(nameof(Accessibility), accessibility.ToString()) }));
-                }
+                return;
             }
+
+            Location location = GetLocation(declaration);
+
+            if (location == null)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddDefaultAccessModifier,
+                location,
+                ImmutableDictionary.CreateRange(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>(nameof(Accessibility), accessibility.ToString()) }));
         }
 
         private static Accessibility GetAccessibility(SyntaxNodeAnalysisContext context, MemberDeclarationSyntax declaration, SyntaxTokenList modifiers)

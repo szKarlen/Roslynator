@@ -21,66 +21,82 @@ namespace Roslynator.CSharp.Refactorings
         {
             var ifStatement = (IfStatementSyntax)context.Node;
 
-            if (ifStatement.IsSimpleIf()
-                && !ifStatement.ContainsDiagnostics)
+            if (!ifStatement.IsSimpleIf()
+                || ifStatement.ContainsDiagnostics)
             {
-                NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(ifStatement.Condition, allowedKinds: NullCheckKind.NotEqualsToNull);
-                if (nullCheck.Success)
-                {
-                    MemberInvocationStatementInfo invocationInfo = SyntaxInfo.MemberInvocationStatementInfo(ifStatement.GetSingleStatementOrDefault());
-                    if (invocationInfo.Success
-                        && SyntaxComparer.AreEquivalent(nullCheck.Expression, invocationInfo.Expression)
-                        && !ifStatement.IsInExpressionTree(expressionType, context.SemanticModel, context.CancellationToken)
-                        && !ifStatement.SpanContainsDirectives())
-                    {
-                        context.ReportDiagnostic(DiagnosticDescriptors.UseConditionalAccess, ifStatement);
-                    }
-                }
+                return;
             }
+
+            NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(ifStatement.Condition, allowedKinds: NullCheckKind.NotEqualsToNull);
+            if (!nullCheck.Success)
+            {
+                return;
+            }
+
+            MemberInvocationStatementInfo invocationInfo = SyntaxInfo.MemberInvocationStatementInfo(ifStatement.GetSingleStatementOrDefault());
+            if (!invocationInfo.Success
+                || !SyntaxComparer.AreEquivalent(nullCheck.Expression, invocationInfo.Expression)
+                || ifStatement.IsInExpressionTree(expressionType, context.SemanticModel, context.CancellationToken)
+                || ifStatement.SpanContainsDirectives())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.UseConditionalAccess, ifStatement);
         }
 
         public static void AnalyzeLogicalAndExpression(SyntaxNodeAnalysisContext context, INamedTypeSymbol expressionType)
         {
             var logicalAndExpression = (BinaryExpressionSyntax)context.Node;
 
-            if (!logicalAndExpression.ContainsDiagnostics)
+            if (logicalAndExpression.ContainsDiagnostics)
             {
-                ExpressionSyntax expression = FindExpressionCheckedForNull(logicalAndExpression);
-
-                if (expression != null
-                    && context.SemanticModel
-                        .GetTypeSymbol(expression, context.CancellationToken)?
-                        .IsReferenceType == true)
-                {
-                    ExpressionSyntax right = logicalAndExpression.Right?.WalkDownParentheses();
-
-                    if (right != null
-                        && ValidateRightExpression(right, context.SemanticModel, context.CancellationToken)
-                        && !RefactoringHelper.ContainsOutArgumentWithLocal(right, context.SemanticModel, context.CancellationToken))
-                    {
-                        ExpressionSyntax expression2 = FindExpressionThatCanBeConditionallyAccessed(expression, right);
-
-                        if (expression2?.SpanContainsDirectives() == false
-                            && !logicalAndExpression.IsInExpressionTree(expressionType, context.SemanticModel, context.CancellationToken))
-                        {
-                            context.ReportDiagnostic(DiagnosticDescriptors.UseConditionalAccess, logicalAndExpression);
-                        }
-                    }
-                }
+                return;
             }
+
+            ExpressionSyntax expression = FindExpressionCheckedForNull(logicalAndExpression);
+
+            if (expression == null
+                || context.SemanticModel
+                    .GetTypeSymbol(expression, context.CancellationToken)?
+                    .IsReferenceType != true)
+            {
+                return;
+            }
+
+            ExpressionSyntax right = logicalAndExpression.Right?.WalkDownParentheses();
+
+            if (right == null
+                || !ValidateRightExpression(right, context.SemanticModel, context.CancellationToken)
+                || RefactoringHelper.ContainsOutArgumentWithLocal(right, context.SemanticModel, context.CancellationToken))
+            {
+                return;
+            }
+
+            ExpressionSyntax expression2 = FindExpressionThatCanBeConditionallyAccessed(expression, right);
+
+            if (expression2?.SpanContainsDirectives() != false
+                || logicalAndExpression.IsInExpressionTree(expressionType, context.SemanticModel, context.CancellationToken))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.UseConditionalAccess, logicalAndExpression);
         }
 
         private static ExpressionSyntax FindExpressionCheckedForNull(BinaryExpressionSyntax logicalAndExpression)
         {
             ExpressionSyntax left = logicalAndExpression.Left?.WalkDownParentheses();
 
-            if (left?.IsKind(SyntaxKind.NotEqualsExpression) == true)
+            if (left?.IsKind(SyntaxKind.NotEqualsExpression) != true)
             {
-                var notEquals = (BinaryExpressionSyntax)left;
-
-                if (notEquals.Right?.IsKind(SyntaxKind.NullLiteralExpression) == true)
-                    return notEquals.Left;
+                return null;
             }
+
+            var notEquals = (BinaryExpressionSyntax)left;
+
+            if (notEquals.Right?.IsKind(SyntaxKind.NullLiteralExpression) == true)
+                return notEquals.Left;
 
             return null;
         }

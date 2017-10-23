@@ -19,34 +19,38 @@ namespace Roslynator.CSharp.Refactorings.WrapSelectedLines
         {
             TextSpan span = context.Span;
 
-            if (IsValidSpan(context.Root, span))
+            if (!IsValidSpan(context.Root, span))
             {
-                SourceText sourceText = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
-
-                return TextLineCollectionSelection.Create(sourceText.Lines, span);
+                return null;
             }
 
-            return null;
+            SourceText sourceText = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
+
+            return TextLineCollectionSelection.Create(sourceText.Lines, span);
         }
 
         private static bool IsValidSpan(SyntaxNode root, TextSpan span)
         {
-            if (!span.IsEmpty)
+            if (span.IsEmpty)
             {
-                int start = span.Start;
-
-                if (start == 0
-                    || root
-                        .FindTrivia(start - 1, findInsideTrivia: true)
-                        .IsEndOfLineTrivia()
-                    || root
-                        .FindToken(start - 1, findInsideTrivia: true)
-                        .IsKind(SyntaxKind.XmlTextLiteralNewLineToken))
-                {
-                    if (!root.FindTrivia(span.End).IsKind(SyntaxKind.MultiLineCommentTrivia))
-                        return true;
-                }
+                return false;
             }
+
+            int start = span.Start;
+
+            if (start != 0
+                && !root
+                    .FindTrivia(start - 1, findInsideTrivia: true)
+                    .IsEndOfLineTrivia()
+                && !root
+                    .FindToken(start - 1, findInsideTrivia: true)
+                    .IsKind(SyntaxKind.XmlTextLiteralNewLineToken))
+            {
+                return false;
+            }
+
+            if (!root.FindTrivia(span.End).IsKind(SyntaxKind.MultiLineCommentTrivia))
+                return true;
 
             return false;
         }

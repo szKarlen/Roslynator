@@ -55,65 +55,75 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var whileStatement = (WhileStatementSyntax)context.Node;
 
-            if (whileStatement.IsParentKind(SyntaxKind.Block))
+            if (!whileStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = whileStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, whileStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = whileStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, whileStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeForStatement(SyntaxNodeAnalysisContext context)
         {
             var forStatement = (ForStatementSyntax)context.Node;
 
-            if (forStatement.IsParentKind(SyntaxKind.Block))
+            if (!forStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = forStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, forStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = forStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, forStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeForEachStatement(SyntaxNodeAnalysisContext context)
         {
             var forEachStatement = (ForEachStatementSyntax)context.Node;
 
-            if (forEachStatement.IsParentKind(SyntaxKind.Block))
+            if (!forEachStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = forEachStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, forEachStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = forEachStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, forEachStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeUsingStatement(SyntaxNodeAnalysisContext context)
         {
             var usingStatement = (UsingStatementSyntax)context.Node;
 
-            if (usingStatement.IsParentKind(SyntaxKind.Block))
+            if (!usingStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = usingStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, usingStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = usingStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, usingStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeFixedStatement(SyntaxNodeAnalysisContext context)
         {
             var fixedStatement = (FixedStatementSyntax)context.Node;
 
-            if (fixedStatement.IsParentKind(SyntaxKind.Block))
+            if (!fixedStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = fixedStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, fixedStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = fixedStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, fixedStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeCheckedStatement(SyntaxNodeAnalysisContext context)
@@ -136,26 +146,30 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var lockStatement = (LockStatementSyntax)context.Node;
 
-            if (lockStatement.IsParentKind(SyntaxKind.Block))
+            if (!lockStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = lockStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, lockStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = lockStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, lockStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeIfStatement(SyntaxNodeAnalysisContext context)
         {
             var ifStatement = (IfStatementSyntax)context.Node;
 
-            if (ifStatement.IsParentKind(SyntaxKind.Block))
+            if (!ifStatement.IsParentKind(SyntaxKind.Block))
             {
-                StatementSyntax statement = ifStatement.Statement;
-
-                if (statement?.IsKind(SyntaxKind.Block) == true)
-                    AnalyzeStatement(context, ifStatement, (BlockSyntax)statement);
+                return;
             }
+
+            StatementSyntax statement = ifStatement.Statement;
+
+            if (statement?.IsKind(SyntaxKind.Block) == true)
+                AnalyzeStatement(context, ifStatement, (BlockSyntax)statement);
         }
 
         private void AnalyzeSwitchStatement(SyntaxNodeAnalysisContext context)
@@ -170,21 +184,23 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var tryStatement = (TryStatementSyntax)context.Node;
 
-            if (tryStatement.IsParentKind(SyntaxKind.Block))
+            if (!tryStatement.IsParentKind(SyntaxKind.Block))
             {
-                FinallyClauseSyntax finallyClause = tryStatement.Finally;
+                return;
+            }
 
-                if (finallyClause != null)
-                {
-                    AnalyzeStatement(context, tryStatement, finallyClause.Block);
-                }
-                else
-                {
-                    CatchClauseSyntax catchClause = tryStatement.Catches.LastOrDefault();
+            FinallyClauseSyntax finallyClause = tryStatement.Finally;
 
-                    if (catchClause != null)
-                        AnalyzeStatement(context, tryStatement, catchClause.Block);
-                }
+            if (finallyClause != null)
+            {
+                AnalyzeStatement(context, tryStatement, finallyClause.Block);
+            }
+            else
+            {
+                CatchClauseSyntax catchClause = tryStatement.Catches.LastOrDefault();
+
+                if (catchClause != null)
+                    AnalyzeStatement(context, tryStatement, catchClause.Block);
             }
         }
 
@@ -204,32 +220,40 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             Debug.Assert(index != -1, "");
 
-            if (index != -1
-                && index < statements.Count - 1)
+            if (index == -1
+                || index >= statements.Count - 1)
             {
-                int startLine = openBrace.GetSpanStartLine();
-
-                int endLine = closeBrace.GetSpanEndLine();
-
-                if (startLine < endLine)
-                {
-                    StatementSyntax nextStatement = statements[index + 1];
-
-                    if (nextStatement.GetSpanStartLine() - endLine == 1)
-                    {
-                        SyntaxTrivia trivia = closeBrace
-                            .TrailingTrivia
-                            .FirstOrDefault(f => f.IsEndOfLineTrivia());
-
-                        if (trivia.IsEndOfLineTrivia())
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.AddEmptyLineAfterClosingBrace,
-                                trivia);
-                        }
-                    }
-                }
+                return;
             }
+
+            int startLine = openBrace.GetSpanStartLine();
+
+            int endLine = closeBrace.GetSpanEndLine();
+
+            if (startLine >= endLine)
+            {
+                return;
+            }
+
+            StatementSyntax nextStatement = statements[index + 1];
+
+            if (nextStatement.GetSpanStartLine() - endLine != 1)
+            {
+                return;
+            }
+
+            SyntaxTrivia trivia = closeBrace
+                .TrailingTrivia
+                .FirstOrDefault(f => f.IsEndOfLineTrivia());
+
+            if (!trivia.IsEndOfLineTrivia())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddEmptyLineAfterClosingBrace,
+                trivia);
         }
     }
 }

@@ -22,12 +22,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             var enumMember = (EnumMemberDeclarationSyntax)context.Node;
 
-            if (HasImplicitValue(enumMember, context.SemanticModel, context.CancellationToken))
+            if (!HasImplicitValue(enumMember, context.SemanticModel, context.CancellationToken))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.EnumMemberShouldDeclareExplicitValue,
-                    enumMember.Identifier);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.EnumMemberShouldDeclareExplicitValue,
+                enumMember.Identifier);
         }
 
         public static async Task<Document> RefactorAsync(
@@ -85,33 +87,35 @@ namespace Roslynator.CSharp.Refactorings
 
             Debug.Assert(optional.HasValue, "");
 
-            if (optional.HasValue)
+            if (!optional.HasValue)
             {
-                object value = optional.Value;
+                return null;
+            }
 
-                SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
-                int index = members.IndexOf(enumMember);
-                int count = members.Take(index).Count(f => HasImplicitValue(f, semanticModel, cancellationToken));
+            object value = optional.Value;
 
-                switch (specialType)
-                {
-                    case SpecialType.System_SByte:
-                        return GetUniquePowerOfTwo((sbyte)value, count, values.Cast<sbyte>().ToArray());
-                    case SpecialType.System_Byte:
-                        return GetUniquePowerOfTwo((byte)value, count, values.Cast<byte>().ToArray());
-                    case SpecialType.System_Int16:
-                        return GetUniquePowerOfTwo((short)value, count, values.Cast<short>().ToArray());
-                    case SpecialType.System_UInt16:
-                        return GetUniquePowerOfTwo((ushort)value, count, values.Cast<ushort>().ToArray());
-                    case SpecialType.System_Int32:
-                        return GetUniquePowerOfTwo((int)value, count, values.Cast<int>().ToArray());
-                    case SpecialType.System_UInt32:
-                        return GetUniquePowerOfTwo((uint)value, count, values.Cast<uint>().ToArray());
-                    case SpecialType.System_Int64:
-                        return GetUniquePowerOfTwo((long)value, count, values.Cast<long>().ToArray());
-                    case SpecialType.System_UInt64:
-                        return GetUniquePowerOfTwo((ulong)value, count, values.Cast<ulong>().ToArray());
-                }
+            SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
+            int index = members.IndexOf(enumMember);
+            int count = members.Take(index).Count(f => HasImplicitValue(f, semanticModel, cancellationToken));
+
+            switch (specialType)
+            {
+                case SpecialType.System_SByte:
+                    return GetUniquePowerOfTwo((sbyte)value, count, values.Cast<sbyte>().ToArray());
+                case SpecialType.System_Byte:
+                    return GetUniquePowerOfTwo((byte)value, count, values.Cast<byte>().ToArray());
+                case SpecialType.System_Int16:
+                    return GetUniquePowerOfTwo((short)value, count, values.Cast<short>().ToArray());
+                case SpecialType.System_UInt16:
+                    return GetUniquePowerOfTwo((ushort)value, count, values.Cast<ushort>().ToArray());
+                case SpecialType.System_Int32:
+                    return GetUniquePowerOfTwo((int)value, count, values.Cast<int>().ToArray());
+                case SpecialType.System_UInt32:
+                    return GetUniquePowerOfTwo((uint)value, count, values.Cast<uint>().ToArray());
+                case SpecialType.System_Int64:
+                    return GetUniquePowerOfTwo((long)value, count, values.Cast<long>().ToArray());
+                case SpecialType.System_UInt64:
+                    return GetUniquePowerOfTwo((ulong)value, count, values.Cast<ulong>().ToArray());
             }
 
             return null;
@@ -121,14 +125,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             EqualsValueClauseSyntax equalsValue = enumMember.EqualsValue;
 
-            if (equalsValue == null)
+            if (equalsValue != null)
             {
-                return semanticModel
-                    .GetDeclaredSymbol(enumMember, cancellationToken)?
-                    .HasConstantValue == true;
+                return false;
             }
 
-            return false;
+            return semanticModel
+                .GetDeclaredSymbol(enumMember, cancellationToken)?
+                .HasConstantValue == true;
         }
 
         private static IEnumerable<object> GetExplicitValues(

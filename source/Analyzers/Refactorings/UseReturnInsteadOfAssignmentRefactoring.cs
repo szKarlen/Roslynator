@@ -24,37 +24,47 @@ namespace Roslynator.CSharp.Refactorings
 
             var ifStatement = (IfStatementSyntax)context.Node;
 
-            if (!ifStatement.IsSimpleIf())
+            if (ifStatement.IsSimpleIf())
             {
-                StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(ifStatement);
-                if (statementsInfo.Success)
-                {
-                    int index = statementsInfo.Statements.IndexOf(ifStatement);
-
-                    ReturnStatementSyntax returnStatement = FindReturnStatementBelow(statementsInfo.Statements, index);
-                    if (returnStatement?.ContainsDiagnostics == false)
-                    {
-                        ExpressionSyntax expression = returnStatement.Expression;
-                        if (expression != null
-                            && !ifStatement.SpanOrTrailingTriviaContainsDirectives()
-                            && !returnStatement.SpanOrLeadingTriviaContainsDirectives())
-                        {
-                            SemanticModel semanticModel = context.SemanticModel;
-                            CancellationToken cancellationToken = context.CancellationToken;
-
-                            ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
-
-                            if (IsLocalDeclaredInScopeOrNonRefOrOutParameterOfEnclosingSymbol(symbol, statementsInfo.Node, semanticModel, cancellationToken)
-                                && ifStatement
-                                    .GetChain()
-                                    .All(ifOrElse => IsSymbolAssignedInLastStatement(ifOrElse, symbol, semanticModel, cancellationToken)))
-                            {
-                                context.ReportDiagnostic(DiagnosticDescriptors.UseReturnInsteadOfAssignment, ifStatement);
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(ifStatement);
+            if (!statementsInfo.Success)
+            {
+                return;
+            }
+
+            int index = statementsInfo.Statements.IndexOf(ifStatement);
+
+            ReturnStatementSyntax returnStatement = FindReturnStatementBelow(statementsInfo.Statements, index);
+            if (returnStatement?.ContainsDiagnostics != false)
+            {
+                return;
+            }
+
+            ExpressionSyntax expression = returnStatement.Expression;
+            if (expression == null
+                || ifStatement.SpanOrTrailingTriviaContainsDirectives()
+                || returnStatement.SpanOrLeadingTriviaContainsDirectives())
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
+
+            if (!IsLocalDeclaredInScopeOrNonRefOrOutParameterOfEnclosingSymbol(symbol, statementsInfo.Node, semanticModel, cancellationToken)
+                || !ifStatement
+                    .GetChain()
+                    .All(ifOrElse => IsSymbolAssignedInLastStatement(ifOrElse, symbol, semanticModel, cancellationToken)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.UseReturnInsteadOfAssignment, ifStatement);
         }
 
         public static void AnalyzeSwitchStatement(SyntaxNodeAnalysisContext context)
@@ -65,33 +75,41 @@ namespace Roslynator.CSharp.Refactorings
             var switchStatement = (SwitchStatementSyntax)context.Node;
 
             StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(switchStatement);
-            if (statementsInfo.Success)
+            if (!statementsInfo.Success)
             {
-                int index = statementsInfo.Statements.IndexOf(switchStatement);
-
-                ReturnStatementSyntax returnStatement = FindReturnStatementBelow(statementsInfo.Statements, index);
-                if (returnStatement != null)
-                {
-                    ExpressionSyntax expression = returnStatement.Expression;
-                    if (expression?.ContainsDiagnostics == false
-                        && !switchStatement.SpanOrTrailingTriviaContainsDirectives()
-                        && !returnStatement.SpanOrLeadingTriviaContainsDirectives())
-                    {
-                        SemanticModel semanticModel = context.SemanticModel;
-                        CancellationToken cancellationToken = context.CancellationToken;
-
-                        ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
-
-                        if (IsLocalDeclaredInScopeOrNonRefOrOutParameterOfEnclosingSymbol(symbol, statementsInfo.Node, semanticModel, cancellationToken)
-                            && switchStatement
-                                .Sections
-                                .All(section => IsValueAssignedInLastStatement(section, symbol, semanticModel, cancellationToken)))
-                        {
-                            context.ReportDiagnostic(DiagnosticDescriptors.UseReturnInsteadOfAssignment, switchStatement);
-                        }
-                    }
-                }
+                return;
             }
+
+            int index = statementsInfo.Statements.IndexOf(switchStatement);
+
+            ReturnStatementSyntax returnStatement = FindReturnStatementBelow(statementsInfo.Statements, index);
+            if (returnStatement == null)
+            {
+                return;
+            }
+
+            ExpressionSyntax expression = returnStatement.Expression;
+            if (expression?.ContainsDiagnostics != false
+                || switchStatement.SpanOrTrailingTriviaContainsDirectives()
+                || returnStatement.SpanOrLeadingTriviaContainsDirectives())
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
+
+            if (!IsLocalDeclaredInScopeOrNonRefOrOutParameterOfEnclosingSymbol(symbol, statementsInfo.Node, semanticModel, cancellationToken)
+                || !switchStatement
+                    .Sections
+                    .All(section => IsValueAssignedInLastStatement(section, symbol, semanticModel, cancellationToken)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.UseReturnInsteadOfAssignment, switchStatement);
         }
 
         private static ReturnStatementSyntax FindReturnStatementBelow(SyntaxList<StatementSyntax> statements, int i)
@@ -108,13 +126,13 @@ namespace Roslynator.CSharp.Refactorings
                 i++;
             }
 
-            if (i <= count - 1
-                && statements[i].IsKind(SyntaxKind.ReturnStatement))
+            if (i > count - 1
+                || !statements[i].IsKind(SyntaxKind.ReturnStatement))
             {
-                return (ReturnStatementSyntax)statements[i];
+                return null;
             }
 
-            return null;
+            return (ReturnStatementSyntax)statements[i];
         }
 
         private static LocalDeclarationStatementSyntax FindLocalDeclarationStatementAbove(SyntaxList<StatementSyntax> statements, int i)
@@ -129,13 +147,13 @@ namespace Roslynator.CSharp.Refactorings
                 i--;
             }
 
-            if (i >= 0
-                && statements[i].IsKind(SyntaxKind.LocalDeclarationStatement))
+            if (i < 0
+                || !statements[i].IsKind(SyntaxKind.LocalDeclarationStatement))
             {
-                return (LocalDeclarationStatementSyntax)statements[i];
+                return null;
             }
 
-            return null;
+            return (LocalDeclarationStatementSyntax)statements[i];
         }
 
         private static bool IsLocalDeclaredInScopeOrNonRefOrOutParameterOfEnclosingSymbol(ISymbol symbol, SyntaxNode containingNode, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -207,13 +225,13 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<StatementSyntax> statements = GetStatements(switchSection);
 
-            if (statements.Count > 1
-                && statements.Last().IsKind(SyntaxKind.BreakStatement))
+            if (statements.Count <= 1
+                || !statements.Last().IsKind(SyntaxKind.BreakStatement))
             {
-                return statements[statements.Count - 2];
+                return null;
             }
 
-            return null;
+            return statements[statements.Count - 2];
         }
 
         private static SyntaxList<StatementSyntax> GetStatements(SwitchSectionSyntax switchSection)

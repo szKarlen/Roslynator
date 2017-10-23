@@ -137,23 +137,27 @@ namespace Roslynator.CSharp.Refactorings.AddExceptionToDocumentationComment
         SemanticModel semanticModel,
         CancellationToken cancellationToken)
         {
-            if (expression != null)
+            if (expression == null)
             {
-                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken);
-
-                if (typeSymbol.InheritsFromException(semanticModel))
-                {
-                    DocumentationCommentTriviaSyntax comment = declaration.GetSingleLineDocumentationComment();
-
-                    if (comment != null
-                        && CanAddExceptionToComment(comment, typeSymbol, semanticModel, cancellationToken))
-                    {
-                        return ThrowInfo.Create(node, typeSymbol, declarationSymbol);
-                    }
-                }
+                return null;
             }
 
-            return null;
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken);
+
+            if (!typeSymbol.InheritsFromException(semanticModel))
+            {
+                return null;
+            }
+
+            DocumentationCommentTriviaSyntax comment = declaration.GetSingleLineDocumentationComment();
+
+            if (comment == null
+                || !CanAddExceptionToComment(comment, typeSymbol, semanticModel, cancellationToken))
+            {
+                return null;
+            }
+
+            return ThrowInfo.Create(node, typeSymbol, declarationSymbol);
         }
 
         private static bool CanAddExceptionToComment(
@@ -222,12 +226,12 @@ namespace Roslynator.CSharp.Refactorings.AddExceptionToDocumentationComment
         {
             XmlElementStartTagSyntax startTag = xmlElement.StartTag;
 
-            if (startTag != null)
+            if (startTag == null)
             {
-                return ContainsException(startTag.Attributes, exceptionSymbol, semanticModel, cancellationToken);
+                return false;
             }
 
-            return false;
+            return ContainsException(startTag.Attributes, exceptionSymbol, semanticModel, cancellationToken);
         }
 
         private static bool ContainsException(XmlEmptyElementSyntax xmlEmptyElement, ITypeSymbol exceptionSymbol, SemanticModel semanticModel, CancellationToken cancellationToken)

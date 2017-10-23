@@ -145,15 +145,17 @@ namespace Roslynator.CSharp.CodeFixes
             string name,
             string newName)
         {
-            if (IsFixable(expression, newName, semanticModel, context.CancellationToken))
+            if (!IsFixable(expression, newName, semanticModel, context.CancellationToken))
             {
-                CodeAction codeAction = CodeAction.Create(
-                    $"Use '{newName}' instead of '{name}'",
-                    cancellationToken => RefactorAsync(context.Document, simpleName, newName, cancellationToken),
-                    GetEquivalenceKey(diagnostic));
-
-                context.RegisterCodeFix(codeAction, diagnostic);
+                return;
             }
+
+            CodeAction codeAction = CodeAction.Create(
+                $"Use '{newName}' instead of '{name}'",
+                cancellationToken => RefactorAsync(context.Document, simpleName, newName, cancellationToken),
+                GetEquivalenceKey(diagnostic));
+
+            context.RegisterCodeFix(codeAction, diagnostic);
         }
 
         private static bool IsFixable(
@@ -164,24 +166,26 @@ namespace Roslynator.CSharp.CodeFixes
         {
             ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken);
 
-            if (typeSymbol != null)
+            if (typeSymbol == null)
             {
-                if (typeSymbol.IsArrayType())
-                    typeSymbol = ((IArrayTypeSymbol)typeSymbol).ElementType;
+                return false;
+            }
 
-                foreach (ISymbol symbol in typeSymbol.GetMembers(newName))
+            if (typeSymbol.IsArrayType())
+                typeSymbol = ((IArrayTypeSymbol)typeSymbol).ElementType;
+
+            foreach (ISymbol symbol in typeSymbol.GetMembers(newName))
+            {
+                if (!symbol.IsStatic
+                    && symbol.IsProperty())
                 {
-                    if (!symbol.IsStatic
-                        && symbol.IsProperty())
-                    {
-                        var propertySymbol = (IPropertySymbol)symbol;
+                    var propertySymbol = (IPropertySymbol)symbol;
 
-                        if (!propertySymbol.IsIndexer
-                            && propertySymbol.IsReadOnly
-                            && semanticModel.IsAccessible(expression.SpanStart, symbol))
-                        {
-                            return true;
-                        }
+                    if (!propertySymbol.IsIndexer
+                        && propertySymbol.IsReadOnly
+                        && semanticModel.IsAccessible(expression.SpanStart, symbol))
+                    {
+                        return true;
                     }
                 }
             }

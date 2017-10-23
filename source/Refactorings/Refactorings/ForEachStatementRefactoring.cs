@@ -27,28 +27,34 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameIdentifierAccordingToTypeName))
                 await RenameIdentifierAccordingToTypeNameAsync(context, forEachStatement).ConfigureAwait(false);
 
-            if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithFor, RefactoringIdentifiers.ReplaceForEachWithForAndReverseLoop)
-                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(forEachStatement))
+            if (!context.IsAnyRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithFor, RefactoringIdentifiers.ReplaceForEachWithForAndReverseLoop)
+                || !context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(forEachStatement))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                if (ReplaceForEachWithForRefactoring.CanRefactor(forEachStatement, semanticModel, context.CancellationToken))
-                {
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithFor))
-                    {
-                        context.RegisterRefactoring(
-                            "Replace foreach with for",
-                            cancellationToken => ReplaceForEachWithForRefactoring.RefactorAsync(context.Document, forEachStatement, semanticModel: semanticModel, reverseLoop: false, cancellationToken: cancellationToken));
-                    }
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithForAndReverseLoop))
-                    {
-                        context.RegisterRefactoring(
-                            "Replace foreach with for and reverse loop",
-                            cancellationToken => ReplaceForEachWithForRefactoring.RefactorAsync(context.Document, forEachStatement, semanticModel: semanticModel, reverseLoop: true, cancellationToken: cancellationToken));
-                    }
-                }
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            if (!ReplaceForEachWithForRefactoring.CanRefactor(forEachStatement, semanticModel, context.CancellationToken))
+            {
+                return;
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithFor))
+            {
+                context.RegisterRefactoring(
+                    "Replace foreach with for",
+                    cancellationToken => ReplaceForEachWithForRefactoring.RefactorAsync(context.Document, forEachStatement, semanticModel: semanticModel, reverseLoop: false, cancellationToken: cancellationToken));
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForEachWithForAndReverseLoop))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Replace foreach with for and reverse loop",
+                cancellationToken => ReplaceForEachWithForRefactoring.RefactorAsync(context.Document, forEachStatement, semanticModel: semanticModel, reverseLoop: true, cancellationToken: cancellationToken));
         }
 
         internal static async Task ChangeTypeAsync(
@@ -93,38 +99,46 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax type = forEachStatement.Type;
 
-            if (type != null)
+            if (type == null)
             {
-                SyntaxToken identifier = forEachStatement.Identifier;
-
-                if (identifier.Span.Contains(context.Span))
-                {
-                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                    ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
-
-                    if (typeSymbol?.IsErrorType() == false)
-                    {
-                        string oldName = identifier.ValueText;
-
-                        string newName = NameGenerator.Default.CreateUniqueLocalName(
-                            typeSymbol,
-                            oldName,
-                            semanticModel,
-                            forEachStatement.SpanStart,
-                            cancellationToken: context.CancellationToken);
-
-                        if (newName != null)
-                        {
-                            ISymbol symbol = semanticModel.GetDeclaredSymbol(forEachStatement, context.CancellationToken);
-
-                            context.RegisterRefactoring(
-                                $"Rename '{oldName}' to '{newName}'",
-                                cancellationToken => Renamer.RenameSymbolAsync(context.Solution, symbol, newName, default(OptionSet), cancellationToken));
-                        }
-                    }
-                }
+                return;
             }
+
+            SyntaxToken identifier = forEachStatement.Identifier;
+
+            if (!identifier.Span.Contains(context.Span))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+            if (typeSymbol?.IsErrorType() != false)
+            {
+                return;
+            }
+
+            string oldName = identifier.ValueText;
+
+            string newName = NameGenerator.Default.CreateUniqueLocalName(
+                typeSymbol,
+                oldName,
+                semanticModel,
+                forEachStatement.SpanStart,
+                cancellationToken: context.CancellationToken);
+
+            if (newName == null)
+            {
+                return;
+            }
+
+            ISymbol symbol = semanticModel.GetDeclaredSymbol(forEachStatement, context.CancellationToken);
+
+            context.RegisterRefactoring(
+                $"Rename '{oldName}' to '{newName}'",
+                cancellationToken => Renamer.RenameSymbolAsync(context.Solution, symbol, newName, default(OptionSet), cancellationToken));
         }
 
         internal static async Task ChangeTypeAccordingToExpressionAsync(
@@ -133,33 +147,39 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax type = forEachStatement.Type;
 
-            if (type?.IsVar == false
-                && type.Span.Contains(context.Span))
+            if (type?.IsVar != false
+                || !type.Span.Contains(context.Span))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                return;
+            }
 
-                ITypeSymbol elementType = semanticModel.GetForEachStatementInfo(forEachStatement).ElementType;
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (elementType?.IsErrorType() == false)
-                {
-                    ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type).ConvertedType;
+            ITypeSymbol elementType = semanticModel.GetForEachStatementInfo(forEachStatement).ElementType;
 
-                    if (!elementType.Equals(typeSymbol))
-                    {
-                        if (elementType.SupportsExplicitDeclaration())
-                        {
-                            context.RegisterRefactoring(
-                                $"Change type to '{SymbolDisplay.GetMinimalString(elementType, semanticModel, type.SpanStart)}'",
-                                cancellationToken => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, elementType, cancellationToken));
-                        }
-                        else
-                        {
-                            context.RegisterRefactoring(
-                                "Change type to 'var'",
-                                cancellationToken => ChangeTypeRefactoring.ChangeTypeToVarAsync(context.Document, type, cancellationToken));
-                        }
-                    }
-                }
+            if (elementType?.IsErrorType() != false)
+            {
+                return;
+            }
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type).ConvertedType;
+
+            if (elementType.Equals(typeSymbol))
+            {
+                return;
+            }
+
+            if (elementType.SupportsExplicitDeclaration())
+            {
+                context.RegisterRefactoring(
+                    $"Change type to '{SymbolDisplay.GetMinimalString(elementType, semanticModel, type.SpanStart)}'",
+                    cancellationToken => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, elementType, cancellationToken));
+            }
+            else
+            {
+                context.RegisterRefactoring(
+                    "Change type to 'var'",
+                    cancellationToken => ChangeTypeRefactoring.ChangeTypeToVarAsync(context.Document, type, cancellationToken));
             }
         }
     }

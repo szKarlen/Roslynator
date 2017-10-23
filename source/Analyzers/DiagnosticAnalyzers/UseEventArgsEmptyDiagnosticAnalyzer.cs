@@ -28,12 +28,14 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
             {
                 INamedTypeSymbol eventArgsSymbol = startContext.Compilation.GetTypeByMetadataName(MetadataNames.System_EventArgs);
 
-                if (eventArgsSymbol != null)
+                if (eventArgsSymbol == null)
                 {
-                    startContext.RegisterSyntaxNodeAction(
-                        nodeContext => UseEventArgsEmptyRefactoring.AnalyzeObjectCreationExpression(nodeContext, eventArgsSymbol),
-                        SyntaxKind.ObjectCreationExpression);
+                    return;
                 }
+
+                startContext.RegisterSyntaxNodeAction(
+                    nodeContext => UseEventArgsEmptyRefactoring.AnalyzeObjectCreationExpression(nodeContext, eventArgsSymbol),
+                    SyntaxKind.ObjectCreationExpression);
             });
         }
     }

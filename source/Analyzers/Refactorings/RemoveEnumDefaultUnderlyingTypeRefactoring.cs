@@ -21,21 +21,23 @@ namespace Roslynator.CSharp.Refactorings
 
         private static BaseTypeSyntax GetRedundantBaseType(SyntaxNodeAnalysisContext context, EnumDeclarationSyntax enumDeclaration)
         {
-            if (enumDeclaration.BaseList != null)
+            if (enumDeclaration.BaseList == null)
             {
-                foreach (BaseTypeSyntax baseType in enumDeclaration.BaseList.Types)
+                return null;
+            }
+
+            foreach (BaseTypeSyntax baseType in enumDeclaration.BaseList.Types)
+            {
+                if (baseType.IsKind(SyntaxKind.SimpleBaseType))
                 {
-                    if (baseType.IsKind(SyntaxKind.SimpleBaseType))
+                    var simpleBaseType = (SimpleBaseTypeSyntax)baseType;
+
+                    if (simpleBaseType.Type?.IsKind(SyntaxKind.PredefinedType) == true)
                     {
-                        var simpleBaseType = (SimpleBaseTypeSyntax)baseType;
+                        var symbol = context.SemanticModel.GetSymbol(simpleBaseType.Type, context.CancellationToken) as INamedTypeSymbol;
 
-                        if (simpleBaseType.Type?.IsKind(SyntaxKind.PredefinedType) == true)
-                        {
-                            var symbol = context.SemanticModel.GetSymbol(simpleBaseType.Type, context.CancellationToken) as INamedTypeSymbol;
-
-                            if (symbol?.IsInt() == true)
-                                return baseType;
-                        }
+                        if (symbol?.IsInt() == true)
+                            return baseType;
                     }
                 }
             }

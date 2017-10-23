@@ -15,13 +15,15 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement)
         {
-            if (CanRefactor(ifStatement, context.SemanticModel, context.CancellationToken)
-                && !ifStatement.SpanContainsDirectives())
+            if (!CanRefactor(ifStatement, context.SemanticModel, context.CancellationToken)
+                || ifStatement.SpanContainsDirectives())
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.ReplaceIfStatementWithAssignment,
-                    ifStatement);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.ReplaceIfStatementWithAssignment,
+                ifStatement);
         }
 
         public static bool CanRefactor(
@@ -29,61 +31,70 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (ifStatement.IsTopmostIf())
+            if (!ifStatement.IsTopmostIf())
             {
-                ElseClauseSyntax elseClause = ifStatement.Else;
-
-                if (elseClause != null)
-                {
-                    ExpressionSyntax condition = ifStatement.Condition;
-
-                    if (condition != null)
-                    {
-                        ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(condition, cancellationToken);
-
-                        if (typeSymbol?.IsBoolean() == true)
-                        {
-                            AssignmentExpressionSyntax trueExpression = GetSimpleAssignmentExpression(ifStatement.GetSingleStatementOrDefault());
-
-                            ExpressionSyntax trueRight = trueExpression?.Right;
-
-                            if (trueRight?.Kind().IsBooleanLiteralExpression() == true)
-                            {
-                                AssignmentExpressionSyntax falseExpression = GetSimpleAssignmentExpression(elseClause.GetSingleStatementOrDefault());
-
-                                ExpressionSyntax falseRight = falseExpression?.Right;
-
-                                if (falseRight?.Kind().IsBooleanLiteralExpression() == true)
-                                {
-                                    var trueBooleanLiteral = (LiteralExpressionSyntax)trueRight;
-                                    var falseBooleanLiteral = (LiteralExpressionSyntax)falseRight;
-
-                                    if (trueBooleanLiteral.IsKind(SyntaxKind.TrueLiteralExpression) != falseBooleanLiteral.IsKind(SyntaxKind.TrueLiteralExpression)
-                                        && SyntaxComparer.AreEquivalent(trueExpression.Left, falseExpression.Left, requireNotNull: true))
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return false;
             }
 
-            return false;
+            ElseClauseSyntax elseClause = ifStatement.Else;
+
+            if (elseClause == null)
+            {
+                return false;
+            }
+
+            ExpressionSyntax condition = ifStatement.Condition;
+
+            if (condition == null)
+            {
+                return false;
+            }
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(condition, cancellationToken);
+
+            if (typeSymbol?.IsBoolean() != true)
+            {
+                return false;
+            }
+
+            AssignmentExpressionSyntax trueExpression = GetSimpleAssignmentExpression(ifStatement.GetSingleStatementOrDefault());
+
+            ExpressionSyntax trueRight = trueExpression?.Right;
+
+            if (trueRight?.Kind().IsBooleanLiteralExpression() != true)
+            {
+                return false;
+            }
+
+            AssignmentExpressionSyntax falseExpression = GetSimpleAssignmentExpression(elseClause.GetSingleStatementOrDefault());
+
+            ExpressionSyntax falseRight = falseExpression?.Right;
+
+            if (falseRight?.Kind().IsBooleanLiteralExpression() != true)
+            {
+                return false;
+            }
+
+            var trueBooleanLiteral = (LiteralExpressionSyntax)trueRight;
+            var falseBooleanLiteral = (LiteralExpressionSyntax)falseRight;
+
+            return trueBooleanLiteral.IsKind(SyntaxKind.TrueLiteralExpression) != falseBooleanLiteral.IsKind(SyntaxKind.TrueLiteralExpression)
+                && SyntaxComparer.AreEquivalent(trueExpression.Left, falseExpression.Left, requireNotNull: true);
         }
 
         private static AssignmentExpressionSyntax GetSimpleAssignmentExpression(StatementSyntax statement)
         {
-            if (statement?.IsKind(SyntaxKind.ExpressionStatement) == true)
+            if (statement?.IsKind(SyntaxKind.ExpressionStatement) != true)
             {
-                var expressionStatement = (ExpressionStatementSyntax)statement;
-
-                ExpressionSyntax expression = expressionStatement.Expression;
-
-                if (expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
-                    return (AssignmentExpressionSyntax)expression;
+                return null;
             }
+
+            var expressionStatement = (ExpressionStatementSyntax)statement;
+
+            ExpressionSyntax expression = expressionStatement.Expression;
+
+            if (expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
+                return (AssignmentExpressionSyntax)expression;
 
             return null;
         }

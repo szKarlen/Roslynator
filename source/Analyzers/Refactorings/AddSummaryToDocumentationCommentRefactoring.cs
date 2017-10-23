@@ -76,14 +76,16 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!containsSummaryElement
-                && !containsInheritDoc
-                && !containsIncludeOrExclude)
+            if (containsSummaryElement
+                || containsInheritDoc
+                || containsIncludeOrExclude)
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddSummaryElementToDocumentationComment,
-                    documentationComment);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddSummaryElementToDocumentationComment,
+                documentationComment);
         }
 
         private static bool IsPartOfMemberDeclaration(DocumentationCommentTriviaSyntax documentationComment)

@@ -68,11 +68,13 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddCastExpression))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.AddCastExpression))
             {
-                foreach (ITypeSymbol destinationType in convertibleDestinationTypes)
-                    RegisterAddCastExpressionRefactoring(context, expression, destinationType, semanticModel);
+                return;
             }
+
+            foreach (ITypeSymbol destinationType in convertibleDestinationTypes)
+                RegisterAddCastExpressionRefactoring(context, expression, destinationType, semanticModel);
         }
 
         private static bool CallToMethod(
@@ -113,19 +115,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             ITypeSymbol expressionType = semanticModel.GetTypeSymbol(expression, context.CancellationToken);
 
-            if (expressionType?.IsNamedType() == true)
+            if (expressionType?.IsNamedType() != true)
             {
-                INamedTypeSymbol constructedFrom = ((INamedTypeSymbol)expressionType).ConstructedFrom;
-
-                if (constructedFrom.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
-                    || constructedFrom.Implements(SpecialType.System_Collections_Generic_IEnumerable_T))
-                {
-                    INamedTypeSymbol enumerable = semanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable);
-
-                    if (enumerable != null)
-                        CallToMethodRefactoring.ComputeRefactoring(context, expression, enumerable, "ToArray");
-                }
+                return;
             }
+
+            INamedTypeSymbol constructedFrom = ((INamedTypeSymbol)expressionType).ConstructedFrom;
+
+            if (constructedFrom.SpecialType != SpecialType.System_Collections_Generic_IEnumerable_T
+                && !constructedFrom.Implements(SpecialType.System_Collections_Generic_IEnumerable_T))
+            {
+                return;
+            }
+
+            INamedTypeSymbol enumerable = semanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable);
+
+            if (enumerable != null)
+                CallToMethodRefactoring.ComputeRefactoring(context, expression, enumerable, "ToArray");
         }
 
         private static void CallToList(
@@ -136,13 +142,15 @@ namespace Roslynator.CSharp.Refactorings
         {
             INamedTypeSymbol list = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Generic_List_T);
 
-            if (list != null && destinationType.ConstructedFrom == list)
+            if (list == null || destinationType.ConstructedFrom != list)
             {
-                INamedTypeSymbol enumerable = semanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable);
-
-                if (enumerable != null)
-                    CallToMethodRefactoring.ComputeRefactoring(context, expression, enumerable, "ToList");
+                return;
             }
+
+            INamedTypeSymbol enumerable = semanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable);
+
+            if (enumerable != null)
+                CallToMethodRefactoring.ComputeRefactoring(context, expression, enumerable, "ToList");
         }
 
         private static void RegisterAddCastExpressionRefactoring(

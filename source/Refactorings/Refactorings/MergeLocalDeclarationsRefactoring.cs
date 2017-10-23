@@ -15,24 +15,28 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, StatementsSelection selectedStatements)
         {
-            if (selectedStatements.Count > 1)
+            if (selectedStatements.Count <= 1)
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                if (AreLocalDeclarations(selectedStatements, semanticModel, context.CancellationToken))
-                {
-                    context.RegisterRefactoring(
-                        "Merge local declarations",
-                        cancellationToken =>
-                        {
-                            return RefactorAsync(
-                                context.Document,
-                                selectedStatements.Info,
-                                selectedStatements.Cast<LocalDeclarationStatementSyntax>().ToArray(),
-                                cancellationToken);
-                        });
-                }
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            if (!AreLocalDeclarations(selectedStatements, semanticModel, context.CancellationToken))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Merge local declarations",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        selectedStatements.Info,
+                        selectedStatements.Cast<LocalDeclarationStatementSyntax>().ToArray(),
+                        cancellationToken);
+                });
         }
 
         private static bool AreLocalDeclarations(

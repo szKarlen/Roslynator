@@ -45,9 +45,9 @@ namespace Roslynator.CSharp.Refactorings
                 && context.Span.IsBetweenSpans(binaryExpression)
                 && binaryExpression.IsKind(SyntaxKind.AddExpression))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                SemanticModel semanticModel2 = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel, context.CancellationToken);
+                StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel2, context.CancellationToken);
                 if (concatenationInfo.Success)
                 {
                     if (context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions))
@@ -67,9 +67,9 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceAsWithCast)
                 && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(binaryExpression))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                SemanticModel semanticModel2 = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (ReplaceAsWithCastRefactoring.CanRefactor(binaryExpression, semanticModel, context.CancellationToken))
+                if (ReplaceAsWithCastRefactoring.CanRefactor(binaryExpression, semanticModel2, context.CancellationToken))
                 {
                     context.RegisterRefactoring(
                         "Replace as with cast",
@@ -93,31 +93,39 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.Span.IsBetweenSpans(binaryExpression)
-                && context.IsAnyRefactoringEnabled(
+            if (context.Span.IsBetweenSpans(binaryExpression)
+                || !context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.ExtractExpressionFromCondition,
                     RefactoringIdentifiers.JoinStringExpressions))
             {
-                BinaryExpressionSelection binaryExpressionSelection = BinaryExpressionSelection.Create(binaryExpression, context.Span);
-
-                if (binaryExpressionSelection.Expressions.Length > 1)
-                {
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractExpressionFromCondition))
-                        ExtractConditionRefactoring.ComputeRefactoring(context, binaryExpressionSelection);
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions)
-                        && binaryExpression.IsKind(SyntaxKind.AddExpression))
-                    {
-                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                        StringConcatenationExpressionInfo concatenation = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpressionSelection, semanticModel, context.CancellationToken);
-                        if (concatenation.Success)
-                        {
-                            JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenation);
-                        }
-                    }
-                }
+                return;
             }
+
+            BinaryExpressionSelection binaryExpressionSelection = BinaryExpressionSelection.Create(binaryExpression, context.Span);
+
+            if (binaryExpressionSelection.Expressions.Length <= 1)
+            {
+                return;
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractExpressionFromCondition))
+                ExtractConditionRefactoring.ComputeRefactoring(context, binaryExpressionSelection);
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions)
+                || !binaryExpression.IsKind(SyntaxKind.AddExpression))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            StringConcatenationExpressionInfo concatenation = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpressionSelection, semanticModel, context.CancellationToken);
+            if (!concatenation.Success)
+            {
+                return;
+            }
+
+            JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenation);
         }
     }
 }

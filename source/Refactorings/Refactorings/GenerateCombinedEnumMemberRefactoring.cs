@@ -20,41 +20,47 @@ namespace Roslynator.CSharp.Refactorings
             if (!SeparatedSyntaxListSelection<EnumMemberDeclarationSyntax>.TryCreate(enumDeclaration.Members, context.Span, out SeparatedSyntaxListSelection<EnumMemberDeclarationSyntax> selection))
                 return;
 
-            if (selection.Count > 1)
+            if (selection.Count <= 1)
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                INamedTypeSymbol enumSymbol = semanticModel.GetDeclaredSymbol(enumDeclaration, context.CancellationToken);
-
-                if (enumSymbol?.IsEnumWithFlagsAttribute(semanticModel) == true)
-                {
-                    object[] constantValues = selection
-                        .Select(f => semanticModel.GetDeclaredSymbol(f, context.CancellationToken))
-                        .Where(f => f.HasConstantValue)
-                        .Select(f => f.ConstantValue)
-                        .ToArray();
-
-                    object combinedValue = GetCombinedValue(constantValues, enumSymbol);
-
-                    if (combinedValue != null
-                        && !IsValueDefined(enumSymbol, combinedValue))
-                    {
-                        SeparatedSyntaxList<EnumMemberDeclarationSyntax> enumMembers = enumDeclaration.Members;
-
-                        string name = NameGenerator.Default.EnsureUniqueEnumMemberName(
-                            string.Concat(selection.Select(f => f.Identifier.ValueText)),
-                            enumSymbol);
-
-                        EnumMemberDeclarationSyntax newEnumMember = CreateEnumMember(name, selection.SelectedItems);
-
-                        int insertIndex = selection.EndIndex + 1;
-
-                        context.RegisterRefactoring(
-                            $"Generate enum member '{name}'",
-                            cancellationToken => RefactorAsync(context.Document, enumDeclaration, newEnumMember, insertIndex, cancellationToken));
-                    }
-                }
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            INamedTypeSymbol enumSymbol = semanticModel.GetDeclaredSymbol(enumDeclaration, context.CancellationToken);
+
+            if (enumSymbol?.IsEnumWithFlagsAttribute(semanticModel) != true)
+            {
+                return;
+            }
+
+            object[] constantValues = selection
+                .Select(f => semanticModel.GetDeclaredSymbol(f, context.CancellationToken))
+                .Where(f => f.HasConstantValue)
+                .Select(f => f.ConstantValue)
+                .ToArray();
+
+            object combinedValue = GetCombinedValue(constantValues, enumSymbol);
+
+            if (combinedValue == null
+                || IsValueDefined(enumSymbol, combinedValue))
+            {
+                return;
+            }
+
+            SeparatedSyntaxList<EnumMemberDeclarationSyntax> enumMembers = enumDeclaration.Members;
+
+            string name = NameGenerator.Default.EnsureUniqueEnumMemberName(
+                string.Concat(selection.Select(f => f.Identifier.ValueText)),
+                enumSymbol);
+
+            EnumMemberDeclarationSyntax newEnumMember = CreateEnumMember(name, selection.SelectedItems);
+
+            int insertIndex = selection.EndIndex + 1;
+
+            context.RegisterRefactoring(
+                $"Generate enum member '{name}'",
+                cancellationToken => RefactorAsync(context.Document, enumDeclaration, newEnumMember, insertIndex, cancellationToken));
         }
 
         private static object GetCombinedValue(IEnumerable<object> constantValues, INamedTypeSymbol enumSymbol)

@@ -15,17 +15,19 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax condition = conditionalExpression.Condition;
 
-            if (condition?.IsMissing == false
-                && !condition.IsKind(SyntaxKind.ParenthesizedExpression)
-                && !conditionalExpression.QuestionToken.IsMissing
-                && !conditionalExpression.ColonToken.IsMissing
-                && conditionalExpression.WhenTrue?.IsMissing == false
-                && conditionalExpression.WhenFalse?.IsMissing == false)
+            if (condition?.IsMissing != false
+                || condition.IsKind(SyntaxKind.ParenthesizedExpression)
+                || conditionalExpression.QuestionToken.IsMissing
+                || conditionalExpression.ColonToken.IsMissing
+                || conditionalExpression.WhenTrue?.IsMissing != false
+                || conditionalExpression.WhenFalse?.IsMissing != false)
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.ParenthesizeConditionInConditionalExpression,
-                    condition);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.ParenthesizeConditionInConditionalExpression,
+                condition);
         }
 
         public static Task<Document> RefactorAsync(

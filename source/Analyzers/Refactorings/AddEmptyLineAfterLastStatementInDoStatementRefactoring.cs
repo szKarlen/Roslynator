@@ -17,48 +17,62 @@ namespace Roslynator.CSharp.Refactorings
         {
             StatementSyntax statement = doStatement.Statement;
 
-            if (statement?.IsKind(SyntaxKind.Block) == true)
+            if (statement?.IsKind(SyntaxKind.Block) != true)
             {
-                var block = (BlockSyntax)statement;
-
-                SyntaxList<StatementSyntax> statements = block.Statements;
-
-                if (statements.Any())
-                {
-                    SyntaxToken closeBrace = block.CloseBraceToken;
-
-                    if (!closeBrace.IsMissing)
-                    {
-                        SyntaxToken whileKeyword = doStatement.WhileKeyword;
-
-                        if (!whileKeyword.IsMissing)
-                        {
-                            int closeBraceLine = closeBrace.GetSpanEndLine();
-
-                            if (closeBraceLine == whileKeyword.GetSpanStartLine())
-                            {
-                                StatementSyntax last = statements.Last();
-
-                                int line = last.GetSpanEndLine(context.CancellationToken);
-
-                                if (closeBraceLine - line == 1)
-                                {
-                                    SyntaxTrivia trivia = last
-                                        .GetTrailingTrivia()
-                                        .FirstOrDefault(f => f.IsEndOfLineTrivia());
-
-                                    if (trivia.IsEndOfLineTrivia())
-                                    {
-                                        context.ReportDiagnostic(
-                                            DiagnosticDescriptors.AddEmptyLineAfterLastStatementInDoStatement,
-                                            Location.Create(doStatement.SyntaxTree, trivia.Span));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            var block = (BlockSyntax)statement;
+
+            SyntaxList<StatementSyntax> statements = block.Statements;
+
+            if (!statements.Any())
+            {
+                return;
+            }
+
+            SyntaxToken closeBrace = block.CloseBraceToken;
+
+            if (closeBrace.IsMissing)
+            {
+                return;
+            }
+
+            SyntaxToken whileKeyword = doStatement.WhileKeyword;
+
+            if (whileKeyword.IsMissing)
+            {
+                return;
+            }
+
+            int closeBraceLine = closeBrace.GetSpanEndLine();
+
+            if (closeBraceLine != whileKeyword.GetSpanStartLine())
+            {
+                return;
+            }
+
+            StatementSyntax last = statements.Last();
+
+            int line = last.GetSpanEndLine(context.CancellationToken);
+
+            if (closeBraceLine - line != 1)
+            {
+                return;
+            }
+
+            SyntaxTrivia trivia = last
+                .GetTrailingTrivia()
+                .FirstOrDefault(f => f.IsEndOfLineTrivia());
+
+            if (!trivia.IsEndOfLineTrivia())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddEmptyLineAfterLastStatementInDoStatement,
+                Location.Create(doStatement.SyntaxTree, trivia.Span));
         }
 
         public static Task<Document> RefactorAsync(

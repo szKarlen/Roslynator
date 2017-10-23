@@ -33,12 +33,14 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var interpolatedString = (InterpolatedStringExpressionSyntax)context.Node;
 
-            if (ReplaceInterpolatedStringWithStringLiteralRefactoring.CanRefactor(interpolatedString))
+            if (!ReplaceInterpolatedStringWithStringLiteralRefactoring.CanRefactor(interpolatedString))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AvoidInterpolatedStringWithNoInterpolation,
-                    Location.Create(context.SyntaxTree(), GetDollarSpan(interpolatedString)));
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AvoidInterpolatedStringWithNoInterpolation,
+                Location.Create(context.SyntaxTree(), GetDollarSpan(interpolatedString)));
         }
 
         private static TextSpan GetDollarSpan(InterpolatedStringExpressionSyntax interpolatedString)

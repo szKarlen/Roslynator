@@ -27,27 +27,33 @@ namespace Roslynator.CSharp.Refactorings.DocumentationComment
             MemberDeclarationSyntax memberDeclaration,
             SeparatedSyntaxList<ParameterSyntax> parameters)
         {
-            if (parameters.Any())
+            if (!parameters.Any())
             {
-                DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
+                return;
+            }
 
-                if (comment != null)
+            DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
+
+            if (comment == null)
+            {
+                return;
+            }
+
+            ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "param", "PARAM", "name");
+
+            if (values.IsDefault)
+            {
+                return;
+            }
+
+            foreach (ParameterSyntax parameter in parameters)
+            {
+                if (!parameter.IsMissing
+                    && !values.Contains(parameter.Identifier.ValueText))
                 {
-                    ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "param", "PARAM", "name");
-
-                    if (!values.IsDefault)
-                    {
-                        foreach (ParameterSyntax parameter in parameters)
-                        {
-                            if (!parameter.IsMissing
-                                && !values.Contains(parameter.Identifier.ValueText))
-                            {
-                                context.ReportDiagnostic(
-                                    DiagnosticDescriptors.AddParameterToDocumentationComment,
-                                    parameter.Identifier);
-                            }
-                        }
-                    }
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.AddParameterToDocumentationComment,
+                        parameter.Identifier);
                 }
             }
         }

@@ -15,33 +15,35 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<UsingDirectiveSyntax> usings = declaration.Usings;
 
-            if (usings.Any())
+            if (!usings.Any())
             {
-                for (int i = 0; i < usings.Count; i++)
-                {
-                    if (usings[i].ContainsDiagnostics)
-                        return;
-
-                    if (i == 0)
-                    {
-                        if (usings[i].SpanOrTrailingTriviaContainsDirectives())
-                            return;
-                    }
-                    else if (i == usings.Count - 1)
-                    {
-                        if (usings[i].SpanOrLeadingTriviaContainsDirectives())
-                            return;
-                    }
-                    else if (usings[i].ContainsDirectives)
-                    {
-                        return;
-                    }
-                }
-
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.DeclareUsingDirectiveOnTopLevel,
-                    Location.Create(declaration.SyntaxTree, usings.Span));
+                return;
             }
+
+            for (int i = 0; i < usings.Count; i++)
+            {
+                if (usings[i].ContainsDiagnostics)
+                    return;
+
+                if (i == 0)
+                {
+                    if (usings[i].SpanOrTrailingTriviaContainsDirectives())
+                        return;
+                }
+                else if (i == usings.Count - 1)
+                {
+                    if (usings[i].SpanOrLeadingTriviaContainsDirectives())
+                        return;
+                }
+                else if (usings[i].ContainsDirectives)
+                {
+                    return;
+                }
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.DeclareUsingDirectiveOnTopLevel,
+                Location.Create(declaration.SyntaxTree, usings.Span));
         }
 
         public static async Task<Document> RefactorAsync(

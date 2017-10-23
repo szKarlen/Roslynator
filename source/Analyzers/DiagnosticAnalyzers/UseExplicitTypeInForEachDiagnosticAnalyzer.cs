@@ -34,13 +34,15 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             TypeAnalysisFlags flags = CSharpAnalysis.AnalyzeType(forEachStatement, context.SemanticModel);
 
-            if (flags.IsImplicit()
-                && flags.SupportsExplicit())
+            if (!flags.IsImplicit()
+                || !flags.SupportsExplicit())
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.UseExplicitTypeInsteadOfVarInForEach,
-                    forEachStatement.Type);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.UseExplicitTypeInsteadOfVarInForEach,
+                forEachStatement.Type);
         }
     }
 }

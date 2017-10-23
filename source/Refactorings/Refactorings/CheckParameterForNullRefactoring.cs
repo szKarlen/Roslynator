@@ -20,14 +20,16 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ParameterSyntax parameter)
         {
-            if (parameter.Identifier.Span.Contains(context.Span)
-                && IsValid(parameter))
+            if (!parameter.Identifier.Span.Contains(context.Span)
+                || !IsValid(parameter))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                if (CanRefactor(parameter, semanticModel, context.CancellationToken))
-                    RegisterRefactoring(context, parameter);
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            if (CanRefactor(parameter, semanticModel, context.CancellationToken))
+                RegisterRefactoring(context, parameter);
         }
 
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ParameterListSyntax parameterList)
@@ -73,15 +75,15 @@ namespace Roslynator.CSharp.Refactorings
         {
             BlockSyntax body = GetBody(parameter);
 
-            if (body != null)
+            if (body == null)
             {
-                IParameterSymbol parameterSymbol = semanticModel.GetDeclaredSymbol(parameter, cancellationToken);
-
-                return parameterSymbol?.Type?.IsReferenceType == true
-                    && !ContainsNullCheck(body, parameter, semanticModel, cancellationToken);
+                return false;
             }
 
-            return false;
+            IParameterSymbol parameterSymbol = semanticModel.GetDeclaredSymbol(parameter, cancellationToken);
+
+            return parameterSymbol?.Type?.IsReferenceType == true
+                && !ContainsNullCheck(body, parameter, semanticModel, cancellationToken);
         }
 
         public static async Task<Document> RefactorAsync(
@@ -202,64 +204,72 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (statement.IsKind(SyntaxKind.IfStatement))
+            if (!statement.IsKind(SyntaxKind.IfStatement))
             {
-                var ifStatement = (IfStatementSyntax)statement;
-
-                var binaryExpression = ifStatement.Condition as BinaryExpressionSyntax;
-
-                if (binaryExpression?.Right?.IsKind(SyntaxKind.NullLiteralExpression) == true)
-                {
-                    ExpressionSyntax left = binaryExpression.Left;
-
-                    if (left.IsKind(SyntaxKind.IdentifierName))
-                    {
-                        var throwStatement = ifStatement.GetSingleStatementOrDefault() as ThrowStatementSyntax;
-
-                        if (throwStatement?.Expression?.IsKind(SyntaxKind.ObjectCreationExpression) == true)
-                        {
-                            var objectCreation = (ObjectCreationExpressionSyntax)throwStatement.Expression;
-
-                            INamedTypeSymbol exceptionType = semanticModel.GetTypeByMetadataName(MetadataNames.System_ArgumentNullException);
-
-                            ISymbol type = semanticModel.GetSymbol(objectCreation.Type, cancellationToken);
-
-                            return type?.Equals(exceptionType) == true;
-                        }
-                    }
-                }
+                return false;
             }
 
-            return false;
+            var ifStatement = (IfStatementSyntax)statement;
+
+            var binaryExpression = ifStatement.Condition as BinaryExpressionSyntax;
+
+            if (binaryExpression?.Right?.IsKind(SyntaxKind.NullLiteralExpression) != true)
+            {
+                return false;
+            }
+
+            ExpressionSyntax left = binaryExpression.Left;
+
+            if (!left.IsKind(SyntaxKind.IdentifierName))
+            {
+                return false;
+            }
+
+            var throwStatement = ifStatement.GetSingleStatementOrDefault() as ThrowStatementSyntax;
+
+            if (throwStatement?.Expression?.IsKind(SyntaxKind.ObjectCreationExpression) != true)
+            {
+                return false;
+            }
+
+            var objectCreation = (ObjectCreationExpressionSyntax)throwStatement.Expression;
+
+            INamedTypeSymbol exceptionType = semanticModel.GetTypeByMetadataName(MetadataNames.System_ArgumentNullException);
+
+            ISymbol type = semanticModel.GetSymbol(objectCreation.Type, cancellationToken);
+
+            return type?.Equals(exceptionType) == true;
         }
 
         private static BlockSyntax GetBody(ParameterSyntax parameter)
         {
             SyntaxNode parent = parameter.Parent;
 
-            if (parent?.IsKind(SyntaxKind.ParameterList) == true)
+            if (parent?.IsKind(SyntaxKind.ParameterList) != true)
             {
-                parent = parent.Parent;
+                return null;
+            }
 
-                switch (parent?.Kind())
-                {
-                    case SyntaxKind.MethodDeclaration:
-                        return ((MethodDeclarationSyntax)parent).Body;
-                    case SyntaxKind.ConstructorDeclaration:
-                        return ((ConstructorDeclarationSyntax)parent).Body;
-                    default:
-                        {
-                            Debug.Assert(parent?.IsKind(
-                                SyntaxKind.ParenthesizedLambdaExpression,
-                                SyntaxKind.AnonymousMethodExpression,
-                                SyntaxKind.LocalFunctionStatement,
-                                SyntaxKind.DelegateDeclaration,
-                                SyntaxKind.OperatorDeclaration,
-                                SyntaxKind.ConversionOperatorDeclaration) != false, parent?.Kind().ToString());
+            parent = parent.Parent;
 
-                            break;
-                        }
-                }
+            switch (parent?.Kind())
+            {
+                case SyntaxKind.MethodDeclaration:
+                    return ((MethodDeclarationSyntax)parent).Body;
+                case SyntaxKind.ConstructorDeclaration:
+                    return ((ConstructorDeclarationSyntax)parent).Body;
+                default:
+                    {
+                        Debug.Assert(parent?.IsKind(
+                            SyntaxKind.ParenthesizedLambdaExpression,
+                            SyntaxKind.AnonymousMethodExpression,
+                            SyntaxKind.LocalFunctionStatement,
+                            SyntaxKind.DelegateDeclaration,
+                            SyntaxKind.OperatorDeclaration,
+                            SyntaxKind.ConversionOperatorDeclaration) != false, parent?.Kind().ToString());
+
+                        break;
+                    }
             }
 
             return null;

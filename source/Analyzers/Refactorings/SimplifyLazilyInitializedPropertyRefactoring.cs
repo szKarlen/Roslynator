@@ -31,72 +31,90 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void Analyze(SyntaxNodeAnalysisContext context, SyntaxNode node, BlockSyntax body)
         {
-            if (body?.ContainsDiagnostics == false)
+            if (body?.ContainsDiagnostics != false)
             {
-                SyntaxList<StatementSyntax> statements = body.Statements;
-
-                if (statements.Count == 2
-                    && statements[0].IsKind(SyntaxKind.IfStatement)
-                    && statements[1].IsKind(SyntaxKind.ReturnStatement))
-                {
-                    var ifStatement = (IfStatementSyntax)statements[0];
-                    var returnStatement = (ReturnStatementSyntax)statements[1];
-
-                    if (CanRefactor(context, ifStatement, returnStatement))
-                    {
-                        TextSpan span = TextSpan.FromBounds(ifStatement.SpanStart, returnStatement.Span.End);
-
-                        if (!body.ContainsDirectives(TextSpan.FromBounds(ifStatement.SpanStart, returnStatement.Span.End)))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.SimplifyLazilyInitializedProperty,
-                                Location.Create(node.SyntaxTree, span));
-                        }
-                    }
-                }
+                return;
             }
+
+            SyntaxList<StatementSyntax> statements = body.Statements;
+
+            if (statements.Count != 2
+                || !statements[0].IsKind(SyntaxKind.IfStatement)
+                || !statements[1].IsKind(SyntaxKind.ReturnStatement))
+            {
+                return;
+            }
+
+            var ifStatement = (IfStatementSyntax)statements[0];
+            var returnStatement = (ReturnStatementSyntax)statements[1];
+
+            if (!CanRefactor(context, ifStatement, returnStatement))
+            {
+                return;
+            }
+
+            TextSpan span = TextSpan.FromBounds(ifStatement.SpanStart, returnStatement.Span.End);
+
+            if (body.ContainsDirectives(TextSpan.FromBounds(ifStatement.SpanStart, returnStatement.Span.End)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.SimplifyLazilyInitializedProperty,
+                Location.Create(node.SyntaxTree, span));
         }
 
         private static bool CanRefactor(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement, ReturnStatementSyntax returnStatement)
         {
             SimpleIfStatementInfo simpleIf = SyntaxInfo.SimpleIfStatementInfo(ifStatement);
 
-            if (simpleIf.Success)
+            if (!simpleIf.Success)
             {
-                StatementSyntax statement = simpleIf.Statement.SingleNonBlockStatementOrDefault();
-
-                if (statement != null)
-                {
-                    SemanticModel semanticModel = context.SemanticModel;
-                    CancellationToken cancellationToken = context.CancellationToken;
-
-                    NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(simpleIf.Condition, allowedKinds: NullCheckKind.IsNull, semanticModel: semanticModel, cancellationToken: cancellationToken);
-                    if (nullCheck.Success)
-                    {
-                        IdentifierNameSyntax identifierName = GetIdentifierName(nullCheck.Expression);
-
-                        if (identifierName != null)
-                        {
-                            var fieldSymbol = semanticModel.GetSymbol(identifierName, cancellationToken) as IFieldSymbol;
-
-                            if (fieldSymbol != null)
-                            {
-                                SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
-                                if (assignmentInfo.Success)
-                                {
-                                    string fieldName = identifierName.Identifier.ValueText;
-
-                                    return assignmentInfo.Right.IsSingleLine()
-                                        && IsBackingField(GetIdentifierName(assignmentInfo.Left), fieldName, fieldSymbol, semanticModel, cancellationToken)
-                                        && IsBackingField(GetIdentifierName(returnStatement.Expression), fieldName, fieldSymbol, semanticModel, cancellationToken);
-                                }
-                            }
-                        }
-                    }
-                }
+                return false;
             }
 
-            return false;
+            StatementSyntax statement = simpleIf.Statement.SingleNonBlockStatementOrDefault();
+
+            if (statement == null)
+            {
+                return false;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(simpleIf.Condition, allowedKinds: NullCheckKind.IsNull, semanticModel: semanticModel, cancellationToken: cancellationToken);
+            if (!nullCheck.Success)
+            {
+                return false;
+            }
+
+            IdentifierNameSyntax identifierName = GetIdentifierName(nullCheck.Expression);
+
+            if (identifierName == null)
+            {
+                return false;
+            }
+
+            var fieldSymbol = semanticModel.GetSymbol(identifierName, cancellationToken) as IFieldSymbol;
+
+            if (fieldSymbol == null)
+            {
+                return false;
+            }
+
+            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
+            if (!assignmentInfo.Success)
+            {
+                return false;
+            }
+
+            string fieldName = identifierName.Identifier.ValueText;
+
+            return assignmentInfo.Right.IsSingleLine()
+                && IsBackingField(GetIdentifierName(assignmentInfo.Left), fieldName, fieldSymbol, semanticModel, cancellationToken)
+                && IsBackingField(GetIdentifierName(returnStatement.Expression), fieldName, fieldSymbol, semanticModel, cancellationToken);
         }
 
         private static bool IsBackingField(
@@ -112,26 +130,28 @@ namespace Roslynator.CSharp.Refactorings
 
         private static IdentifierNameSyntax GetIdentifierName(ExpressionSyntax expression)
         {
-            if (expression != null)
+            if (expression == null)
             {
-                SyntaxKind kind = expression.Kind();
+                return null;
+            }
 
-                if (kind == SyntaxKind.IdentifierName)
-                {
-                    return (IdentifierNameSyntax)expression;
-                }
-                else if (kind == SyntaxKind.SimpleMemberAccessExpression)
-                {
-                    var memberAccess = (MemberAccessExpressionSyntax)expression;
+            SyntaxKind kind = expression.Kind();
 
-                    if (memberAccess.Expression?.IsKind(SyntaxKind.ThisExpression) == true)
+            if (kind == SyntaxKind.IdentifierName)
+            {
+                return (IdentifierNameSyntax)expression;
+            }
+            else if (kind == SyntaxKind.SimpleMemberAccessExpression)
+            {
+                var memberAccess = (MemberAccessExpressionSyntax)expression;
+
+                if (memberAccess.Expression?.IsKind(SyntaxKind.ThisExpression) == true)
+                {
+                    SimpleNameSyntax name = memberAccess.Name;
+
+                    if (name?.IsKind(SyntaxKind.IdentifierName) == true)
                     {
-                        SimpleNameSyntax name = memberAccess.Name;
-
-                        if (name?.IsKind(SyntaxKind.IdentifierName) == true)
-                        {
-                            return (IdentifierNameSyntax)name;
-                        }
+                        return (IdentifierNameSyntax)name;
                     }
                 }
             }

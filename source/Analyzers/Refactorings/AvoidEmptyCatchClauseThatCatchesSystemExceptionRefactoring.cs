@@ -12,31 +12,39 @@ namespace Roslynator.CSharp.Refactorings
         {
             CatchDeclarationSyntax declaration = catchClause.Declaration;
 
-            if (declaration != null)
+            if (declaration == null)
             {
-                BlockSyntax block = catchClause.Block;
-
-                if (block != null
-                    && declaration.Type != null
-                    && !block.Statements.Any())
-                {
-                    ITypeSymbol typeSymbol = context
-                        .SemanticModel
-                        .GetTypeSymbol(declaration.Type, context.CancellationToken);
-
-                    if (typeSymbol?.IsErrorType() == false)
-                    {
-                        INamedTypeSymbol exceptionTypeSymbol = context.GetTypeByMetadataName(MetadataNames.System_Exception);
-
-                        if (typeSymbol.Equals(exceptionTypeSymbol))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.AvoidEmptyCatchClauseThatCatchesSystemException,
-                                catchClause.CatchKeyword);
-                        }
-                    }
-                }
+                return;
             }
+
+            BlockSyntax block = catchClause.Block;
+
+            if (block == null
+                || declaration.Type == null
+                || block.Statements.Any())
+            {
+                return;
+            }
+
+            ITypeSymbol typeSymbol = context
+                .SemanticModel
+                .GetTypeSymbol(declaration.Type, context.CancellationToken);
+
+            if (typeSymbol?.IsErrorType() != false)
+            {
+                return;
+            }
+
+            INamedTypeSymbol exceptionTypeSymbol = context.GetTypeByMetadataName(MetadataNames.System_Exception);
+
+            if (!typeSymbol.Equals(exceptionTypeSymbol))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AvoidEmptyCatchClauseThatCatchesSystemException,
+                catchClause.CatchKeyword);
         }
     }
 }

@@ -18,22 +18,26 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax left = coalesceExpression.Left;
             ExpressionSyntax right = coalesceExpression.Right;
 
-            if (left != null
-                && right != null)
+            if (left == null
+                || right == null)
             {
-                SemanticModel semanticModel = context.SemanticModel;
-                CancellationToken cancellationToken = context.CancellationToken;
-
-                TextSpan span = GetRedundantSpan(coalesceExpression, left, right, semanticModel, cancellationToken);
-
-                if (span != default(TextSpan)
-                    && !coalesceExpression.SpanContainsDirectives())
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.SimplifyCoalesceExpression,
-                        Location.Create(coalesceExpression.SyntaxTree, span));
-                }
+                return;
             }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            TextSpan span = GetRedundantSpan(coalesceExpression, left, right, semanticModel, cancellationToken);
+
+            if (span == default(TextSpan)
+                || coalesceExpression.SpanContainsDirectives())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.SimplifyCoalesceExpression,
+                Location.Create(coalesceExpression.SyntaxTree, span));
         }
 
         private static TextSpan GetRedundantSpan(
@@ -136,18 +140,15 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax type = defaultExpression.Type;
 
-            if (type != null)
+            if (type == null)
             {
-                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, cancellationToken);
-
-                if (typeSymbol?.IsErrorType() == false
-                    && typeSymbol.IsReferenceType)
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, cancellationToken);
+
+            return typeSymbol?.IsErrorType() == false
+                && typeSymbol.IsReferenceType;
         }
 
         public static Task<Document> RefactorAsync(

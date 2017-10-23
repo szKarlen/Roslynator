@@ -16,17 +16,21 @@ namespace Roslynator.CSharp.Refactorings
                 RemoveConditionFromLastElseRefactoring.ComputeRefactorings(context, elseClause);
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBraces)
-                && elseClause.Statement?.IsKind(SyntaxKind.IfStatement) == true)
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.AddBraces)
+                || elseClause.Statement?.IsKind(SyntaxKind.IfStatement) != true)
             {
-                var ifStatement = (IfStatementSyntax)elseClause.Statement;
-
-                if (ifStatement.IfKeyword.Span.Contains(context.Span)
-                        || context.Span.IsBetweenSpans(ifStatement))
-                {
-                    AddBracesRefactoring.RegisterRefactoring(context, ifStatement);
-                }
+                return;
             }
+
+            var ifStatement = (IfStatementSyntax)elseClause.Statement;
+
+            if (!ifStatement.IfKeyword.Span.Contains(context.Span)
+                    && !context.Span.IsBetweenSpans(ifStatement))
+            {
+                return;
+            }
+
+            AddBracesRefactoring.RegisterRefactoring(context, ifStatement);
         }
     }
 }

@@ -16,22 +16,28 @@ namespace Roslynator.CSharp.Refactorings
         {
             var expression = (ImplicitArrayCreationExpressionSyntax)context.Node;
 
-            if (!expression.ContainsDiagnostics)
+            if (expression.ContainsDiagnostics)
             {
-                var typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken) as IArrayTypeSymbol;
-
-                if (typeSymbol?.ElementType.SupportsExplicitDeclaration() == true)
-                {
-                    TextSpan span = TextSpan.FromBounds(expression.NewKeyword.SpanStart, expression.CloseBracketToken.Span.End);
-
-                    if (!expression.ContainsDirectives(span))
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.AvoidImplicitlyTypedArray,
-                            Location.Create(expression.SyntaxTree, span));
-                    }
-                }
+                return;
             }
+
+            var typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken) as IArrayTypeSymbol;
+
+            if (typeSymbol?.ElementType.SupportsExplicitDeclaration() != true)
+            {
+                return;
+            }
+
+            TextSpan span = TextSpan.FromBounds(expression.NewKeyword.SpanStart, expression.CloseBracketToken.Span.End);
+
+            if (expression.ContainsDirectives(span))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AvoidImplicitlyTypedArray,
+                Location.Create(expression.SyntaxTree, span));
         }
 
         public static async Task<Document> RefactorAsync(

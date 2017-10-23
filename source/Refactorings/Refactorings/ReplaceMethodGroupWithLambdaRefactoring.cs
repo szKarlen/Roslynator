@@ -26,40 +26,50 @@ namespace Roslynator.CSharp.Refactorings
 
         private static async Task ComputeRefactoringAsync(RefactoringContext context, ExpressionSyntax expression)
         {
-            if (expression?.IsKind(SyntaxKind.IdentifierName, SyntaxKind.SimpleMemberAccessExpression) == true
-                && context.Span.IsContainedInSpanOrBetweenSpans(expression))
+            if (expression?.IsKind(SyntaxKind.IdentifierName, SyntaxKind.SimpleMemberAccessExpression) != true
+                || !context.Span.IsContainedInSpanOrBetweenSpans(expression))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                var methodSymbol = semanticModel.GetSymbol(expression, context.CancellationToken) as IMethodSymbol;
-
-                if (methodSymbol?.IsImplicitlyDeclared == false
-                    && methodSymbol.PartialDefinitionPart == null)
-                {
-                    Debug.Assert(methodSymbol.DeclaringSyntaxReferences.Any(), "");
-
-                    SyntaxReference syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-
-                    if (syntaxReference != null)
-                    {
-                        SyntaxNode node = await syntaxReference.GetSyntaxAsync(context.CancellationToken).ConfigureAwait(false);
-
-                        Debug.Assert(node.IsKind(SyntaxKind.MethodDeclaration), node.Kind().ToString());
-
-                        if (node.IsKind(SyntaxKind.MethodDeclaration))
-                        {
-                            var methodDeclaration = (MethodDeclarationSyntax)node;
-
-                            if (!methodDeclaration.ContainsYield())
-                            {
-                                context.RegisterRefactoring(
-                               $"Replace '{expression}' with lambda",
-                               cancellationToken => RefactorAsync(context.Document, expression, methodDeclaration, cancellationToken));
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            var methodSymbol = semanticModel.GetSymbol(expression, context.CancellationToken) as IMethodSymbol;
+
+            if (methodSymbol?.IsImplicitlyDeclared != false
+                || methodSymbol.PartialDefinitionPart != null)
+            {
+                return;
+            }
+
+            Debug.Assert(methodSymbol.DeclaringSyntaxReferences.Any(), "");
+
+            SyntaxReference syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+
+            if (syntaxReference == null)
+            {
+                return;
+            }
+
+            SyntaxNode node = await syntaxReference.GetSyntaxAsync(context.CancellationToken).ConfigureAwait(false);
+
+            Debug.Assert(node.IsKind(SyntaxKind.MethodDeclaration), node.Kind().ToString());
+
+            if (!node.IsKind(SyntaxKind.MethodDeclaration))
+            {
+                return;
+            }
+
+            var methodDeclaration = (MethodDeclarationSyntax)node;
+
+            if (methodDeclaration.ContainsYield())
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+           $"Replace '{expression}' with lambda",
+           cancellationToken => RefactorAsync(context.Document, expression, methodDeclaration, cancellationToken));
         }
 
         private static Task<Document> RefactorAsync(

@@ -21,13 +21,15 @@ namespace Roslynator.CSharp.Refactorings.NodeInList
         {
             int index = FindNode(context.Span);
 
-            if (index > 0
-                && !List[index - 1].IsMissing)
+            if (index <= 0
+                || List[index - 1].IsMissing)
             {
-                context.RegisterRefactoring(
-                    GetTitle(),
-                    cancellationToken => RefactorAsync(context.Document, index, cancellationToken));
+                return;
             }
+
+            context.RegisterRefactoring(
+                GetTitle(),
+                cancellationToken => RefactorAsync(context.Document, index, cancellationToken));
         }
 
         protected Task<Document> RefactorAsync(

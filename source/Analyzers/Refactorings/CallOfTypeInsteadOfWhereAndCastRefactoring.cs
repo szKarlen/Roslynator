@@ -21,95 +21,121 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax expression = memberAccess?.Expression;
 
-            if (expression?.IsKind(SyntaxKind.InvocationExpression) == true)
+            if (expression?.IsKind(SyntaxKind.InvocationExpression) != true)
             {
-                var invocation2 = (InvocationExpressionSyntax)expression;
-
-                ArgumentListSyntax argumentList = invocation2.ArgumentList;
-
-                if (argumentList?.IsMissing == false)
-                {
-                    SeparatedSyntaxList<ArgumentSyntax> arguments = argumentList.Arguments;
-
-                    if (arguments.Count == 1
-                        && invocation2.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
-                    {
-                        var memberAccess2 = (MemberAccessExpressionSyntax)invocation2.Expression;
-
-                        if (string.Equals(memberAccess2.Name?.Identifier.ValueText, "Where", StringComparison.Ordinal))
-                        {
-                            SemanticModel semanticModel = context.SemanticModel;
-                            CancellationToken cancellationToken = context.CancellationToken;
-
-                            MethodInfo methodInfo;
-                            if (semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.Reduced, cancellationToken)
-                                && methodInfo.IsLinqCast())
-                            {
-                                MethodInfo methodInfo2;
-                                if (semanticModel.TryGetExtensionMethodInfo(invocation2, out methodInfo2, ExtensionMethodKind.Reduced, cancellationToken)
-                                    && methodInfo2.IsLinqWhere())
-                                {
-                                    BinaryExpressionSyntax isExpression = GetIsExpression(arguments.First().Expression);
-
-                                    if (isExpression != null)
-                                    {
-                                        var type = isExpression.Right as TypeSyntax;
-
-                                        if (type != null)
-                                        {
-                                            TypeSyntax type2 = GetTypeArgument(memberAccess.Name);
-
-                                            if (type2 != null)
-                                            {
-                                                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type);
-
-                                                if (typeSymbol != null)
-                                                {
-                                                    ITypeSymbol typeSymbol2 = semanticModel.GetTypeSymbol(type2);
-
-                                                    if (typeSymbol.Equals(typeSymbol2))
-                                                    {
-                                                        TextSpan span = TextSpan.FromBounds(memberAccess2.Name.Span.Start, invocation.Span.End);
-
-                                                        if (!invocation.ContainsDirectives(span))
-                                                        {
-                                                            context.ReportDiagnostic(
-                                                                DiagnosticDescriptors.SimplifyLinqMethodChain,
-                                                                Location.Create(invocation.SyntaxTree, span));
-                                                        }
-
-                                                        return true;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return false;
             }
 
-            return false;
+            var invocation2 = (InvocationExpressionSyntax)expression;
+
+            ArgumentListSyntax argumentList = invocation2.ArgumentList;
+
+            if (argumentList?.IsMissing != false)
+            {
+                return false;
+            }
+
+            SeparatedSyntaxList<ArgumentSyntax> arguments = argumentList.Arguments;
+
+            if (arguments.Count != 1
+                || invocation2.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
+            {
+                return false;
+            }
+
+            var memberAccess2 = (MemberAccessExpressionSyntax)invocation2.Expression;
+
+            if (!string.Equals(memberAccess2.Name?.Identifier.ValueText, "Where", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            MethodInfo methodInfo;
+            if (!semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.Reduced, cancellationToken)
+                || !methodInfo.IsLinqCast())
+            {
+                return false;
+            }
+
+            MethodInfo methodInfo2;
+            if (!semanticModel.TryGetExtensionMethodInfo(invocation2, out methodInfo2, ExtensionMethodKind.Reduced, cancellationToken)
+                || !methodInfo2.IsLinqWhere())
+            {
+                return false;
+            }
+
+            BinaryExpressionSyntax isExpression = GetIsExpression(arguments.First().Expression);
+
+            if (isExpression == null)
+            {
+                return false;
+            }
+
+            var type = isExpression.Right as TypeSyntax;
+
+            if (type == null)
+            {
+                return false;
+            }
+
+            TypeSyntax type2 = GetTypeArgument(memberAccess.Name);
+
+            if (type2 == null)
+            {
+                return false;
+            }
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type);
+
+            if (typeSymbol == null)
+            {
+                return false;
+            }
+
+            ITypeSymbol typeSymbol2 = semanticModel.GetTypeSymbol(type2);
+
+            if (!typeSymbol.Equals(typeSymbol2))
+            {
+                return false;
+            }
+
+            TextSpan span = TextSpan.FromBounds(memberAccess2.Name.Span.Start, invocation.Span.End);
+
+            if (invocation.ContainsDirectives(span))
+            {
+                return true;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.SimplifyLinqMethodChain,
+                Location.Create(invocation.SyntaxTree, span));
+
+            return true;
         }
 
         private static TypeSyntax GetTypeArgument(SimpleNameSyntax name)
         {
-            if (name.IsKind(SyntaxKind.GenericName))
+            if (!name.IsKind(SyntaxKind.GenericName))
             {
-                var genericName = (GenericNameSyntax)name;
-
-                TypeArgumentListSyntax typeArgumentList = genericName.TypeArgumentList;
-
-                if (typeArgumentList?.IsMissing == false)
-                {
-                    SeparatedSyntaxList<TypeSyntax> typeArguments = typeArgumentList.Arguments;
-
-                    if (typeArguments.Count == 1)
-                        return typeArguments.First();
-                }
+                return null;
             }
+
+            var genericName = (GenericNameSyntax)name;
+
+            TypeArgumentListSyntax typeArgumentList = genericName.TypeArgumentList;
+
+            if (typeArgumentList?.IsMissing != false)
+            {
+                return null;
+            }
+
+            SeparatedSyntaxList<TypeSyntax> typeArguments = typeArgumentList.Arguments;
+
+            if (typeArguments.Count == 1)
+                return typeArguments.First();
 
             return null;
         }

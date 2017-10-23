@@ -16,18 +16,22 @@ namespace Roslynator.CSharp.Refactorings
                 return;
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandExpressionBody))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandExpressionBody))
             {
-                ArrowExpressionClauseSyntax arrowExpressionClause = GetArrowExpressionClause(semicolonToken);
-
-                if (arrowExpressionClause?.IsMissing == false
-                    && ExpandExpressionBodyRefactoring.CanRefactor(arrowExpressionClause))
-                {
-                    context.RegisterRefactoring(
-                        "Expand expression body",
-                        cancellationToken => ExpandExpressionBodyRefactoring.RefactorAsync(context.Document, arrowExpressionClause, cancellationToken));
-                }
+                return;
             }
+
+            ArrowExpressionClauseSyntax arrowExpressionClause = GetArrowExpressionClause(semicolonToken);
+
+            if (arrowExpressionClause?.IsMissing != false
+                || !ExpandExpressionBodyRefactoring.CanRefactor(arrowExpressionClause))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Expand expression body",
+                cancellationToken => ExpandExpressionBodyRefactoring.RefactorAsync(context.Document, arrowExpressionClause, cancellationToken));
         }
 
         private static ArrowExpressionClauseSyntax GetArrowExpressionClause(SyntaxToken semicolonToken)

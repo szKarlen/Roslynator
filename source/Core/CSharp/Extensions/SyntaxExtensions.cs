@@ -587,13 +587,15 @@ namespace Roslynator.CSharp
 
             List<DirectiveTriviaSyntax> relatedDirectives = endRegionDirective.GetRelatedDirectives();
 
-            if (relatedDirectives.Count == 2)
+            if (relatedDirectives.Count != 2)
             {
-                foreach (DirectiveTriviaSyntax directive in relatedDirectives)
-                {
-                    if (directive.IsKind(SyntaxKind.RegionDirectiveTrivia))
-                        return (RegionDirectiveTriviaSyntax)directive;
-                }
+                return null;
+            }
+
+            foreach (DirectiveTriviaSyntax directive in relatedDirectives)
+            {
+                if (directive.IsKind(SyntaxKind.RegionDirectiveTrivia))
+                    return (RegionDirectiveTriviaSyntax)directive;
             }
 
             return null;
@@ -840,13 +842,15 @@ namespace Roslynator.CSharp
         {
             SyntaxNode parent = ifStatement.Parent;
 
-            if (parent?.IsKind(SyntaxKind.ElseClause) == true)
+            if (parent?.IsKind(SyntaxKind.ElseClause) != true)
             {
-                parent = parent.Parent;
-
-                if (parent?.IsKind(SyntaxKind.IfStatement) == true)
-                    return (IfStatementSyntax)parent;
+                return null;
             }
+
+            parent = parent.Parent;
+
+            if (parent?.IsKind(SyntaxKind.IfStatement) == true)
+                return (IfStatementSyntax)parent;
 
             return null;
         }
@@ -1157,13 +1161,15 @@ namespace Roslynator.CSharp
 
             SyntaxTrivia trivia = member.GetSingleLineDocumentationCommentTrivia();
 
-            if (trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
+            if (!trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
             {
-                var comment = trivia.GetStructure() as DocumentationCommentTriviaSyntax;
-
-                if (comment?.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) == true)
-                    return comment;
+                return null;
             }
+
+            var comment = trivia.GetStructure() as DocumentationCommentTriviaSyntax;
+
+            if (comment?.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) == true)
+                return comment;
 
             return null;
         }
@@ -1175,13 +1181,15 @@ namespace Roslynator.CSharp
 
             SyntaxTrivia trivia = member.GetDocumentationCommentTrivia();
 
-            if (trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia, SyntaxKind.MultiLineDocumentationCommentTrivia))
+            if (!trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia, SyntaxKind.MultiLineDocumentationCommentTrivia))
             {
-                var comment = trivia.GetStructure() as DocumentationCommentTriviaSyntax;
-
-                if (comment?.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia, SyntaxKind.MultiLineDocumentationCommentTrivia) == true)
-                    return comment;
+                return null;
             }
+
+            var comment = trivia.GetStructure() as DocumentationCommentTriviaSyntax;
+
+            if (comment?.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia, SyntaxKind.MultiLineDocumentationCommentTrivia) == true)
+                return comment;
 
             return null;
         }
@@ -1949,13 +1957,15 @@ namespace Roslynator.CSharp
 
             List<DirectiveTriviaSyntax> relatedDirectives = regionDirective.GetRelatedDirectives();
 
-            if (relatedDirectives.Count == 2)
+            if (relatedDirectives.Count != 2)
             {
-                foreach (DirectiveTriviaSyntax directive in relatedDirectives)
-                {
-                    if (directive.IsKind(SyntaxKind.EndRegionDirectiveTrivia))
-                        return (EndRegionDirectiveTriviaSyntax)directive;
-                }
+                return null;
+            }
+
+            foreach (DirectiveTriviaSyntax directive in relatedDirectives)
+            {
+                if (directive.IsKind(SyntaxKind.EndRegionDirectiveTrivia))
+                    return (EndRegionDirectiveTriviaSyntax)directive;
             }
 
             return null;
@@ -2096,13 +2106,15 @@ namespace Roslynator.CSharp
                 throw new ArgumentNullException(nameof(statement));
 
             SyntaxList<StatementSyntax> statements;
-            if (statement.TryGetContainingList(out statements))
+            if (!statement.TryGetContainingList(out statements))
             {
-                int index = statements.IndexOf(statement);
-
-                if (index > 0)
-                    return statements[index - 1];
+                return null;
             }
+
+            int index = statements.IndexOf(statement);
+
+            if (index > 0)
+                return statements[index - 1];
 
             return null;
         }
@@ -2113,13 +2125,15 @@ namespace Roslynator.CSharp
                 throw new ArgumentNullException(nameof(statement));
 
             SyntaxList<StatementSyntax> statements;
-            if (statement.TryGetContainingList(out statements))
+            if (!statement.TryGetContainingList(out statements))
             {
-                int index = statements.IndexOf(statement);
-
-                if (index < statements.Count - 1)
-                    return statements[index + 1];
+                return null;
             }
+
+            int index = statements.IndexOf(statement);
+
+            if (index < statements.Count - 1)
+                return statements[index + 1];
 
             return null;
         }
@@ -2612,15 +2626,15 @@ namespace Roslynator.CSharp
             if (node == null)
                 throw new ArgumentNullException(nameof(node));
 
-            if (node.IsKind(SyntaxKind.NumericLiteralExpression))
+            if (!node.IsKind(SyntaxKind.NumericLiteralExpression))
             {
-                object tokenValue = ((LiteralExpressionSyntax)node).Token.Value;
-
-                return tokenValue is int
-                    && (int)tokenValue == value;
+                return false;
             }
 
-            return false;
+            object tokenValue = ((LiteralExpressionSyntax)node).Token.Value;
+
+            return tokenValue is int
+                && (int)tokenValue == value;
         }
 
         internal static bool IsNumericLiteralExpression(this SyntaxNode node, string valueText)
@@ -3118,17 +3132,19 @@ namespace Roslynator.CSharp
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (expressionType != null)
+            if (expressionType == null)
             {
-                for (SyntaxNode current = node; current != null; current = current.Parent)
-                {
-                    if (current.IsKind(SyntaxKind.SimpleLambdaExpression, SyntaxKind.ParenthesizedLambdaExpression))
-                    {
-                        TypeInfo typeInfo = semanticModel.GetTypeInfo(current, cancellationToken);
+                return false;
+            }
 
-                        if (expressionType.Equals(typeInfo.ConvertedType?.OriginalDefinition))
-                            return true;
-                    }
+            for (SyntaxNode current = node; current != null; current = current.Parent)
+            {
+                if (current.IsKind(SyntaxKind.SimpleLambdaExpression, SyntaxKind.ParenthesizedLambdaExpression))
+                {
+                    TypeInfo typeInfo = semanticModel.GetTypeInfo(current, cancellationToken);
+
+                    if (expressionType.Equals(typeInfo.ConvertedType?.OriginalDefinition))
+                        return true;
                 }
             }
 

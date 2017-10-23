@@ -44,13 +44,15 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStatementWithIfElse)
-                && (context.Span.IsEmptyAndContainedInSpan(yieldStatement.YieldKeyword)
-                    || context.Span.IsEmptyAndContainedInSpan(yieldStatement.ReturnOrBreakKeyword)
-                    || context.Span.IsBetweenSpans(yieldStatement)))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStatementWithIfElse)
+                || (!context.Span.IsEmptyAndContainedInSpan(yieldStatement.YieldKeyword)
+                    && !context.Span.IsEmptyAndContainedInSpan(yieldStatement.ReturnOrBreakKeyword)
+                    && !context.Span.IsBetweenSpans(yieldStatement)))
             {
-                await ReplaceStatementWithIfStatementRefactoring.ReplaceYieldReturnWithIfElse.ComputeRefactoringAsync(context, yieldStatement).ConfigureAwait(false);
+                return;
             }
+
+            await ReplaceStatementWithIfStatementRefactoring.ReplaceYieldReturnWithIfElse.ComputeRefactoringAsync(context, yieldStatement).ConfigureAwait(false);
         }
     }
 }

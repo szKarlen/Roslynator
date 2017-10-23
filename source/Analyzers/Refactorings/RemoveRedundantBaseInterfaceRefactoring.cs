@@ -20,74 +20,78 @@ namespace Roslynator.CSharp.Refactorings
         {
             var baseList = (BaseListSyntax)context.Node;
 
-            if (baseList.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration)
-                && !baseList.ContainsDiagnostics
-                && !baseList.SpanContainsDirectives())
+            if (!baseList.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration, SyntaxKind.InterfaceDeclaration)
+                || baseList.ContainsDiagnostics
+                || baseList.SpanContainsDirectives())
             {
-                SeparatedSyntaxList<BaseTypeSyntax> baseTypes = baseList.Types;
+                return;
+            }
 
-                if (baseTypes.Count > 1)
+            SeparatedSyntaxList<BaseTypeSyntax> baseTypes = baseList.Types;
+
+            if (baseTypes.Count <= 1)
+            {
+                return;
+            }
+
+            bool isFirst = true;
+            INamedTypeSymbol typeSymbol = null;
+            var baseClassInfo = default(SymbolInterfaceInfo);
+            List<SymbolInterfaceInfo> baseInterfaceInfos = null;
+
+            foreach (BaseTypeSyntax baseType in baseTypes)
+            {
+                TypeSyntax type = baseType.Type;
+
+                if (type?.IsMissing == false)
                 {
-                    bool isFirst = true;
-                    INamedTypeSymbol typeSymbol = null;
-                    var baseClassInfo = default(SymbolInterfaceInfo);
-                    List<SymbolInterfaceInfo> baseInterfaceInfos = null;
+                    var baseSymbol = context.SemanticModel.GetSymbol(type, context.CancellationToken) as INamedTypeSymbol;
 
-                    foreach (BaseTypeSyntax baseType in baseTypes)
+                    if (baseSymbol != null)
                     {
-                        TypeSyntax type = baseType.Type;
+                        TypeKind typeKind = baseSymbol.TypeKind;
 
-                        if (type?.IsMissing == false)
+                        ImmutableArray<INamedTypeSymbol> allInterfaces = baseSymbol.AllInterfaces;
+
+                        if (typeKind == TypeKind.Class)
                         {
-                            var baseSymbol = context.SemanticModel.GetSymbol(type, context.CancellationToken) as INamedTypeSymbol;
+                            if (!isFirst)
+                                break;
 
-                            if (baseSymbol != null)
+                            if (allInterfaces.Any())
+                                baseClassInfo = new SymbolInterfaceInfo(baseType, baseSymbol, allInterfaces);
+                        }
+                        else if (typeKind == TypeKind.Interface)
+                        {
+                            var baseInterfaceInfo = new SymbolInterfaceInfo(baseType, baseSymbol, allInterfaces);
+
+                            if (baseInterfaceInfos == null)
                             {
-                                TypeKind typeKind = baseSymbol.TypeKind;
-
-                                ImmutableArray<INamedTypeSymbol> allInterfaces = baseSymbol.AllInterfaces;
-
-                                if (typeKind == TypeKind.Class)
+                                if (allInterfaces.Any())
+                                    baseInterfaceInfos = new List<SymbolInterfaceInfo>() { baseInterfaceInfo };
+                            }
+                            else
+                            {
+                                foreach (SymbolInterfaceInfo baseInterfaceInfo2 in baseInterfaceInfos)
                                 {
-                                    if (!isFirst)
-                                        break;
-
-                                    if (allInterfaces.Any())
-                                        baseClassInfo = new SymbolInterfaceInfo(baseType, baseSymbol, allInterfaces);
-                                }
-                                else if (typeKind == TypeKind.Interface)
-                                {
-                                    var baseInterfaceInfo = new SymbolInterfaceInfo(baseType, baseSymbol, allInterfaces);
-
-                                    if (baseInterfaceInfos == null)
-                                    {
-                                        if (allInterfaces.Any())
-                                            baseInterfaceInfos = new List<SymbolInterfaceInfo>() { baseInterfaceInfo };
-                                    }
-                                    else
-                                    {
-                                        foreach (SymbolInterfaceInfo baseInterfaceInfo2 in baseInterfaceInfos)
-                                        {
-                                            Analyze(context, baseInterfaceInfo, baseInterfaceInfo2);
-                                            Analyze(context, baseInterfaceInfo2, baseInterfaceInfo);
-                                        }
-                                    }
-
-                                    if (baseClassInfo.IsValid)
-                                    {
-                                        if (typeSymbol == null)
-                                            typeSymbol = context.SemanticModel.GetDeclaredSymbol((TypeDeclarationSyntax)baseList.Parent, context.CancellationToken);
-
-                                        Analyze(context, baseInterfaceInfo, baseClassInfo, typeSymbol);
-                                    }
+                                    Analyze(context, baseInterfaceInfo, baseInterfaceInfo2);
+                                    Analyze(context, baseInterfaceInfo2, baseInterfaceInfo);
                                 }
                             }
-                        }
 
-                        if (isFirst)
-                            isFirst = false;
+                            if (baseClassInfo.IsValid)
+                            {
+                                if (typeSymbol == null)
+                                    typeSymbol = context.SemanticModel.GetDeclaredSymbol((TypeDeclarationSyntax)baseList.Parent, context.CancellationToken);
+
+                                Analyze(context, baseInterfaceInfo, baseClassInfo, typeSymbol);
+                            }
+                        }
                     }
                 }
+
+                if (isFirst)
+                    isFirst = false;
             }
         }
 

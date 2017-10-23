@@ -21,15 +21,17 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax left,
             ExpressionSyntax right)
         {
-            if (!binaryExpression.SpanContainsDirectives())
+            if (binaryExpression.SpanContainsDirectives())
             {
-                TextSpan span = GetSpanToRemove(binaryExpression, left, right);
-
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.RemoveRedundantBooleanLiteral,
-                    Location.Create(binaryExpression.SyntaxTree, span),
-                    binaryExpression.ToString(span));
+                return;
             }
+
+            TextSpan span = GetSpanToRemove(binaryExpression, left, right);
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RemoveRedundantBooleanLiteral,
+                Location.Create(binaryExpression.SyntaxTree, span),
+                binaryExpression.ToString(span));
         }
 
         public static TextSpan GetSpanToRemove(BinaryExpressionSyntax binaryExpression, ExpressionSyntax left, ExpressionSyntax right)

@@ -20,19 +20,16 @@ namespace Roslynator.CSharp.Refactorings
                 .Initializer?
                 .Value;
 
-            if (value?.IsNumericLiteralExpression("0") == true
-                && forStatement.Condition?.IsKind(SyntaxKind.LessThanExpression) == true)
+            if (value?.IsNumericLiteralExpression("0") != true
+                || forStatement.Condition?.IsKind(SyntaxKind.LessThanExpression) != true)
             {
-                SeparatedSyntaxList<ExpressionSyntax> incrementors = forStatement.Incrementors;
-
-                if (incrementors.Count == 1
-                    && incrementors[0].IsKind(SyntaxKind.PostIncrementExpression))
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            SeparatedSyntaxList<ExpressionSyntax> incrementors = forStatement.Incrementors;
+
+            return incrementors.Count == 1
+                && incrementors[0].IsKind(SyntaxKind.PostIncrementExpression);
         }
 
         public static Task<Document> RefactorAsync(

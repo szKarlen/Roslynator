@@ -14,19 +14,23 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, StatementSyntax statement)
         {
-            if (!statement.IsKind(SyntaxKind.IfStatement)
-                || ((IfStatementSyntax)statement).IsSimpleIf())
+            if (statement.IsKind(SyntaxKind.IfStatement)
+                && !((IfStatementSyntax)statement).IsSimpleIf())
             {
-                StatementSyntax embeddedStatement = EmbeddedStatementHelper.AnalyzeEmbeddedStatementToBlock(statement, ifInsideElse: false, usingInsideUsing: false);
-
-                if (embeddedStatement != null)
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AddBraces,
-                        embeddedStatement,
-                        statement.GetTitle());
-                }
+                return;
             }
+
+            StatementSyntax embeddedStatement = EmbeddedStatementHelper.AnalyzeEmbeddedStatementToBlock(statement, ifInsideElse: false, usingInsideUsing: false);
+
+            if (embeddedStatement == null)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddBraces,
+                embeddedStatement,
+                statement.GetTitle());
         }
 
         public static Task<Document> RefactorAsync(

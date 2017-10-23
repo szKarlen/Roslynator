@@ -23,11 +23,13 @@ namespace Roslynator.CSharp.Refactorings
                 MakeIndexerVirtualRefactoring.ComputeRefactoring(context, indexerDeclaration);
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
-                && indexerDeclaration.HeaderSpan().Contains(context.Span))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                || !indexerDeclaration.HeaderSpan().Contains(context.Span))
             {
-                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, indexerDeclaration).ConfigureAwait(false);
+                return;
             }
+
+            await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, indexerDeclaration).ConfigureAwait(false);
         }
     }
 }

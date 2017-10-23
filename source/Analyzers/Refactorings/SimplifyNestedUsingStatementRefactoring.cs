@@ -15,43 +15,47 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, UsingStatementSyntax usingStatement)
         {
-            if (ContainsEmbeddableUsingStatement(usingStatement)
-                && !usingStatement
+            if (!ContainsEmbeddableUsingStatement(usingStatement)
+                || usingStatement
                     .Ancestors()
                     .Any(f => f.IsKind(SyntaxKind.UsingStatement) && ContainsEmbeddableUsingStatement((UsingStatementSyntax)f)))
             {
-                var block = (BlockSyntax)usingStatement.Statement;
-
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.SimplifyNestedUsingStatement,
-                    block);
-
-                context.ReportBraces(DiagnosticDescriptors.SimplifyNestedUsingStatementFadeOut, block);
+                return;
             }
+
+            var block = (BlockSyntax)usingStatement.Statement;
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.SimplifyNestedUsingStatement,
+                block);
+
+            context.ReportBraces(DiagnosticDescriptors.SimplifyNestedUsingStatementFadeOut, block);
         }
 
         public static bool ContainsEmbeddableUsingStatement(UsingStatementSyntax usingStatement)
         {
             StatementSyntax statement = usingStatement.Statement;
 
-            if (statement?.IsKind(SyntaxKind.Block) == true)
+            if (statement?.IsKind(SyntaxKind.Block) != true)
             {
-                var block = (BlockSyntax)statement;
-                SyntaxList<StatementSyntax> statements = block.Statements;
-
-                if (statements.Count == 1
-                    && statements[0].IsKind(SyntaxKind.UsingStatement))
-                {
-                    var usingStatement2 = (UsingStatementSyntax)statements[0];
-
-                    return block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
-                        && block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
-                        && usingStatement2.GetLeadingTrivia().IsEmptyOrWhitespace()
-                        && usingStatement2.GetTrailingTrivia().IsEmptyOrWhitespace();
-                }
+                return false;
             }
 
-            return false;
+            var block = (BlockSyntax)statement;
+            SyntaxList<StatementSyntax> statements = block.Statements;
+
+            if (statements.Count != 1
+                || !statements[0].IsKind(SyntaxKind.UsingStatement))
+            {
+                return false;
+            }
+
+            var usingStatement2 = (UsingStatementSyntax)statements[0];
+
+            return block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
+                && block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
+                && usingStatement2.GetLeadingTrivia().IsEmptyOrWhitespace()
+                && usingStatement2.GetTrailingTrivia().IsEmptyOrWhitespace();
         }
 
         public static Task<Document> RefactorAsync(

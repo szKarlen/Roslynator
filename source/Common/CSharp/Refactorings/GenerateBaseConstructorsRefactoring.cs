@@ -23,13 +23,15 @@ namespace Roslynator.CSharp.Refactorings
         {
             INamedTypeSymbol symbol = semanticModel.GetDeclaredSymbol(classDeclaration, cancellationToken);
 
-            if (symbol?.IsStatic == false)
+            if (symbol?.IsStatic != false)
             {
-                INamedTypeSymbol baseSymbol = symbol.BaseType;
-
-                if (baseSymbol?.IsObject() == false)
-                    return GetMissingBaseConstructors(symbol, baseSymbol);
+                return null;
             }
+
+            INamedTypeSymbol baseSymbol = symbol.BaseType;
+
+            if (baseSymbol?.IsObject() == false)
+                return GetMissingBaseConstructors(symbol, baseSymbol);
 
             return null;
         }

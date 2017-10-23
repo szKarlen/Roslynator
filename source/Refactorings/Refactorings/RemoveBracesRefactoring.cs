@@ -24,45 +24,53 @@ namespace Roslynator.CSharp.Refactorings
                 block = (BlockSyntax)statement.Parent;
             }
 
-            if (block != null)
+            if (block == null)
             {
-                ComputeRefactoring(context, block);
+                return;
             }
+
+            ComputeRefactoring(context, block);
         }
 
         private static void ComputeRefactoring(RefactoringContext context, BlockSyntax block)
         {
-            if (context.IsAnyRefactoringEnabled(
+            if (!context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.RemoveBraces,
                     RefactoringIdentifiers.RemoveBracesFromIfElse)
-                && CanRefactor(context, block))
+                || !CanRefactor(context, block))
             {
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBraces))
-                {
-                    context.RegisterRefactoring(
-                        "Remove braces",
-                        cancellationToken => RefactorAsync(context.Document, block, cancellationToken));
-                }
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromIfElse))
-                {
-                    IfStatementSyntax topmostIf = GetTopmostIf(block);
-
-                    if (topmostIf?.Else != null
-                        && CanRefactorIfElse(block, topmostIf))
-                    {
-                        context.RegisterRefactoring(
-                            "Remove braces from if-else",
-                            cancellationToken =>
-                            {
-                                return RemoveBracesFromIfElseElseRefactoring.RefactorAsync(
-                                    context.Document,
-                                    topmostIf,
-                                    cancellationToken);
-                            });
-                    }
-                }
+                return;
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBraces))
+            {
+                context.RegisterRefactoring(
+                    "Remove braces",
+                    cancellationToken => RefactorAsync(context.Document, block, cancellationToken));
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromIfElse))
+            {
+                return;
+            }
+
+            IfStatementSyntax topmostIf = GetTopmostIf(block);
+
+            if (topmostIf?.Else == null
+                || !CanRefactorIfElse(block, topmostIf))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Remove braces from if-else",
+                cancellationToken =>
+                {
+                    return RemoveBracesFromIfElseElseRefactoring.RefactorAsync(
+                        context.Document,
+                        topmostIf,
+                        cancellationToken);
+                });
         }
 
         private static bool CanRefactorIfElse(BlockSyntax selectedBlock, IfStatementSyntax topmostIf)
@@ -101,16 +109,16 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool CanRefactor(RefactoringContext context, BlockSyntax block)
         {
-            if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(block)
-                && IsEmbeddableBlock(block))
+            if (!context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(block)
+                || !IsEmbeddableBlock(block))
             {
-                StatementSyntax statement = EmbeddedStatementHelper.GetEmbeddedStatement(block.Statements[0]);
-
-                return statement == null
-                    || !statement.FullSpan.Contains(context.Span);
+                return false;
             }
 
-            return false;
+            StatementSyntax statement = EmbeddedStatementHelper.GetEmbeddedStatement(block.Statements[0]);
+
+            return statement == null
+                || !statement.FullSpan.Contains(context.Span);
         }
 
         private static IfStatementSyntax GetTopmostIf(BlockSyntax block)

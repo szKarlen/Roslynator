@@ -12,25 +12,31 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, ObjectCreationExpressionSyntax objectCreationExpression)
         {
-            if (objectCreationExpression.Type?.IsMissing == false
-                && objectCreationExpression.Initializer?.IsMissing == false)
+            if (objectCreationExpression.Type?.IsMissing != false
+                || objectCreationExpression.Initializer?.IsMissing != false)
             {
-                ArgumentListSyntax argumentList = objectCreationExpression.ArgumentList;
-
-                if (argumentList?.Arguments.Any() == false)
-                {
-                    SyntaxToken openParen = argumentList.OpenParenToken;
-                    SyntaxToken closeParen = argumentList.CloseParenToken;
-
-                    if (!openParen.IsMissing
-                        && !closeParen.IsMissing
-                        && openParen.TrailingTrivia.IsEmptyOrWhitespace()
-                        && closeParen.LeadingTrivia.IsEmptyOrWhitespace())
-                    {
-                        context.ReportDiagnostic(DiagnosticDescriptors.RemoveArgumentListFromObjectCreation, argumentList);
-                    }
-                }
+                return;
             }
+
+            ArgumentListSyntax argumentList = objectCreationExpression.ArgumentList;
+
+            if (argumentList?.Arguments.Any() != false)
+            {
+                return;
+            }
+
+            SyntaxToken openParen = argumentList.OpenParenToken;
+            SyntaxToken closeParen = argumentList.CloseParenToken;
+
+            if (openParen.IsMissing
+                || closeParen.IsMissing
+                || !openParen.TrailingTrivia.IsEmptyOrWhitespace()
+                || !closeParen.LeadingTrivia.IsEmptyOrWhitespace())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.RemoveArgumentListFromObjectCreation, argumentList);
         }
 
         public static Task<Document> RefactorAsync(

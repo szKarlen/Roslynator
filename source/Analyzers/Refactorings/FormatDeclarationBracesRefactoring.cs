@@ -43,21 +43,25 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxToken openBrace,
             SyntaxToken closeBrace)
         {
-            if (!openBrace.IsMissing
-                && !closeBrace.IsMissing
-                && declaration.SyntaxTree.GetLineCount(TextSpan.FromBounds(openBrace.Span.End, closeBrace.SpanStart)) != 2)
+            if (openBrace.IsMissing
+                || closeBrace.IsMissing
+                || declaration.SyntaxTree.GetLineCount(TextSpan.FromBounds(openBrace.Span.End, closeBrace.SpanStart)) == 2)
             {
-                TextSpan span = TextSpan.FromBounds(openBrace.Span.Start, closeBrace.Span.End);
-
-                if (declaration
-                    .DescendantTrivia(span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.FormatDeclarationBraces,
-                        Location.Create(declaration.SyntaxTree, span));
-                }
+                return;
             }
+
+            TextSpan span = TextSpan.FromBounds(openBrace.Span.Start, closeBrace.Span.End);
+
+            if (!declaration
+                .DescendantTrivia(span)
+                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.FormatDeclarationBraces,
+                Location.Create(declaration.SyntaxTree, span));
         }
 
         public static Task<Document> RefactorAsync(

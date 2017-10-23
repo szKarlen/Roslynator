@@ -14,71 +14,75 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, StatementsSelection selectedStatements)
         {
-            if (selectedStatements.Count > 1)
+            if (selectedStatements.Count <= 1)
             {
-                StatementSyntax firstStatement = selectedStatements.First();
+                return;
+            }
 
-                SemanticModel semanticModel = null;
-                ISymbol symbol = null;
-                ObjectCreationExpressionSyntax objectCreation = null;
+            StatementSyntax firstStatement = selectedStatements.First();
 
-                SyntaxKind kind = firstStatement.Kind();
+            SemanticModel semanticModel = null;
+            ISymbol symbol = null;
+            ObjectCreationExpressionSyntax objectCreation = null;
 
-                if (kind == SyntaxKind.LocalDeclarationStatement)
+            SyntaxKind kind = firstStatement.Kind();
+
+            if (kind == SyntaxKind.LocalDeclarationStatement)
+            {
+                var localDeclaration = (LocalDeclarationStatementSyntax)firstStatement;
+
+                VariableDeclaratorSyntax variable = localDeclaration
+                    .Declaration?
+                    .Variables
+                    .SingleOrDefault(throwException: false);
+
+                objectCreation = variable?.Initializer?.Value as ObjectCreationExpressionSyntax;
+
+                if (objectCreation != null)
                 {
-                    var localDeclaration = (LocalDeclarationStatementSyntax)firstStatement;
+                    semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                    VariableDeclaratorSyntax variable = localDeclaration
-                        .Declaration?
-                        .Variables
-                        .SingleOrDefault(throwException: false);
+                    symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
+                }
+            }
+            else if (kind == SyntaxKind.ExpressionStatement)
+            {
+                var expressionStatement = (ExpressionStatementSyntax)firstStatement;
 
-                    objectCreation = variable?.Initializer?.Value as ObjectCreationExpressionSyntax;
+                var assignment = expressionStatement.Expression as AssignmentExpressionSyntax;
+
+                if (assignment != null)
+                {
+                    objectCreation = assignment.Right as ObjectCreationExpressionSyntax;
 
                     if (objectCreation != null)
                     {
                         semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                        symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
+                        symbol = semanticModel.GetSymbol(assignment.Left, context.CancellationToken);
                     }
-                }
-                else if (kind == SyntaxKind.ExpressionStatement)
-                {
-                    var expressionStatement = (ExpressionStatementSyntax)firstStatement;
-
-                    var assignment = expressionStatement.Expression as AssignmentExpressionSyntax;
-
-                    if (assignment != null)
-                    {
-                        objectCreation = assignment.Right as ObjectCreationExpressionSyntax;
-
-                        if (objectCreation != null)
-                        {
-                            semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                            symbol = semanticModel.GetSymbol(assignment.Left, context.CancellationToken);
-                        }
-                    }
-                }
-
-                if (objectCreation != null
-                    && symbol?.IsErrorType() == false
-                    && selectedStatements
-                        .Skip(1)
-                        .All(f => IsValidAssignmentStatement(f, symbol, semanticModel, context.CancellationToken)))
-                {
-                    context.RegisterRefactoring(
-                        "Collapse to initializer",
-                        cancellationToken =>
-                        {
-                            return RefactorAsync(
-                                context.Document,
-                                objectCreation,
-                                selectedStatements,
-                                cancellationToken);
-                        });
                 }
             }
+
+            if (objectCreation == null
+                || symbol?.IsErrorType() != false
+                || !selectedStatements
+                    .Skip(1)
+                    .All(f => IsValidAssignmentStatement(f, symbol, semanticModel, context.CancellationToken)))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Collapse to initializer",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        objectCreation,
+                        selectedStatements,
+                        cancellationToken);
+                });
         }
 
         public static bool IsValidAssignmentStatement(
@@ -87,33 +91,38 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (statement.IsKind(SyntaxKind.ExpressionStatement))
+            if (!statement.IsKind(SyntaxKind.ExpressionStatement))
             {
-                var expressionStatement = (ExpressionStatementSyntax)statement;
-
-                if (expressionStatement.Expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
-                {
-                    var assignment = (AssignmentExpressionSyntax)expressionStatement.Expression;
-
-                    if (assignment.Left?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
-                    {
-                        var memberAccess = (MemberAccessExpressionSyntax)assignment.Left;
-
-                        ISymbol expressionSymbol = semanticModel
-                            .GetSymbol(memberAccess.Expression, cancellationToken);
-
-                        if (symbol.Equals(expressionSymbol))
-                        {
-                            ISymbol leftSymbol = semanticModel.GetSymbol(assignment.Left, cancellationToken);
-
-                            if (leftSymbol?.IsProperty() == true)
-                                return true;
-                        }
-                    }
-                }
+                return false;
             }
 
-            return false;
+            var expressionStatement = (ExpressionStatementSyntax)statement;
+
+            if (expressionStatement.Expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) != true)
+            {
+                return false;
+            }
+
+            var assignment = (AssignmentExpressionSyntax)expressionStatement.Expression;
+
+            if (assignment.Left?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
+            {
+                return false;
+            }
+
+            var memberAccess = (MemberAccessExpressionSyntax)assignment.Left;
+
+            ISymbol expressionSymbol = semanticModel
+                .GetSymbol(memberAccess.Expression, cancellationToken);
+
+            if (!symbol.Equals(expressionSymbol))
+            {
+                return false;
+            }
+
+            ISymbol leftSymbol = semanticModel.GetSymbol(assignment.Left, cancellationToken);
+
+            return leftSymbol?.IsProperty() == true;
         }
 
         public static Task<Document> RefactorAsync(

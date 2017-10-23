@@ -18,18 +18,22 @@ namespace Roslynator.CSharp.Refactorings
 
             SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
 
-            if (expressions.Any()
-                && expressions.Count == expressions.SeparatorCount)
+            if (!expressions.Any()
+                || expressions.Count != expressions.SeparatorCount)
             {
-                SyntaxToken token = expressions.GetSeparators().Last();
-
-                if (!token.IsMissing)
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.RemoveRedundantCommaInInitializer,
-                        token);
-                }
+                return;
             }
+
+            SyntaxToken token = expressions.GetSeparators().Last();
+
+            if (token.IsMissing)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RemoveRedundantCommaInInitializer,
+                token);
         }
 
         public static Task<Document> RefactorAsync(

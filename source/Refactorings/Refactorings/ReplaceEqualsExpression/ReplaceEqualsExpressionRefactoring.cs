@@ -16,37 +16,47 @@ namespace Roslynator.CSharp.Refactorings.ReplaceEqualsExpression
 
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, BinaryExpressionSyntax binaryExpression)
         {
-            if (binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression))
+            if (!binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression))
             {
-                ExpressionSyntax left = binaryExpression.Left;
-
-                if (left?.IsKind(SyntaxKind.NullLiteralExpression) == false)
-                {
-                    ExpressionSyntax right = binaryExpression.Right;
-
-                    if (right?.IsKind(SyntaxKind.NullLiteralExpression) == true)
-                    {
-                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                        ITypeSymbol leftSymbol = semanticModel.GetTypeInfo(left, context.CancellationToken).ConvertedType;
-
-                        if (leftSymbol?.IsString() == true)
-                        {
-                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrEmpty))
-                            {
-                                var refactoring = new ReplaceEqualsExpressionWithStringIsNullOrEmptyRefactoring();
-                                refactoring.RegisterRefactoring(context, binaryExpression, left);
-                            }
-
-                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace))
-                            {
-                                var refactoring = new ReplaceEqualsExpressionWithStringIsNullOrWhiteSpaceRefactoring();
-                                refactoring.RegisterRefactoring(context, binaryExpression, left);
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            ExpressionSyntax left = binaryExpression.Left;
+
+            if (left?.IsKind(SyntaxKind.NullLiteralExpression) != false)
+            {
+                return;
+            }
+
+            ExpressionSyntax right = binaryExpression.Right;
+
+            if (right?.IsKind(SyntaxKind.NullLiteralExpression) != true)
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            ITypeSymbol leftSymbol = semanticModel.GetTypeInfo(left, context.CancellationToken).ConvertedType;
+
+            if (leftSymbol?.IsString() != true)
+            {
+                return;
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrEmpty))
+            {
+                var refactoring2 = new ReplaceEqualsExpressionWithStringIsNullOrEmptyRefactoring();
+                refactoring2.RegisterRefactoring(context, binaryExpression, left);
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace))
+            {
+                return;
+            }
+
+            var refactoring = new ReplaceEqualsExpressionWithStringIsNullOrWhiteSpaceRefactoring();
+            refactoring.RegisterRefactoring(context, binaryExpression, left);
         }
 
         private void RegisterRefactoring(RefactoringContext context, BinaryExpressionSyntax binaryExpression, ExpressionSyntax left)

@@ -15,38 +15,44 @@ namespace Roslynator.CSharp.Refactorings
         {
             CatchDeclarationSyntax declaration = catchClause.Declaration;
 
-            if (declaration != null)
+            if (declaration == null)
             {
-                BlockSyntax block = catchClause.Block;
+                return;
+            }
 
-                if (block != null)
+            BlockSyntax block = catchClause.Block;
+
+            if (block == null)
+            {
+                return;
+            }
+
+            ILocalSymbol symbol = context
+                .SemanticModel
+                .GetDeclaredSymbol(catchClause.Declaration, context.CancellationToken);
+
+            if (symbol == null)
+            {
+                return;
+            }
+
+            foreach (SyntaxNode node in block.DescendantNodes(f => !f.IsKind(SyntaxKind.CatchClause)))
+            {
+                if (node.IsKind(SyntaxKind.ThrowStatement))
                 {
-                    ILocalSymbol symbol = context
-                        .SemanticModel
-                        .GetDeclaredSymbol(catchClause.Declaration, context.CancellationToken);
-
-                    if (symbol != null)
+                    var throwStatement = (ThrowStatementSyntax)node;
+                    if (throwStatement.Expression != null)
                     {
-                        foreach (SyntaxNode node in block.DescendantNodes(f => !f.IsKind(SyntaxKind.CatchClause)))
-                        {
-                            if (node.IsKind(SyntaxKind.ThrowStatement))
-                            {
-                                var throwStatement = (ThrowStatementSyntax)node;
-                                if (throwStatement.Expression != null)
-                                {
-                                    ISymbol expressionSymbol = context
-                                        .SemanticModel
-                                        .GetSymbol(throwStatement.Expression, context.CancellationToken);
+                        ISymbol expressionSymbol = context
+                            .SemanticModel
+                            .GetSymbol(throwStatement.Expression, context.CancellationToken);
 
-                                    if (expressionSymbol != null
-                                        && symbol.Equals(expressionSymbol))
-                                    {
-                                        context.ReportDiagnostic(
-                                            DiagnosticDescriptors.RemoveOriginalExceptionFromThrowStatement,
-                                            throwStatement.Expression);
-                                    }
-                                }
-                            }
+                        if (expressionSymbol != null
+                            && symbol.Equals(expressionSymbol))
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.RemoveOriginalExceptionFromThrowStatement,
+                                throwStatement.Expression);
                         }
                     }
                 }

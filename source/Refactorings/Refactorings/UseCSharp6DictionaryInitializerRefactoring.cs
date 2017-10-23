@@ -79,22 +79,24 @@ namespace Roslynator.CSharp.Refactorings
         {
             ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(objectCreationExpression, cancellationToken);
 
-            if (typeSymbol?.IsErrorType() == false)
+            if (typeSymbol?.IsErrorType() != false)
             {
-                foreach (ISymbol member in semanticModel.LookupSymbols(objectCreationExpression.SpanStart, typeSymbol, "this[]"))
+                return null;
+            }
+
+            foreach (ISymbol member in semanticModel.LookupSymbols(objectCreationExpression.SpanStart, typeSymbol, "this[]"))
+            {
+                var propertySymbol = (IPropertySymbol)member;
+
+                if (!propertySymbol.IsReadOnly
+                    && semanticModel.IsAccessible(objectCreationExpression.SpanStart, propertySymbol.SetMethod))
                 {
-                    var propertySymbol = (IPropertySymbol)member;
+                    ImmutableArray<IParameterSymbol> parameters = propertySymbol.Parameters;
 
-                    if (!propertySymbol.IsReadOnly
-                        && semanticModel.IsAccessible(objectCreationExpression.SpanStart, propertySymbol.SetMethod))
+                    if (parameters.Length == 1
+                        && CanRefactor(expressions, parameters[0].Type, propertySymbol.Type, semanticModel))
                     {
-                        ImmutableArray<IParameterSymbol> parameters = propertySymbol.Parameters;
-
-                        if (parameters.Length == 1
-                            && CanRefactor(expressions, parameters[0].Type, propertySymbol.Type, semanticModel))
-                        {
-                            return propertySymbol;
-                        }
+                        return propertySymbol;
                     }
                 }
             }

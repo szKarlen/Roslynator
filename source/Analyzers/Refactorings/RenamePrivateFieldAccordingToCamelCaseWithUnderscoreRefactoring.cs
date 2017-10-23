@@ -16,16 +16,18 @@ namespace Roslynator.CSharp.Refactorings
         {
             var fieldSymbol = (IFieldSymbol)context.Symbol;
 
-            if (!fieldSymbol.IsConst
-                && !fieldSymbol.IsImplicitlyDeclared
-                && fieldSymbol.IsPrivate()
-                && !string.IsNullOrEmpty(fieldSymbol.Name)
-                && !StringUtility.IsCamelCasePrefixedWithUnderscore(fieldSymbol.Name))
+            if (fieldSymbol.IsConst
+                || fieldSymbol.IsImplicitlyDeclared
+                || !fieldSymbol.IsPrivate()
+                || string.IsNullOrEmpty(fieldSymbol.Name)
+                || StringUtility.IsCamelCasePrefixedWithUnderscore(fieldSymbol.Name))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.RenamePrivateFieldAccordingToCamelCaseWithUnderscore,
-                    fieldSymbol.Locations[0]);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RenamePrivateFieldAccordingToCamelCaseWithUnderscore,
+                fieldSymbol.Locations[0]);
         }
 
         public static Task<Solution> RefactorAsync(

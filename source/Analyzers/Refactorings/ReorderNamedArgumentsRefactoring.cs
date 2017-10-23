@@ -25,17 +25,21 @@ namespace Roslynator.CSharp.Refactorings
 
             int index = IndexOfFirstFixableParameter(argumentList, arguments, context.SemanticModel, context.CancellationToken);
 
-            if (index != -1)
+            if (index == -1)
             {
-                TextSpan span = TextSpan.FromBounds(arguments[index].SpanStart, arguments.Last().Span.End);
-
-                if (!argumentList.ContainsDirectives(span))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.ReorderNamedArguments,
-                        Location.Create(argumentList.SyntaxTree, span));
-                }
+                return;
             }
+
+            TextSpan span = TextSpan.FromBounds(arguments[index].SpanStart, arguments.Last().Span.End);
+
+            if (argumentList.ContainsDirectives(span))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.ReorderNamedArguments,
+                Location.Create(argumentList.SyntaxTree, span));
         }
 
         public static int IndexOfFirstFixableParameter(

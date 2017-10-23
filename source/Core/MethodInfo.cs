@@ -182,34 +182,38 @@ namespace Roslynator
 
         internal bool IsLinqSelect(bool allowImmutableArrayExtension = false)
         {
-            if (IsValid
-                && Symbol.IsPublic()
-                && Symbol.ReturnType.IsConstructedFromIEnumerableOfT()
-                && IsName("Select")
-                && Symbol.Arity == 2)
+            if (!IsValid
+                || !Symbol.IsPublic()
+                || !Symbol.ReturnType.IsConstructedFromIEnumerableOfT()
+                || !IsName("Select")
+                || Symbol.Arity != 2)
             {
-                INamedTypeSymbol containingType = Symbol.ContainingType;
+                return false;
+            }
 
-                if (containingType != null)
-                {
-                    if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            INamedTypeSymbol containingType = Symbol.ContainingType;
 
-                        return parameters.Length == 2
-                            && parameters[0].Type.IsConstructedFromIEnumerableOfT()
-                            && SymbolUtility.IsFunc(parameters[1].Type, Symbol.TypeArguments[0], Symbol.TypeArguments[1], SemanticModel);
-                    }
-                    else if (allowImmutableArrayExtension
-                        && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            if (containingType == null)
+            {
+                return false;
+            }
 
-                        return parameters.Length == 2
-                            && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel)
-                            && SymbolUtility.IsFunc(parameters[1].Type, Symbol.TypeArguments[0], Symbol.TypeArguments[1], SemanticModel);
-                    }
-                }
+            if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return parameters.Length == 2
+                    && parameters[0].Type.IsConstructedFromIEnumerableOfT()
+                    && SymbolUtility.IsFunc(parameters[1].Type, Symbol.TypeArguments[0], Symbol.TypeArguments[1], SemanticModel);
+            }
+            else if (allowImmutableArrayExtension
+                && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return parameters.Length == 2
+                    && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel)
+                    && SymbolUtility.IsFunc(parameters[1].Type, Symbol.TypeArguments[0], Symbol.TypeArguments[1], SemanticModel);
             }
 
             return false;
@@ -233,30 +237,34 @@ namespace Roslynator
             int parameterCount = -1,
             bool allowImmutableArrayExtension = false)
         {
-            if (IsValid
-                && Symbol.IsPublic()
-                && IsNullOrName(name))
+            if (!IsValid
+                || !Symbol.IsPublic()
+                || !IsNullOrName(name))
             {
-                INamedTypeSymbol containingType = Symbol.ContainingType;
+                return false;
+            }
 
-                if (containingType != null)
-                {
-                    if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            INamedTypeSymbol containingType = Symbol.ContainingType;
 
-                        return (parameterCount == -1 || parameters.Length == parameterCount)
-                            && parameters[0].Type.IsConstructedFromIEnumerableOfT();
-                    }
-                    else if (allowImmutableArrayExtension
-                        && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            if (containingType == null)
+            {
+                return false;
+            }
 
-                        return (parameterCount == -1 || parameters.Length == parameterCount)
-                            && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel);
-                    }
-                }
+            if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return (parameterCount == -1 || parameters.Length == parameterCount)
+                    && parameters[0].Type.IsConstructedFromIEnumerableOfT();
+            }
+            else if (allowImmutableArrayExtension
+                && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return (parameterCount == -1 || parameters.Length == parameterCount)
+                    && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel);
             }
 
             return false;
@@ -274,32 +282,36 @@ namespace Roslynator
             int parameterCount,
             bool allowImmutableArrayExtension = false)
         {
-            if (IsValid
-                && Symbol.IsPublic()
-                && IsName(name))
+            if (!IsValid
+                || !Symbol.IsPublic()
+                || !IsName(name))
             {
-                INamedTypeSymbol containingType = Symbol.ContainingType;
+                return false;
+            }
 
-                if (containingType != null)
-                {
-                    if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            INamedTypeSymbol containingType = Symbol.ContainingType;
 
-                        return parameters.Length == parameterCount
-                            && parameters[0].Type.IsConstructedFromIEnumerableOfT()
-                            && SymbolUtility.IsPredicateFunc(parameters[1].Type, Symbol.TypeArguments[0], SemanticModel);
-                    }
-                    else if (allowImmutableArrayExtension
-                        && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
-                    {
-                        ImmutableArray<IParameterSymbol> parameters = Parameters;
+            if (containingType == null)
+            {
+                return false;
+            }
 
-                        return parameters.Length == parameterCount
-                            && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel)
-                            && SymbolUtility.IsPredicateFunc(parameters[1].Type, Symbol.TypeArguments[0], SemanticModel);
-                    }
-                }
+            if (containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return parameters.Length == parameterCount
+                    && parameters[0].Type.IsConstructedFromIEnumerableOfT()
+                    && SymbolUtility.IsPredicateFunc(parameters[1].Type, Symbol.TypeArguments[0], SemanticModel);
+            }
+            else if (allowImmutableArrayExtension
+                && containingType.Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_ImmutableArrayExtensions)))
+            {
+                ImmutableArray<IParameterSymbol> parameters = Parameters;
+
+                return parameters.Length == parameterCount
+                    && parameters[0].Type.IsConstructedFromImmutableArrayOfT(SemanticModel)
+                    && SymbolUtility.IsPredicateFunc(parameters[1].Type, Symbol.TypeArguments[0], SemanticModel);
             }
 
             return false;

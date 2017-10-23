@@ -37,22 +37,24 @@ namespace Roslynator.CSharp.Refactorings
                     });
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceInterpolatedStringWithInterpolationExpression)
-                && interpolatedString.Span.Contains(context.Span)
-                && ReplaceInterpolatedStringWithInterpolationExpressionRefactoring.CanRefactor(interpolatedString))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceInterpolatedStringWithInterpolationExpression)
+                || !interpolatedString.Span.Contains(context.Span)
+                || !ReplaceInterpolatedStringWithInterpolationExpressionRefactoring.CanRefactor(interpolatedString))
             {
-                ExpressionSyntax expression = ((InterpolationSyntax)(interpolatedString.Contents[0])).Expression;
-
-                context.RegisterRefactoring(
-                    $"Replace interpolated string with '{expression}'",
-                    cancellationToken =>
-                    {
-                        return ReplaceInterpolatedStringWithInterpolationExpressionRefactoring.RefactorAsync(
-                            context.Document,
-                            interpolatedString,
-                            cancellationToken);
-                    });
+                return;
             }
+
+            ExpressionSyntax expression = ((InterpolationSyntax)(interpolatedString.Contents[0])).Expression;
+
+            context.RegisterRefactoring(
+                $"Replace interpolated string with '{expression}'",
+                cancellationToken =>
+                {
+                    return ReplaceInterpolatedStringWithInterpolationExpressionRefactoring.RefactorAsync(
+                        context.Document,
+                        interpolatedString,
+                        cancellationToken);
+                });
         }
     }
 }

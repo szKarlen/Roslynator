@@ -76,18 +76,18 @@ namespace Roslynator.CSharp
             if (destinationType == null)
                 throw new ArgumentNullException(nameof(destinationType));
 
-            if (!destinationType.IsErrorType()
-                && !destinationType.IsVoid())
+            if (destinationType.IsErrorType()
+                || destinationType.IsVoid())
             {
-                Conversion conversion = semanticModel.ClassifyConversion(
-                    expression,
-                    destinationType,
-                    isExplicitInSource);
-
-                return conversion.IsExplicit;
+                return false;
             }
 
-            return false;
+            Conversion conversion = semanticModel.ClassifyConversion(
+                expression,
+                destinationType,
+                isExplicitInSource);
+
+            return conversion.IsExplicit;
         }
 
         internal static bool IsImplicitConversion(
@@ -96,18 +96,18 @@ namespace Roslynator.CSharp
             ITypeSymbol destinationType,
             bool isExplicitInSource = false)
         {
-            if (!destinationType.IsErrorType()
-                && !destinationType.IsVoid())
+            if (destinationType.IsErrorType()
+                || destinationType.IsVoid())
             {
-                Conversion conversion = semanticModel.ClassifyConversion(
-                    expression,
-                    destinationType,
-                    isExplicitInSource);
-
-                return conversion.IsImplicit;
+                return false;
             }
 
-            return false;
+            Conversion conversion = semanticModel.ClassifyConversion(
+                expression,
+                destinationType,
+                isExplicitInSource);
+
+            return conversion.IsImplicit;
         }
 
         public static IParameterSymbol DetermineParameter(
@@ -196,71 +196,73 @@ namespace Roslynator.CSharp
                 return true;
             }
 
-            if (kind == SyntaxKind.DefaultExpression)
+            if (kind != SyntaxKind.DefaultExpression)
             {
-                var defaultExpression = (DefaultExpressionSyntax)expression;
-
-                TypeSyntax type = defaultExpression.Type;
-
-                return type != null
-                    && typeSymbol.Equals(semanticModel.GetTypeSymbol(type, cancellationToken));
+                return false;
             }
 
-            return false;
+            var defaultExpression = (DefaultExpressionSyntax)expression;
+
+            TypeSyntax type = defaultExpression.Type;
+
+            return type != null
+                && typeSymbol.Equals(semanticModel.GetTypeSymbol(type, cancellationToken));
         }
 
         private static bool IsZeroConstantValue(this SemanticModel semanticModel, ExpressionSyntax expression, CancellationToken cancellationToken = default(CancellationToken))
         {
             Optional<object> optional = semanticModel.GetConstantValue(expression, cancellationToken);
 
-            if (optional.HasValue)
+            if (!optional.HasValue)
             {
-                object value = optional.Value;
+                return false;
+            }
 
-                if (value is int)
-                {
-                    return (int)value == 0;
-                }
-                else if (value is uint)
-                {
-                    return (uint)value == 0;
-                }
-                else if (value is sbyte)
-                {
-                    return (sbyte)value == 0;
-                }
-                else if (value is byte)
-                {
-                    return (byte)value == 0;
-                }
-                else if (value is short)
-                {
-                    return (short)value == 0;
-                }
-                else if (value is ushort)
-                {
-                    return (ushort)value == 0;
-                }
-                else if (value is long)
-                {
-                    return (long)value == 0;
-                }
-                else if (value is ulong)
-                {
-                    return (ulong)value == 0;
-                }
-                else if (value is float)
-                {
-                    return (float)value == 0;
-                }
-                else if (value is double)
-                {
-                    return (double)value == 0;
-                }
-                else if (value is decimal)
-                {
-                    return (decimal)value == 0;
-                }
+            object value = optional.Value;
+
+            if (value is int)
+            {
+                return (int)value == 0;
+            }
+            else if (value is uint)
+            {
+                return (uint)value == 0;
+            }
+            else if (value is sbyte)
+            {
+                return (sbyte)value == 0;
+            }
+            else if (value is byte)
+            {
+                return (byte)value == 0;
+            }
+            else if (value is short)
+            {
+                return (short)value == 0;
+            }
+            else if (value is ushort)
+            {
+                return (ushort)value == 0;
+            }
+            else if (value is long)
+            {
+                return (long)value == 0;
+            }
+            else if (value is ulong)
+            {
+                return (ulong)value == 0;
+            }
+            else if (value is float)
+            {
+                return (float)value == 0;
+            }
+            else if (value is double)
+            {
+                return (double)value == 0;
+            }
+            else if (value is decimal)
+            {
+                return (decimal)value == 0;
             }
 
             return false;
@@ -270,13 +272,15 @@ namespace Roslynator.CSharp
         {
             Optional<object> optional = semanticModel.GetConstantValue(expression, cancellationToken);
 
-            if (optional.HasValue)
+            if (!optional.HasValue)
             {
-                object constantValue = optional.Value;
-
-                if (constantValue is bool)
-                    return (bool)constantValue == value;
+                return false;
             }
+
+            object constantValue = optional.Value;
+
+            if (constantValue is bool)
+                return (bool)constantValue == value;
 
             return false;
         }
@@ -285,13 +289,15 @@ namespace Roslynator.CSharp
         {
             Optional<object> optional = semanticModel.GetConstantValue(expression, cancellationToken);
 
-            if (optional.HasValue)
+            if (!optional.HasValue)
             {
-                object constantValue = optional.Value;
-
-                if (constantValue is char)
-                    return (char)constantValue == value;
+                return false;
             }
+
+            object constantValue = optional.Value;
+
+            if (constantValue is char)
+                return (char)constantValue == value;
 
             return false;
         }

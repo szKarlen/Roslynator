@@ -11,21 +11,25 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, EnumMemberDeclarationSyntax enumMemberDeclaration)
         {
-            if (context.Span.IsEmptyAndContainedInSpan(enumMemberDeclaration))
+            if (!context.Span.IsEmptyAndContainedInSpan(enumMemberDeclaration))
             {
-                SyntaxNode parent = enumMemberDeclaration.Parent;
-
-                if (parent?.IsKind(SyntaxKind.EnumDeclaration) == true)
-                {
-                    var enumDeclaration = (EnumDeclarationSyntax)parent;
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumValues))
-                        await GenerateEnumValuesRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember))
-                        await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
-                }
+                return;
             }
+
+            SyntaxNode parent = enumMemberDeclaration.Parent;
+
+            if (parent?.IsKind(SyntaxKind.EnumDeclaration) != true)
+            {
+                return;
+            }
+
+            var enumDeclaration = (EnumDeclarationSyntax)parent;
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumValues))
+                await GenerateEnumValuesRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember))
+                await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
         }
     }
 }

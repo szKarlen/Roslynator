@@ -13,32 +13,36 @@ namespace Roslynator.CSharp.Refactorings
         {
             AttributeArgumentSyntax argument = GetArgument(context, argumentList);
 
-            if (argument != null)
+            if (argument == null)
             {
-                context.RegisterRefactoring(
-                    "Duplicate argument",
-                    cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
+                return;
             }
+
+            context.RegisterRefactoring(
+                "Duplicate argument",
+                cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
         }
 
         private static AttributeArgumentSyntax GetArgument(RefactoringContext context, AttributeArgumentListSyntax argumentList)
         {
-            if (context.Span.IsEmpty)
+            if (!context.Span.IsEmpty)
             {
-                SeparatedSyntaxList<AttributeArgumentSyntax> arguments = argumentList.Arguments;
+                return null;
+            }
 
-                foreach (AttributeArgumentSyntax argument in arguments)
+            SeparatedSyntaxList<AttributeArgumentSyntax> arguments = argumentList.Arguments;
+
+            foreach (AttributeArgumentSyntax argument in arguments)
+            {
+                if (argument.IsMissing
+                    && context.Span.Contains(argument.Span))
                 {
-                    if (argument.IsMissing
-                        && context.Span.Contains(argument.Span))
-                    {
-                        int index = arguments.IndexOf(argument);
+                    int index = arguments.IndexOf(argument);
 
-                        if (index > 0
-                            && !arguments[index - 1].IsMissing)
-                        {
-                            return argument;
-                        }
+                    if (index > 0
+                        && !arguments[index - 1].IsMissing)
+                    {
+                        return argument;
                     }
                 }
             }

@@ -15,29 +15,37 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol symbol)
         {
-            if (symbol.IsTypeKind(TypeKind.Class, TypeKind.Struct, TypeKind.Interface))
+            if (!symbol.IsTypeKind(TypeKind.Class, TypeKind.Struct, TypeKind.Interface))
             {
-                ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
-
-                if (syntaxReferences.Length == 1)
-                {
-                    var memberDeclaration = syntaxReferences[0].GetSyntax(context.CancellationToken) as MemberDeclarationSyntax;
-
-                    if (memberDeclaration != null)
-                    {
-                        SyntaxToken partialKeyword = memberDeclaration.GetModifiers()
-                            .FirstOrDefault(f => f.IsKind(SyntaxKind.PartialKeyword));
-
-                        if (partialKeyword.IsKind(SyntaxKind.PartialKeyword)
-                            && !ContainsPartialMethod(memberDeclaration))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.RemovePartialModifierFromTypeWithSinglePart,
-                                partialKeyword);
-                        }
-                    }
-                }
+                return;
             }
+
+            ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
+
+            if (syntaxReferences.Length != 1)
+            {
+                return;
+            }
+
+            var memberDeclaration = syntaxReferences[0].GetSyntax(context.CancellationToken) as MemberDeclarationSyntax;
+
+            if (memberDeclaration == null)
+            {
+                return;
+            }
+
+            SyntaxToken partialKeyword = memberDeclaration.GetModifiers()
+                .FirstOrDefault(f => f.IsKind(SyntaxKind.PartialKeyword));
+
+            if (!partialKeyword.IsKind(SyntaxKind.PartialKeyword)
+                || ContainsPartialMethod(memberDeclaration))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RemovePartialModifierFromTypeWithSinglePart,
+                partialKeyword);
         }
 
         private static bool ContainsPartialMethod(MemberDeclarationSyntax member)

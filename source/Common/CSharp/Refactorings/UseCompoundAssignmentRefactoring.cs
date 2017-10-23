@@ -19,30 +19,32 @@ namespace Roslynator.CSharp.Refactorings
             if (assignment == null)
                 throw new ArgumentNullException(nameof(assignment));
 
-            if (assignment.IsKind(SyntaxKind.SimpleAssignmentExpression))
+            if (!assignment.IsKind(SyntaxKind.SimpleAssignmentExpression))
             {
-                ExpressionSyntax left = assignment.Left;
-                ExpressionSyntax right = assignment.Right;
-
-                if (left?.IsMissing == false
-                    && right?.IsMissing == false
-                    && !assignment.IsParentKind(SyntaxKind.ObjectInitializerExpression)
-                    && right.Kind().SupportsCompoundAssignment())
-                {
-                    var binaryExpression = (BinaryExpressionSyntax)right;
-                    ExpressionSyntax binaryLeft = binaryExpression.Left;
-                    ExpressionSyntax binaryRight = binaryExpression.Right;
-
-                    return binaryLeft?.IsMissing == false
-                        && binaryRight?.IsMissing == false
-                        && SyntaxComparer.AreEquivalent(left, binaryLeft)
-                        && (assignment
-                            .DescendantTrivia(assignment.Span)
-                            .All(f => f.IsWhitespaceOrEndOfLineTrivia()));
-                }
+                return false;
             }
 
-            return false;
+            ExpressionSyntax left = assignment.Left;
+            ExpressionSyntax right = assignment.Right;
+
+            if (left?.IsMissing != false
+                || right?.IsMissing != false
+                || assignment.IsParentKind(SyntaxKind.ObjectInitializerExpression)
+                || !right.Kind().SupportsCompoundAssignment())
+            {
+                return false;
+            }
+
+            var binaryExpression = (BinaryExpressionSyntax)right;
+            ExpressionSyntax binaryLeft = binaryExpression.Left;
+            ExpressionSyntax binaryRight = binaryExpression.Right;
+
+            return binaryLeft?.IsMissing == false
+                && binaryRight?.IsMissing == false
+                && SyntaxComparer.AreEquivalent(left, binaryLeft)
+                && (assignment
+                    .DescendantTrivia(assignment.Span)
+                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()));
         }
 
         public static Task<Document> RefactorAsync(

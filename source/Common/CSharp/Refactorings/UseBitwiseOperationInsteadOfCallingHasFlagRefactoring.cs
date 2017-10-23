@@ -19,27 +19,26 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (invocation.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true
-                && invocation.ArgumentList?.Arguments.Count == 1)
+            if (invocation.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true
+                || invocation.ArgumentList?.Arguments.Count != 1)
             {
-                MemberAccessExpressionSyntax memberAccess = GetTopmostMemberAccessExpression((MemberAccessExpressionSyntax)invocation.Expression);
-
-                if (memberAccess.Name.Identifier.ValueText == "HasFlag")
-                {
-                    MethodInfo info;
-                    if (semanticModel.TryGetMethodInfo(memberAccess, out info, cancellationToken)
-                        && info.IsName("HasFlag")
-                        && !info.IsExtensionMethod
-                        && info.IsReturnType(SpecialType.System_Boolean)
-                        && info.Symbol.Parameters.SingleOrDefault(throwException: false)?.Type.SpecialType == SpecialType.System_Enum
-                        && info.IsContainingType(SpecialType.System_Enum))
-                    {
-                        return true;
-                    }
-                }
+                return false;
             }
 
-            return false;
+            MemberAccessExpressionSyntax memberAccess = GetTopmostMemberAccessExpression((MemberAccessExpressionSyntax)invocation.Expression);
+
+            if (memberAccess.Name.Identifier.ValueText != "HasFlag")
+            {
+                return false;
+            }
+
+            MethodInfo info;
+            return semanticModel.TryGetMethodInfo(memberAccess, out info, cancellationToken)
+                && info.IsName("HasFlag")
+                && !info.IsExtensionMethod
+                && info.IsReturnType(SpecialType.System_Boolean)
+                && info.Symbol.Parameters.SingleOrDefault(throwException: false)?.Type.SpecialType == SpecialType.System_Enum
+                && info.IsContainingType(SpecialType.System_Enum);
         }
 
         public static Task<Document> RefactorAsync(

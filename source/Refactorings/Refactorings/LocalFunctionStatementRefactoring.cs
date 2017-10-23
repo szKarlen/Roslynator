@@ -22,13 +22,15 @@ namespace Roslynator.CSharp.Refactorings
                     cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, localFunctionStatement, cancellationToken));
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseListInsteadOfYield)
-                && localFunctionStatement.Identifier.Span.Contains(context.Span))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseListInsteadOfYield)
+                || !localFunctionStatement.Identifier.Span.Contains(context.Span))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                UseListInsteadOfYieldRefactoring.ComputeRefactoring(context, localFunctionStatement, semanticModel);
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            UseListInsteadOfYieldRefactoring.ComputeRefactoring(context, localFunctionStatement, semanticModel);
         }
     }
 }

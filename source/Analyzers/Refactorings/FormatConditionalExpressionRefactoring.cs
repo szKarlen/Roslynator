@@ -16,50 +16,58 @@ namespace Roslynator.CSharp.Refactorings
         {
             var conditionalExpression = (ConditionalExpressionSyntax)context.Node;
 
-            if (!conditionalExpression.ContainsDiagnostics
-                && !conditionalExpression.SpanContainsDirectives())
+            if (conditionalExpression.ContainsDiagnostics
+                || conditionalExpression.SpanContainsDirectives())
             {
-                if (IsFixable(conditionalExpression.Condition, conditionalExpression.QuestionToken)
-                    || IsFixable(conditionalExpression.WhenTrue, conditionalExpression.ColonToken))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.FormatConditionalExpression,
-                        conditionalExpression);
-                }
+                return;
             }
+
+            if (!IsFixable(conditionalExpression.Condition, conditionalExpression.QuestionToken)
+                && !IsFixable(conditionalExpression.WhenTrue, conditionalExpression.ColonToken))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.FormatConditionalExpression,
+                conditionalExpression);
         }
 
         private static bool IsFixable(ExpressionSyntax expression, SyntaxToken token)
         {
             SyntaxTriviaList expressionTrailing = expression.GetTrailingTrivia();
 
-            if (expressionTrailing.IsEmptyOrWhitespace())
+            if (!expressionTrailing.IsEmptyOrWhitespace())
             {
-                SyntaxTriviaList tokenLeading = token.LeadingTrivia;
+                return false;
+            }
 
-                if (tokenLeading.IsEmptyOrWhitespace())
+            SyntaxTriviaList tokenLeading = token.LeadingTrivia;
+
+            if (!tokenLeading.IsEmptyOrWhitespace())
+            {
+                return false;
+            }
+
+            SyntaxTriviaList tokenTrailing = token.TrailingTrivia;
+
+            int count = tokenTrailing.Count;
+
+            if (count == 1)
+            {
+                if (tokenTrailing[0].IsEndOfLineTrivia())
+                    return true;
+            }
+            else if (count > 1)
+            {
+                for (int i = 0; i < count - 1; i++)
                 {
-                    SyntaxTriviaList tokenTrailing = token.TrailingTrivia;
-
-                    int count = tokenTrailing.Count;
-
-                    if (count == 1)
-                    {
-                        if (tokenTrailing[0].IsEndOfLineTrivia())
-                            return true;
-                    }
-                    else if (count > 1)
-                    {
-                        for (int i = 0; i < count - 1; i++)
-                        {
-                            if (!tokenTrailing[i].IsWhitespaceTrivia())
-                                return false;
-                        }
-
-                        if (tokenTrailing.Last().IsEndOfLineTrivia())
-                            return true;
-                    }
+                    if (!tokenTrailing[i].IsWhitespaceTrivia())
+                        return false;
                 }
+
+                if (tokenTrailing.Last().IsEndOfLineTrivia())
+                    return true;
             }
 
             return false;

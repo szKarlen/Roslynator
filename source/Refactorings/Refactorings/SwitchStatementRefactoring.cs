@@ -25,16 +25,20 @@ namespace Roslynator.CSharp.Refactorings
 
             SelectedSwitchSectionsRefactoring.ComputeRefactorings(context, switchStatement);
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceSwitchWithIfElse))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceSwitchWithIfElse))
             {
-                TextSpan span = context.Span;
-
-                if (span.IsEmptyAndContainedInSpan(switchStatement.SwitchKeyword)
-                    || span.IsBetweenSpans(switchStatement))
-                {
-                    ReplaceSwitchWithIfElseRefactoring.ComputeRefactoring(context, switchStatement);
-                }
+                return;
             }
+
+            TextSpan span = context.Span;
+
+            if (!span.IsEmptyAndContainedInSpan(switchStatement.SwitchKeyword)
+                && !span.IsBetweenSpans(switchStatement))
+            {
+                return;
+            }
+
+            ReplaceSwitchWithIfElseRefactoring.ComputeRefactoring(context, switchStatement);
         }
     }
 }

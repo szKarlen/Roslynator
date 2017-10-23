@@ -21,41 +21,53 @@ namespace Roslynator.CSharp.Refactorings
             MemberAccessExpressionSyntax memberAccess,
             string methodName)
         {
-            if (memberAccess.Expression?.IsKind(SyntaxKind.InvocationExpression) == true)
+            if (memberAccess.Expression?.IsKind(SyntaxKind.InvocationExpression) != true)
             {
-                var invocation2 = (InvocationExpressionSyntax)memberAccess.Expression;
-
-                if (invocation2.ArgumentList?.Arguments.Count == 1
-                    && invocation2.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
-                {
-                    var memberAccess2 = (MemberAccessExpressionSyntax)invocation2.Expression;
-
-                    if (memberAccess2.Name?.Identifier.ValueText == "Where")
-                    {
-                        SemanticModel semanticModel = context.SemanticModel;
-                        CancellationToken cancellationToken = context.CancellationToken;
-
-                        MethodInfo methodInfo;
-                        if (semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.None, cancellationToken)
-                            && methodInfo.IsLinqExtensionOfIEnumerableOfTWithoutParameters(methodName))
-                        {
-                            MethodInfo methodInfo2;
-                            if (semanticModel.TryGetExtensionMethodInfo(invocation2, out methodInfo2, ExtensionMethodKind.None, cancellationToken)
-                                && methodInfo2.IsLinqWhere(allowImmutableArrayExtension: true))
-                            {
-                                TextSpan span = TextSpan.FromBounds(memberAccess2.Name.Span.Start, invocation.Span.End);
-
-                                if (!invocation.ContainsDirectives(span))
-                                {
-                                    context.ReportDiagnostic(
-                                        DiagnosticDescriptors.SimplifyLinqMethodChain,
-                                        Location.Create(invocation.SyntaxTree, span));
-                                }
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            var invocation2 = (InvocationExpressionSyntax)memberAccess.Expression;
+
+            if (invocation2.ArgumentList?.Arguments.Count != 1
+                || invocation2.Expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
+            {
+                return;
+            }
+
+            var memberAccess2 = (MemberAccessExpressionSyntax)invocation2.Expression;
+
+            if (memberAccess2.Name?.Identifier.ValueText != "Where")
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            MethodInfo methodInfo;
+            if (!semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.None, cancellationToken)
+                || !methodInfo.IsLinqExtensionOfIEnumerableOfTWithoutParameters(methodName))
+            {
+                return;
+            }
+
+            MethodInfo methodInfo2;
+            if (!semanticModel.TryGetExtensionMethodInfo(invocation2, out methodInfo2, ExtensionMethodKind.None, cancellationToken)
+                || !methodInfo2.IsLinqWhere(allowImmutableArrayExtension: true))
+            {
+                return;
+            }
+
+            TextSpan span = TextSpan.FromBounds(memberAccess2.Name.Span.Start, invocation.Span.End);
+
+            if (invocation.ContainsDirectives(span))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.SimplifyLinqMethodChain,
+                Location.Create(invocation.SyntaxTree, span));
         }
 
         public static Task<Document> RefactorAsync(

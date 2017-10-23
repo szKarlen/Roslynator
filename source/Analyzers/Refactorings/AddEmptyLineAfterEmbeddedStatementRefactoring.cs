@@ -54,14 +54,16 @@ namespace Roslynator.CSharp.Refactorings
             StatementSyntax statement = elseClause.Statement;
             SyntaxToken elseKeyword = elseClause.ElseKeyword;
 
-            if (statement?.IsKind(SyntaxKind.Block, SyntaxKind.IfStatement) == false
-                && context.SyntaxTree().IsMultiLineSpan(TextSpan.FromBounds(elseKeyword.SpanStart, statement.SpanStart)))
+            if (statement?.IsKind(SyntaxKind.Block, SyntaxKind.IfStatement) != false
+                || !context.SyntaxTree().IsMultiLineSpan(TextSpan.FromBounds(elseKeyword.SpanStart, statement.SpanStart)))
             {
-                IfStatementSyntax topmostIf = elseClause.GetTopmostIf();
-
-                if (topmostIf != null)
-                    Analyze(context, topmostIf, elseKeyword, statement);
+                return;
             }
+
+            IfStatementSyntax topmostIf = elseClause.GetTopmostIf();
+
+            if (topmostIf != null)
+                Analyze(context, topmostIf, elseKeyword, statement);
         }
 
         private static void Analyze(
@@ -70,39 +72,47 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxToken token,
             StatementSyntax statement)
         {
-            if (!token.IsKind(SyntaxKind.None)
-                && !token.IsMissing
-                && statement?.IsKind(SyntaxKind.Block, SyntaxKind.EmptyStatement) == false
-                && context.SyntaxTree().IsMultiLineSpan(TextSpan.FromBounds(token.SpanStart, statement.SpanStart)))
+            if (token.IsKind(SyntaxKind.None)
+                || token.IsMissing
+                || statement?.IsKind(SyntaxKind.Block, SyntaxKind.EmptyStatement) != false
+                || !context.SyntaxTree().IsMultiLineSpan(TextSpan.FromBounds(token.SpanStart, statement.SpanStart)))
             {
-                SyntaxNode parent = containingStatement.Parent;
-
-                if (parent?.IsKind(SyntaxKind.Block) == true)
-                {
-                    var block = (BlockSyntax)parent;
-
-                    SyntaxList<StatementSyntax> statements = block.Statements;
-
-                    int index = statements.IndexOf(containingStatement);
-
-                    if (index < statements.Count - 1
-                        && context
-                            .SyntaxTree()
-                            .GetLineCount(TextSpan.FromBounds(statement.Span.End, statements[index + 1].SpanStart)) <= 2)
-                    {
-                        SyntaxTrivia trivia = statement
-                            .GetTrailingTrivia()
-                            .FirstOrDefault(f => f.IsEndOfLineTrivia());
-
-                        if (trivia.IsEndOfLineTrivia())
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.AddEmptyLineAfterEmbeddedStatement,
-                                trivia);
-                        }
-                    }
-                }
+                return;
             }
+
+            SyntaxNode parent = containingStatement.Parent;
+
+            if (parent?.IsKind(SyntaxKind.Block) != true)
+            {
+                return;
+            }
+
+            var block = (BlockSyntax)parent;
+
+            SyntaxList<StatementSyntax> statements = block.Statements;
+
+            int index = statements.IndexOf(containingStatement);
+
+            if (index >= statements.Count - 1
+                || context
+                    .SyntaxTree()
+                    .GetLineCount(TextSpan.FromBounds(statement.Span.End, statements[index + 1].SpanStart)) > 2)
+            {
+                return;
+            }
+
+            SyntaxTrivia trivia = statement
+                .GetTrailingTrivia()
+                .FirstOrDefault(f => f.IsEndOfLineTrivia());
+
+            if (!trivia.IsEndOfLineTrivia())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AddEmptyLineAfterEmbeddedStatement,
+                trivia);
         }
 
         public static Task<Document> RefactorAsync(

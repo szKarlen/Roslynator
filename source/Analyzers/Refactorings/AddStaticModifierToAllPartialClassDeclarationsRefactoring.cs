@@ -15,51 +15,57 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol symbol)
         {
-            if (symbol.IsClass()
-                && symbol.IsStatic
-                && !symbol.IsImplicitClass
-                && !symbol.IsImplicitlyDeclared)
+            if (!symbol.IsClass()
+                || !symbol.IsStatic
+                || symbol.IsImplicitClass
+                || symbol.IsImplicitlyDeclared)
             {
-                ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
+                return;
+            }
 
-                if (syntaxReferences.Length > 1)
+            ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
+
+            if (syntaxReferences.Length <= 1)
+            {
+                return;
+            }
+
+            bool isStatic = false;
+            List<ClassDeclarationSyntax> classDeclarations = null;
+
+            foreach (SyntaxReference syntaxReference in syntaxReferences)
+            {
+                SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+
+                Debug.Assert(node.IsKind(SyntaxKind.ClassDeclaration), node.Kind().ToString());
+
+                if (node.IsKind(SyntaxKind.ClassDeclaration))
                 {
-                    bool isStatic = false;
-                    List<ClassDeclarationSyntax> classDeclarations = null;
+                    var classDeclaration = (ClassDeclarationSyntax)node;
+                    SyntaxTokenList modifiers = classDeclaration.Modifiers;
 
-                    foreach (SyntaxReference syntaxReference in syntaxReferences)
+                    if (modifiers.Contains(SyntaxKind.StaticKeyword))
                     {
-                        SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
-
-                        Debug.Assert(node.IsKind(SyntaxKind.ClassDeclaration), node.Kind().ToString());
-
-                        if (node.IsKind(SyntaxKind.ClassDeclaration))
-                        {
-                            var classDeclaration = (ClassDeclarationSyntax)node;
-                            SyntaxTokenList modifiers = classDeclaration.Modifiers;
-
-                            if (modifiers.Contains(SyntaxKind.StaticKeyword))
-                            {
-                                isStatic = true;
-                            }
-                            else if (!classDeclaration.ContainsDirectives(modifiers.Span))
-                            {
-                                (classDeclarations ?? (classDeclarations = new List<ClassDeclarationSyntax>())).Add(classDeclaration);
-                            }
-                        }
+                        isStatic = true;
                     }
-
-                    if (isStatic
-                        && classDeclarations != null)
+                    else if (!classDeclaration.ContainsDirectives(modifiers.Span))
                     {
-                        foreach (ClassDeclarationSyntax classDeclaration in classDeclarations)
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.AddStaticModifierToAllPartialClassDeclarations,
-                                classDeclaration.Identifier);
-                        }
+                        (classDeclarations ?? (classDeclarations = new List<ClassDeclarationSyntax>())).Add(classDeclaration);
                     }
                 }
+            }
+
+            if (!isStatic
+                || classDeclarations == null)
+            {
+                return;
+            }
+
+            foreach (ClassDeclarationSyntax classDeclaration in classDeclarations)
+            {
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AddStaticModifierToAllPartialClassDeclarations,
+                    classDeclaration.Identifier);
             }
         }
     }

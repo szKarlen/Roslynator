@@ -12,21 +12,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             binaryExpression = GetBinaryExpression(binaryExpression, context.Span);
 
-            if (binaryExpression != null
-                && IsFormattableKind(binaryExpression.Kind()))
+            if (binaryExpression == null
+                || !IsFormattableKind(binaryExpression.Kind()))
             {
-                if (binaryExpression.IsSingleLine())
-                {
-                    context.RegisterRefactoring(
-                        "Format binary expression on multiple lines",
-                        cancellationToken => CSharpFormatter.ToMultiLineAsync(context.Document, binaryExpression, cancellationToken));
-                }
-                else
-                {
-                    context.RegisterRefactoring(
-                        "Format binary expression on a single line",
-                        cancellationToken => CSharpFormatter.ToSingleLineAsync(context.Document, binaryExpression, cancellationToken));
-                }
+                return;
+            }
+
+            if (binaryExpression.IsSingleLine())
+            {
+                context.RegisterRefactoring(
+                    "Format binary expression on multiple lines",
+                    cancellationToken => CSharpFormatter.ToMultiLineAsync(context.Document, binaryExpression, cancellationToken));
+            }
+            else
+            {
+                context.RegisterRefactoring(
+                    "Format binary expression on a single line",
+                    cancellationToken => CSharpFormatter.ToSingleLineAsync(context.Document, binaryExpression, cancellationToken));
             }
         }
 

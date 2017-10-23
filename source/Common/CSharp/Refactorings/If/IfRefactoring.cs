@@ -178,18 +178,20 @@ namespace Roslynator.CSharp.Refactorings.If
                 }
             }
 
-            if (expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
-                && SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
+            if (!expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
+                || !SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
             {
-                expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
-
-                if (SyntaxComparer.AreEquivalent(nullCheck.Expression, expression1, requireNotNull: true))
-                {
-                    return IfToReturnWithCoalesceExpression.Create(ifStatement, expression1, expression2, isYield);
-                }
+                return null;
             }
 
-            return null;
+            expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
+
+            if (!SyntaxComparer.AreEquivalent(nullCheck.Expression, expression1, requireNotNull: true))
+            {
+                return null;
+            }
+
+            return IfToReturnWithCoalesceExpression.Create(ifStatement, expression1, expression2, isYield);
         }
 
         private static ImmutableArray<IfRefactoring> Analyze(
@@ -270,14 +272,16 @@ namespace Roslynator.CSharp.Refactorings.If
                     return new IfElseToAssignmentWithCoalesceExpression(ifStatement, left, expression1, expression2);
             }
 
-            if (expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
-                && SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
+            if (!expression1.IsKind(SyntaxKind.SimpleMemberAccessExpression)
+                || !SyntaxUtility.IsPropertyOfNullableOfT(expression1, "Value", semanticModel, cancellationToken))
             {
-                expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
-
-                if (SyntaxComparer.AreEquivalent(nullCheck.Expression, expression1, requireNotNull: true))
-                    return new IfElseToAssignmentWithCoalesceExpression(ifStatement, left, expression1, expression2);
+                return null;
             }
+
+            expression1 = ((MemberAccessExpressionSyntax)expression1).Expression;
+
+            if (SyntaxComparer.AreEquivalent(nullCheck.Expression, expression1, requireNotNull: true))
+                return new IfElseToAssignmentWithCoalesceExpression(ifStatement, left, expression1, expression2);
 
             return null;
         }

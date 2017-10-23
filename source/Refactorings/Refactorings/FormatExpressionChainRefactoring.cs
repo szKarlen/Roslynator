@@ -13,41 +13,45 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, MemberAccessExpressionSyntax memberAccessExpression)
         {
-            if (context.Span.IsEmpty
-                && memberAccessExpression.Span.Contains(context.Span)
-                && memberAccessExpression.IsKind(SyntaxKind.SimpleMemberAccessExpression))
+            if (!context.Span.IsEmpty
+                || !memberAccessExpression.Span.Contains(context.Span)
+                || !memberAccessExpression.IsKind(SyntaxKind.SimpleMemberAccessExpression))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                return;
+            }
 
-                List<MemberAccessExpressionSyntax> expressions = GetChain(memberAccessExpression, semanticModel, context.CancellationToken);
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (expressions.Count > 1)
-                {
-                    if (expressions[0].IsSingleLine(includeExteriorTrivia: false))
+            List<MemberAccessExpressionSyntax> expressions = GetChain(memberAccessExpression, semanticModel, context.CancellationToken);
+
+            if (expressions.Count <= 1)
+            {
+                return;
+            }
+
+            if (expressions[0].IsSingleLine(includeExteriorTrivia: false))
+            {
+                context.RegisterRefactoring(
+                    "Format expression chain on multiple lines",
+                    cancellationToken =>
                     {
-                        context.RegisterRefactoring(
-                            "Format expression chain on multiple lines",
-                            cancellationToken =>
-                            {
-                                return CSharpFormatter.ToMultiLineAsync(
-                                    context.Document,
-                                    expressions.ToArray(),
-                                    cancellationToken);
-                            });
-                    }
-                    else
+                        return CSharpFormatter.ToMultiLineAsync(
+                            context.Document,
+                            expressions.ToArray(),
+                            cancellationToken);
+                    });
+            }
+            else
+            {
+                context.RegisterRefactoring(
+                    "Format expression chain on a single line",
+                    cancellationToken =>
                     {
-                        context.RegisterRefactoring(
-                            "Format expression chain on a single line",
-                            cancellationToken =>
-                            {
-                                return CSharpFormatter.ToSingleLineAsync(
-                                    context.Document,
-                                    expressions[0],
-                                    cancellationToken);
-                            });
-                    }
-                }
+                        return CSharpFormatter.ToSingleLineAsync(
+                            context.Document,
+                            expressions[0],
+                            cancellationToken);
+                    });
             }
         }
 

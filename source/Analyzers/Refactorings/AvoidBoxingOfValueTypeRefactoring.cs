@@ -23,21 +23,23 @@ namespace Roslynator.CSharp.Refactorings
             var addExpression = (BinaryExpressionSyntax)context.Node;
 
             MethodInfo methodInfo;
-            if (context.SemanticModel.TryGetMethodInfo(addExpression, out methodInfo, context.CancellationToken)
-                && methodInfo.MethodKind == MethodKind.BuiltinOperator
-                && methodInfo.Name == WellKnownMemberNames.AdditionOperatorName
-                && methodInfo.IsContainingType(SpecialType.System_String))
+            if (!context.SemanticModel.TryGetMethodInfo(addExpression, out methodInfo, context.CancellationToken)
+                || methodInfo.MethodKind != MethodKind.BuiltinOperator
+                || methodInfo.Name != WellKnownMemberNames.AdditionOperatorName
+                || !methodInfo.IsContainingType(SpecialType.System_String))
             {
-                ImmutableArray<IParameterSymbol> parameters = methodInfo.Parameters;
+                return;
+            }
 
-                if (parameters[0].Type.IsObject())
-                {
-                    Analyze(context, addExpression.Left);
-                }
-                else if (parameters[1].Type.IsObject())
-                {
-                    Analyze(context, addExpression.Right);
-                }
+            ImmutableArray<IParameterSymbol> parameters = methodInfo.Parameters;
+
+            if (parameters[0].Type.IsObject())
+            {
+                Analyze(context, addExpression.Left);
+            }
+            else if (parameters[1].Type.IsObject())
+            {
+                Analyze(context, addExpression.Right);
             }
         }
 
@@ -45,13 +47,15 @@ namespace Roslynator.CSharp.Refactorings
         {
             expression = expression.WalkDownParentheses();
 
-            if (!expression.IsKind(SyntaxKind.AddExpression))
+            if (expression.IsKind(SyntaxKind.AddExpression))
             {
-                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
-
-                if (typeSymbol?.IsValueType == true)
-                    context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, expression);
+                return;
             }
+
+            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+            if (typeSymbol?.IsValueType == true)
+                context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, expression);
         }
 
         public static void Interpolation(SyntaxNodeAnalysisContext context)
@@ -61,21 +65,25 @@ namespace Roslynator.CSharp.Refactorings
 
             var interpolation = (InterpolationSyntax)context.Node;
 
-            if (interpolation.AlignmentClause == null
-                && interpolation.FormatClause == null)
+            if (interpolation.AlignmentClause != null
+                || interpolation.FormatClause != null)
             {
-                ExpressionSyntax expression = interpolation.Expression;
-
-                if (expression != null)
-                {
-                    expression = expression.WalkDownParentheses();
-
-                    ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
-
-                    if (typeSymbol?.IsValueType == true)
-                        context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, expression);
-                }
+                return;
             }
+
+            ExpressionSyntax expression = interpolation.Expression;
+
+            if (expression == null)
+            {
+                return;
+            }
+
+            expression = expression.WalkDownParentheses();
+
+            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+            if (typeSymbol?.IsValueType == true)
+                context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, expression);
         }
 
         public static async Task<Document> RefactorAsync(

@@ -141,12 +141,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             TextSpan span = GetCommentsSpan(leadingTrivia);
 
-            if (span != default(TextSpan))
+            if (span == default(TextSpan))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.ReplaceCommentWithDocumentationComment,
-                    Location.Create(context.SyntaxTree(), span));
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.ReplaceCommentWithDocumentationComment,
+                Location.Create(context.SyntaxTree(), span));
         }
 
         private static TextSpan GetCommentsSpan(SyntaxTriviaList leadingTrivia)

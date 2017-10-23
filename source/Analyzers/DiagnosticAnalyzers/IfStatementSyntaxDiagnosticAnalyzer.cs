@@ -56,26 +56,30 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
         private static void AnalyzeBraces(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement)
         {
-            if (!ifStatement.IsParentKind(SyntaxKind.ElseClause)
-                && ifStatement.Else != null)
+            if (ifStatement.IsParentKind(SyntaxKind.ElseClause)
+                || ifStatement.Else == null)
             {
-                BracesAnalysisResult result = CSharpAnalysis.AnalyzeBraces(ifStatement);
+                return;
+            }
 
-                if ((result & BracesAnalysisResult.AddBraces) != 0)
-                {
-                    context.ReportDiagnostic(DiagnosticDescriptors.AddBracesToIfElse, ifStatement);
-                }
+            BracesAnalysisResult result = CSharpAnalysis.AnalyzeBraces(ifStatement);
 
-                if ((result & BracesAnalysisResult.RemoveBraces) != 0)
-                {
-                    context.ReportDiagnostic(DiagnosticDescriptors.RemoveBracesFromIfElse, ifStatement);
+            if ((result & BracesAnalysisResult.AddBraces) != 0)
+            {
+                context.ReportDiagnostic(DiagnosticDescriptors.AddBracesToIfElse, ifStatement);
+            }
 
-                    foreach (SyntaxNode node in ifStatement.DescendantNodes())
-                    {
-                        if (node.IsKind(SyntaxKind.Block))
-                            context.ReportBraces(DiagnosticDescriptors.RemoveBracesFromIfElseFadeOut, (BlockSyntax)node);
-                    }
-                }
+            if ((result & BracesAnalysisResult.RemoveBraces) == 0)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.RemoveBracesFromIfElse, ifStatement);
+
+            foreach (SyntaxNode node in ifStatement.DescendantNodes())
+            {
+                if (node.IsKind(SyntaxKind.Block))
+                    context.ReportBraces(DiagnosticDescriptors.RemoveBracesFromIfElseFadeOut, (BlockSyntax)node);
             }
         }
     }

@@ -113,19 +113,21 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax left = equalsExpression.Left?.WalkDownParentheses();
 
-            if (IsFixableSwitchExpression(left, semanticModel, cancellationToken))
+            if (!IsFixableSwitchExpression(left, semanticModel, cancellationToken))
             {
-                ExpressionSyntax right = equalsExpression.Right?.WalkDownParentheses();
-
-                if (IsFixableSwitchExpression(right, semanticModel, cancellationToken)
-                    && semanticModel.GetConstantValue(right).HasValue)
-                {
-                    return switchExpression == null
-                        || SyntaxComparer.AreEquivalent(left, switchExpression);
-                }
+                return false;
             }
 
-            return false;
+            ExpressionSyntax right = equalsExpression.Right?.WalkDownParentheses();
+
+            if (!IsFixableSwitchExpression(right, semanticModel, cancellationToken)
+                || !semanticModel.GetConstantValue(right).HasValue)
+            {
+                return false;
+            }
+
+            return switchExpression == null
+                || SyntaxComparer.AreEquivalent(left, switchExpression);
         }
 
         private static bool IsFixableSwitchExpression(
@@ -165,25 +167,27 @@ namespace Roslynator.CSharp.Refactorings
                     return true;
             }
 
-            if ((typeSymbol is INamedTypeSymbol namedTypeSymbol)
-                && namedTypeSymbol.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
+            if ((!(typeSymbol is INamedTypeSymbol namedTypeSymbol))
+                || namedTypeSymbol.ConstructedFrom.SpecialType != SpecialType.System_Nullable_T)
             {
-                switch (namedTypeSymbol.TypeArguments[0].SpecialType)
-                {
-                    case SpecialType.System_Boolean:
-                    case SpecialType.System_Char:
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                    case SpecialType.System_Single:
-                    case SpecialType.System_Double:
-                        return true;
-                }
+                return false;
+            }
+
+            switch (namedTypeSymbol.TypeArguments[0].SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                case SpecialType.System_Char:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
+                    return true;
             }
 
             return false;
@@ -306,13 +310,15 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool ContainsBreakStatementThatBelongsToParentLoop(StatementSyntax statement)
         {
-            if (ShouldCheckBreakStatement())
+            if (!ShouldCheckBreakStatement())
             {
-                foreach (SyntaxNode descendant in statement.DescendantNodes(statement.Span, f => !IsLoopOrNestedMethod(f.Kind())))
-                {
-                    if (descendant.IsKind(SyntaxKind.BreakStatement))
-                        return true;
-                }
+                return false;
+            }
+
+            foreach (SyntaxNode descendant in statement.DescendantNodes(statement.Span, f => !IsLoopOrNestedMethod(f.Kind())))
+            {
+                if (descendant.IsKind(SyntaxKind.BreakStatement))
+                    return true;
             }
 
             return false;

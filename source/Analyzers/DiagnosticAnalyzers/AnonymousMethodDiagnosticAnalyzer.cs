@@ -43,14 +43,16 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var anonymousMethod = (AnonymousMethodExpressionSyntax)context.Node;
 
-            if (UseLambdaExpressionInsteadOfAnonymousMethodRefactoring.CanRefactor(anonymousMethod))
+            if (!UseLambdaExpressionInsteadOfAnonymousMethodRefactoring.CanRefactor(anonymousMethod))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.UseLambdaExpressionInsteadOfAnonymousMethod,
-                    anonymousMethod);
-
-                FadeOut(context, anonymousMethod);
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.UseLambdaExpressionInsteadOfAnonymousMethod,
+                anonymousMethod);
+
+            FadeOut(context, anonymousMethod);
         }
 
         private static void FadeOut(SyntaxNodeAnalysisContext context, AnonymousMethodExpressionSyntax anonymousMethod)
@@ -61,19 +63,23 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             SyntaxList<StatementSyntax> statements = block.Statements;
 
-            if (statements.Count == 1
-                && block.IsSingleLine())
+            if (statements.Count != 1
+                || !block.IsSingleLine())
             {
-                StatementSyntax statement = statements[0];
-
-                if (statement.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.ExpressionStatement))
-                {
-                    context.ReportBraces(DiagnosticDescriptor, block);
-
-                    if (statement.IsKind(SyntaxKind.ReturnStatement))
-                        context.ReportToken(DiagnosticDescriptor, ((ReturnStatementSyntax)statement).ReturnKeyword);
-                }
+                return;
             }
+
+            StatementSyntax statement = statements[0];
+
+            if (!statement.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.ExpressionStatement))
+            {
+                return;
+            }
+
+            context.ReportBraces(DiagnosticDescriptor, block);
+
+            if (statement.IsKind(SyntaxKind.ReturnStatement))
+                context.ReportToken(DiagnosticDescriptor, ((ReturnStatementSyntax)statement).ReturnKeyword);
         }
     }
 }

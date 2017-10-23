@@ -29,25 +29,31 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax right = logicalOr.Right.WalkDownParentheses();
 
-            if (left.IsKind(SyntaxKind.LogicalAndExpression)
-                && right.IsKind(SyntaxKind.LogicalAndExpression))
+            if (!left.IsKind(SyntaxKind.LogicalAndExpression)
+                || !right.IsKind(SyntaxKind.LogicalAndExpression))
             {
-                ExpressionPair expressions = GetExpressionPair((BinaryExpressionSyntax)left);
-
-                if (expressions.IsValid)
-                {
-                    ExpressionPair expressions2 = GetExpressionPair((BinaryExpressionSyntax)right);
-
-                    if (expressions2.IsValid
-                        && (expressions.Expression.Kind() == expressions2.NegatedExpression.Kind()
-                        && expressions.NegatedExpression.Kind() == expressions2.Expression.Kind()
-                        && SyntaxComparer.AreEquivalent(expressions.Expression, expressions2.NegatedExpression)
-                        && SyntaxComparer.AreEquivalent(expressions.NegatedExpression, expressions2.Expression)))
-                    {
-                        context.ReportDiagnostic(DiagnosticDescriptors.UseExclusiveOrOperator, logicalOr);
-                    }
-                }
+                return;
             }
+
+            ExpressionPair expressions = GetExpressionPair((BinaryExpressionSyntax)left);
+
+            if (!expressions.IsValid)
+            {
+                return;
+            }
+
+            ExpressionPair expressions2 = GetExpressionPair((BinaryExpressionSyntax)right);
+
+            if (!expressions2.IsValid
+                || (expressions.Expression.Kind() != expressions2.NegatedExpression.Kind()
+                || expressions.NegatedExpression.Kind() != expressions2.Expression.Kind()
+                || !SyntaxComparer.AreEquivalent(expressions.Expression, expressions2.NegatedExpression)
+                || !SyntaxComparer.AreEquivalent(expressions.NegatedExpression, expressions2.Expression)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.UseExclusiveOrOperator, logicalOr);
         }
 
         private static ExpressionPair GetExpressionPair(BinaryExpressionSyntax logicalAnd)

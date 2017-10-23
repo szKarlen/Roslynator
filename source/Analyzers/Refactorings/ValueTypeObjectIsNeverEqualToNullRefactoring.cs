@@ -28,19 +28,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax left = binaryExpression.Left;
 
-            if (left?.IsMissing == false)
+            if (left?.IsMissing != false)
             {
-                ExpressionSyntax right = binaryExpression.Right;
-
-                if (right?.IsKind(SyntaxKind.NullLiteralExpression) == true
-                    && IsStructButNotNullableOfT(context.SemanticModel.GetTypeSymbol(left, context.CancellationToken))
-                    && !binaryExpression.SpanContainsDirectives())
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.ValueTypeObjectIsNeverEqualToNull,
-                        binaryExpression);
-                }
+                return;
             }
+
+            ExpressionSyntax right = binaryExpression.Right;
+
+            if (right?.IsKind(SyntaxKind.NullLiteralExpression) != true
+                || !IsStructButNotNullableOfT(context.SemanticModel.GetTypeSymbol(left, context.CancellationToken))
+                || binaryExpression.SpanContainsDirectives())
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.ValueTypeObjectIsNeverEqualToNull,
+                binaryExpression);
         }
 
         private static bool IsStructButNotNullableOfT(ITypeSymbol typeSymbol)

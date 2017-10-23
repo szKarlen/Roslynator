@@ -20,58 +20,72 @@ namespace Roslynator.CSharp.Refactorings
         {
             var localDeclaration = (LocalDeclarationStatementSyntax)context.Node;
 
-            if (!localDeclaration.IsConst
-                && !localDeclaration.ContainsDiagnostics
-                && !localDeclaration.SpanOrTrailingTriviaContainsDirectives())
+            if (localDeclaration.IsConst
+                || localDeclaration.ContainsDiagnostics
+                || localDeclaration.SpanOrTrailingTriviaContainsDirectives())
             {
-                VariableDeclarationSyntax declaration = localDeclaration.Declaration;
-
-                if (declaration != null)
-                {
-                    SeparatedSyntaxList<VariableDeclaratorSyntax> variables = declaration.Variables;
-
-                    if (variables.Count == 1)
-                    {
-                        StatementSyntax nextStatement = localDeclaration.NextStatementOrDefault();
-
-                        if (nextStatement?.ContainsDiagnostics == false
-                            && nextStatement?.SpanOrLeadingTriviaContainsDirectives() == false)
-                        {
-                            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(nextStatement);
-                            if (assignmentInfo.Success
-                                && assignmentInfo.Left.IsKind(SyntaxKind.IdentifierName))
-                            {
-                                SemanticModel semanticModel = context.SemanticModel;
-                                CancellationToken cancellationToken = context.CancellationToken;
-
-                                LocalInfo localInfo = FindInitializedVariable((IdentifierNameSyntax)assignmentInfo.Left, variables[0], semanticModel, cancellationToken);
-
-                                if (localInfo.IsValid)
-                                {
-                                    EqualsValueClauseSyntax initializer = localInfo.Declarator.Initializer;
-                                    ExpressionSyntax value = initializer?.Value;
-
-                                    if (value == null
-                                        || (IsDefaultValue(declaration.Type, value, semanticModel, cancellationToken)
-                                            && !IsReferenced(localInfo.Symbol, assignmentInfo.Right, semanticModel, cancellationToken)))
-                                    {
-                                        context.ReportDiagnostic(DiagnosticDescriptors.MergeLocalDeclarationWithAssignment, localInfo.Declarator.Identifier);
-
-                                        if (value != null)
-                                        {
-                                            context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, initializer);
-                                            context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.AssignmentExpression.OperatorToken);
-                                        }
-
-                                        context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, localDeclaration.SemicolonToken);
-                                        context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.Left);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            VariableDeclarationSyntax declaration = localDeclaration.Declaration;
+
+            if (declaration == null)
+            {
+                return;
+            }
+
+            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = declaration.Variables;
+
+            if (variables.Count != 1)
+            {
+                return;
+            }
+
+            StatementSyntax nextStatement = localDeclaration.NextStatementOrDefault();
+
+            if (nextStatement?.ContainsDiagnostics != false
+                || nextStatement?.SpanOrLeadingTriviaContainsDirectives() != false)
+            {
+                return;
+            }
+
+            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(nextStatement);
+            if (!assignmentInfo.Success
+                || !assignmentInfo.Left.IsKind(SyntaxKind.IdentifierName))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = context.SemanticModel;
+            CancellationToken cancellationToken = context.CancellationToken;
+
+            LocalInfo localInfo = FindInitializedVariable((IdentifierNameSyntax)assignmentInfo.Left, variables[0], semanticModel, cancellationToken);
+
+            if (!localInfo.IsValid)
+            {
+                return;
+            }
+
+            EqualsValueClauseSyntax initializer = localInfo.Declarator.Initializer;
+            ExpressionSyntax value = initializer?.Value;
+
+            if (value != null
+                && (!IsDefaultValue(declaration.Type, value, semanticModel, cancellationToken)
+                    || IsReferenced(localInfo.Symbol, assignmentInfo.Right, semanticModel, cancellationToken)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.MergeLocalDeclarationWithAssignment, localInfo.Declarator.Identifier);
+
+            if (value != null)
+            {
+                context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, initializer);
+                context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.AssignmentExpression.OperatorToken);
+            }
+
+            context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, localDeclaration.SemicolonToken);
+            context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.Left);
         }
 
         private static bool IsReferenced(

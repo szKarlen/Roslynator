@@ -45,17 +45,19 @@ namespace Roslynator.CSharp.Refactorings
         {
             StatementSyntax statement = usingStatement.Statement;
 
-            if (statement != null)
+            if (statement == null)
             {
-                if (statement.IsKind(SyntaxKind.Block))
-                {
-                    foreach (StatementSyntax statement2 in ((BlockSyntax)statement).Statements)
-                        yield return statement2;
-                }
-                else
-                {
-                    yield return statement;
-                }
+                yield break;
+            }
+
+            if (statement.IsKind(SyntaxKind.Block))
+            {
+                foreach (StatementSyntax statement2 in ((BlockSyntax)statement).Statements)
+                    yield return statement2;
+            }
+            else
+            {
+                yield return statement;
             }
         }
     }

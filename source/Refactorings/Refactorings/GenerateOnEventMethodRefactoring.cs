@@ -21,51 +21,53 @@ namespace Roslynator.CSharp.Refactorings
 
             VariableDeclarationSyntax variableDeclaration = eventFieldDeclaration.Declaration;
 
-            if (variableDeclaration != null)
+            if (variableDeclaration == null)
             {
-                foreach (VariableDeclaratorSyntax variableDeclarator in variableDeclaration.Variables)
+                return;
+            }
+
+            foreach (VariableDeclaratorSyntax variableDeclarator in variableDeclaration.Variables)
+            {
+                if (context.Span.IsContainedInSpanOrBetweenSpans(variableDeclarator.Identifier))
                 {
-                    if (context.Span.IsContainedInSpanOrBetweenSpans(variableDeclarator.Identifier))
+                    semanticModel = semanticModel ?? await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                    var eventSymbol = semanticModel.GetDeclaredSymbol(variableDeclarator, context.CancellationToken) as IEventSymbol;
+
+                    if (eventSymbol?.IsStatic == false)
                     {
-                        semanticModel = semanticModel ?? await context.GetSemanticModelAsync().ConfigureAwait(false);
+                        INamedTypeSymbol containingType = eventSymbol.ContainingType;
 
-                        var eventSymbol = semanticModel.GetDeclaredSymbol(variableDeclarator, context.CancellationToken) as IEventSymbol;
-
-                        if (eventSymbol?.IsStatic == false)
+                        if (containingType?.IsInterface() == false)
                         {
-                            INamedTypeSymbol containingType = eventSymbol.ContainingType;
+                            var eventHandlerType = eventSymbol.Type as INamedTypeSymbol;
 
-                            if (containingType?.IsInterface() == false)
+                            if (eventHandlerType != null)
                             {
-                                var eventHandlerType = eventSymbol.Type as INamedTypeSymbol;
+                                ITypeSymbol eventArgsSymbol = GetEventArgsSymbol(eventHandlerType, semanticModel);
 
-                                if (eventHandlerType != null)
+                                if (eventArgsSymbol != null)
                                 {
-                                    ITypeSymbol eventArgsSymbol = GetEventArgsSymbol(eventHandlerType, semanticModel);
+                                    string methodName = "On" + eventSymbol.Name;
 
-                                    if (eventArgsSymbol != null)
+                                    if (!containingType.ExistsMethod(
+                                        $"On{eventSymbol.Name}",
+                                        methodSymbol => eventArgsSymbol.Equals(methodSymbol.Parameters.SingleOrDefault(throwException: false)?.Type)))
                                     {
-                                        string methodName = "On" + eventSymbol.Name;
+                                        methodName = NameGenerator.Default.EnsureUniqueMemberName(methodName, containingType);
 
-                                        if (!containingType.ExistsMethod(
-                                            $"On{eventSymbol.Name}",
-                                            methodSymbol => eventArgsSymbol.Equals(methodSymbol.Parameters.SingleOrDefault(throwException: false)?.Type)))
-                                        {
-                                            methodName = NameGenerator.Default.EnsureUniqueMemberName(methodName, containingType);
-
-                                            context.RegisterRefactoring(
-                                                $"Generate '{methodName}' method",
-                                                cancellationToken =>
-                                                {
-                                                    return RefactorAsync(
-                                                        context.Document,
-                                                        eventFieldDeclaration,
-                                                        eventSymbol,
-                                                        eventArgsSymbol,
-                                                        context.SupportsCSharp6,
-                                                        cancellationToken);
-                                                });
-                                        }
+                                        context.RegisterRefactoring(
+                                            $"Generate '{methodName}' method",
+                                            cancellationToken =>
+                                            {
+                                                return RefactorAsync(
+                                                    context.Document,
+                                                    eventFieldDeclaration,
+                                                    eventSymbol,
+                                                    eventArgsSymbol,
+                                                    context.SupportsCSharp6,
+                                                    cancellationToken);
+                                            });
                                     }
                                 }
                             }

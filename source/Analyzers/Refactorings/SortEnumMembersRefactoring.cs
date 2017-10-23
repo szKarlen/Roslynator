@@ -17,12 +17,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             var enumDeclaration = (EnumDeclarationSyntax)context.Node;
 
-            if (IsListUnsorted(enumDeclaration.Members, context.SemanticModel, context.CancellationToken)
-                && !enumDeclaration.ContainsDirectives(enumDeclaration.BracesSpan()))
+            if (!IsListUnsorted(enumDeclaration.Members, context.SemanticModel, context.CancellationToken)
+                || enumDeclaration.ContainsDirectives(enumDeclaration.BracesSpan()))
             {
-                SyntaxToken identifier = enumDeclaration.Identifier;
-                context.ReportDiagnostic(DiagnosticDescriptors.SortEnumMembers, identifier, identifier);
+                return;
             }
+
+            SyntaxToken identifier = enumDeclaration.Identifier;
+            context.ReportDiagnostic(DiagnosticDescriptors.SortEnumMembers, identifier, identifier);
         }
 
         private static bool IsListUnsorted(
@@ -30,41 +32,45 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (members.Any())
+            if (!members.Any())
             {
-                IFieldSymbol firstField = semanticModel.GetDeclaredSymbol(members.First(), cancellationToken);
+                return false;
+            }
 
-                if (firstField?.HasConstantValue == true)
+            IFieldSymbol firstField = semanticModel.GetDeclaredSymbol(members.First(), cancellationToken);
+
+            if (firstField?.HasConstantValue != true)
+            {
+                return false;
+            }
+
+            object previousValue = firstField.ConstantValue;
+
+            for (int i = 1; i < members.Count - 1; i++)
+            {
+                IFieldSymbol field = semanticModel.GetDeclaredSymbol(members[i], cancellationToken);
+
+                if (field?.HasConstantValue != true)
+                    return false;
+
+                object value = field.ConstantValue;
+
+                if (EnumMemberValueComparer.Instance.Compare(previousValue, value) > 0)
                 {
-                    object previousValue = firstField.ConstantValue;
+                    i++;
 
-                    for (int i = 1; i < members.Count - 1; i++)
+                    while (i < members.Count)
                     {
-                        IFieldSymbol field = semanticModel.GetDeclaredSymbol(members[i], cancellationToken);
-
-                        if (field?.HasConstantValue != true)
+                        if (semanticModel.GetDeclaredSymbol(members[i], cancellationToken)?.HasConstantValue != true)
                             return false;
 
-                        object value = field.ConstantValue;
-
-                        if (EnumMemberValueComparer.Instance.Compare(previousValue, value) > 0)
-                        {
-                            i++;
-
-                            while (i < members.Count)
-                            {
-                                if (semanticModel.GetDeclaredSymbol(members[i], cancellationToken)?.HasConstantValue != true)
-                                    return false;
-
-                                i++;
-                            }
-
-                            return true;
-                        }
-
-                        previousValue = value;
+                        i++;
                     }
+
+                    return true;
                 }
+
+                previousValue = value;
             }
 
             return false;

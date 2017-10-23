@@ -16,45 +16,51 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, MemberDeclarationSyntax member)
         {
-            if (context.IsAnyRefactoringEnabled(
+            if (!context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.SplitAttributes,
                     RefactoringIdentifiers.MergeAttributes)
-                && !member.IsKind(SyntaxKind.NamespaceDeclaration))
+                || member.IsKind(SyntaxKind.NamespaceDeclaration))
             {
-                SyntaxListSelection<AttributeListSyntax> selectedAttributeLists;
-                if (SyntaxListSelection<AttributeListSyntax>.TryCreate(member.GetAttributeLists(), context.Span, out selectedAttributeLists))
-                {
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.SplitAttributes)
-                        && selectedAttributeLists.Any(f => f.Attributes.Count > 1))
-                    {
-                        context.RegisterRefactoring(
-                            "Split attributes",
-                            cancellationToken =>
-                            {
-                                return SplitAsync(
-                                    context.Document,
-                                    member,
-                                    selectedAttributeLists.ToArray(),
-                                    cancellationToken);
-                            });
-                    }
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.MergeAttributes)
-                        && selectedAttributeLists.Count > 1)
-                    {
-                        context.RegisterRefactoring(
-                            "Merge attributes",
-                            cancellationToken =>
-                            {
-                                return MergeAsync(
-                                    context.Document,
-                                    member,
-                                    selectedAttributeLists.ToArray(),
-                                    cancellationToken);
-                            });
-                    }
-                }
+                return;
             }
+
+            SyntaxListSelection<AttributeListSyntax> selectedAttributeLists;
+            if (!SyntaxListSelection<AttributeListSyntax>.TryCreate(member.GetAttributeLists(), context.Span, out selectedAttributeLists))
+            {
+                return;
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SplitAttributes)
+                && selectedAttributeLists.Any(f => f.Attributes.Count > 1))
+            {
+                context.RegisterRefactoring(
+                    "Split attributes",
+                    cancellationToken =>
+                    {
+                        return SplitAsync(
+                            context.Document,
+                            member,
+                            selectedAttributeLists.ToArray(),
+                            cancellationToken);
+                    });
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.MergeAttributes)
+                || selectedAttributeLists.Count <= 1)
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Merge attributes",
+                cancellationToken =>
+                {
+                    return MergeAsync(
+                        context.Document,
+                        member,
+                        selectedAttributeLists.ToArray(),
+                        cancellationToken);
+                });
         }
 
         public static Task<Document> SplitAsync(

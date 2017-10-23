@@ -27,53 +27,69 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel = context.SemanticModel;
             CancellationToken cancellationToken = context.CancellationToken;
 
-            if (!localDeclaration.IsConst)
+            if (localDeclaration.IsConst)
             {
-                StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(localDeclaration);
-                if (statementsInfo.Success)
-                {
-                    SyntaxList<StatementSyntax> statements = statementsInfo.Statements;
-
-                    if (statements.Count > 1)
-                    {
-                        int index = statements.IndexOf(localDeclaration);
-
-                        if (index < statements.Count - 1)
-                        {
-                            VariableDeclarationSyntax variableDeclaration = localDeclaration.Declaration;
-
-                            if (variableDeclaration?.IsMissing == false)
-                            {
-                                SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
-
-                                if (variables.Any())
-                                {
-                                    TypeSyntax type = variableDeclaration.Type;
-                                    ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, cancellationToken);
-
-                                    if (typeSymbol?.SupportsConstantValue() == true
-                                        && variables.All(variable => HasConstantValue(variable.Initializer?.Value, typeSymbol, semanticModel, cancellationToken)))
-                                    {
-                                        TextSpan span = TextSpan.FromBounds(statements[index + 1].Span.Start, statements.Last().Span.End);
-                                        IEnumerable<SyntaxNode> nodes = statementsInfo.Node.DescendantNodes(span);
-
-                                        if (!IsAnyVariableInvalidOrAssigned(
-                                            variables,
-                                            nodes,
-                                            semanticModel,
-                                            cancellationToken))
-                                        {
-                                            context.ReportDiagnostic(
-                                                DiagnosticDescriptors.MarkLocalVariableAsConst,
-                                                type);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(localDeclaration);
+            if (!statementsInfo.Success)
+            {
+                return;
+            }
+
+            SyntaxList<StatementSyntax> statements = statementsInfo.Statements;
+
+            if (statements.Count <= 1)
+            {
+                return;
+            }
+
+            int index = statements.IndexOf(localDeclaration);
+
+            if (index >= statements.Count - 1)
+            {
+                return;
+            }
+
+            VariableDeclarationSyntax variableDeclaration = localDeclaration.Declaration;
+
+            if (variableDeclaration?.IsMissing != false)
+            {
+                return;
+            }
+
+            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
+
+            if (!variables.Any())
+            {
+                return;
+            }
+
+            TypeSyntax type = variableDeclaration.Type;
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, cancellationToken);
+
+            if (typeSymbol?.SupportsConstantValue() != true
+                || !variables.All(variable => HasConstantValue(variable.Initializer?.Value, typeSymbol, semanticModel, cancellationToken)))
+            {
+                return;
+            }
+
+            TextSpan span = TextSpan.FromBounds(statements[index + 1].Span.Start, statements.Last().Span.End);
+            IEnumerable<SyntaxNode> nodes = statementsInfo.Node.DescendantNodes(span);
+
+            if (IsAnyVariableInvalidOrAssigned(
+                variables,
+                nodes,
+                semanticModel,
+                cancellationToken))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.MarkLocalVariableAsConst,
+                type);
         }
 
         private static bool IsAnyVariableInvalidOrAssigned(SeparatedSyntaxList<VariableDeclaratorSyntax> variables, IEnumerable<SyntaxNode> nodes, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -132,54 +148,54 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (expression?.IsMissing == false)
+            if (expression?.IsMissing != false)
             {
-                switch (typeSymbol.SpecialType)
-                {
-                    case SpecialType.System_Boolean:
-                        {
-                            if (expression.Kind().IsBooleanLiteralExpression())
-                                return true;
-
-                            break;
-                        }
-                    case SpecialType.System_Char:
-                        {
-                            if (expression.IsKind(SyntaxKind.CharacterLiteralExpression))
-                                return true;
-
-                            break;
-                        }
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                    case SpecialType.System_Decimal:
-                    case SpecialType.System_Single:
-                    case SpecialType.System_Double:
-                        {
-                            if (expression.IsKind(SyntaxKind.NumericLiteralExpression))
-                                return true;
-
-                            break;
-                        }
-                    case SpecialType.System_String:
-                        {
-                            if (expression.IsKind(SyntaxKind.StringLiteralExpression))
-                                return true;
-
-                            break;
-                        }
-                }
-
-                return semanticModel.GetConstantValue(expression, cancellationToken).HasValue;
+                return false;
             }
 
-            return false;
+            switch (typeSymbol.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    {
+                        if (expression.Kind().IsBooleanLiteralExpression())
+                            return true;
+
+                        break;
+                    }
+                case SpecialType.System_Char:
+                    {
+                        if (expression.IsKind(SyntaxKind.CharacterLiteralExpression))
+                            return true;
+
+                        break;
+                    }
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                case SpecialType.System_Decimal:
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
+                    {
+                        if (expression.IsKind(SyntaxKind.NumericLiteralExpression))
+                            return true;
+
+                        break;
+                    }
+                case SpecialType.System_String:
+                    {
+                        if (expression.IsKind(SyntaxKind.StringLiteralExpression))
+                            return true;
+
+                        break;
+                    }
+            }
+
+            return semanticModel.GetConstantValue(expression, cancellationToken).HasValue;
         }
 
         private static ExpressionSyntax GetAssignedExpression(SyntaxNode node)

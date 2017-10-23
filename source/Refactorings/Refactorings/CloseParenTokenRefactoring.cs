@@ -33,15 +33,17 @@ namespace Roslynator.CSharp.Refactorings
                     await ParameterRefactoring.ComputeRefactoringsAsync(context, parameter).ConfigureAwait(false);
             }
 
-            if (closeParen.IsParentKind(SyntaxKind.ArgumentList))
+            if (!closeParen.IsParentKind(SyntaxKind.ArgumentList))
             {
-                ArgumentSyntax argument = ((ArgumentListSyntax)closeParen.Parent)
-                    .Arguments
-                    .FirstOrDefault(f => f.FullSpan.End == closeParen.FullSpan.Start);
-
-                if (argument != null)
-                    await ArgumentRefactoring.ComputeRefactoringsAsync(context, argument).ConfigureAwait(false);
+                return;
             }
+
+            ArgumentSyntax argument = ((ArgumentListSyntax)closeParen.Parent)
+                .Arguments
+                .FirstOrDefault(f => f.FullSpan.End == closeParen.FullSpan.Start);
+
+            if (argument != null)
+                await ArgumentRefactoring.ComputeRefactoringsAsync(context, argument).ConfigureAwait(false);
         }
     }
 }

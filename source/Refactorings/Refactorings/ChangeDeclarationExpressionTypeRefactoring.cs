@@ -13,46 +13,48 @@ namespace Roslynator.CSharp.Refactorings
             RefactoringContext context,
             DeclarationExpressionSyntax declarationExpression)
         {
-            if (declarationExpression.Type?.Span.Contains(context.Span) == true
-                && context.IsAnyRefactoringEnabled(
+            if (declarationExpression.Type?.Span.Contains(context.Span) != true
+                || !context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.ChangeExplicitTypeToVar,
                     RefactoringIdentifiers.ChangeVarToExplicitType))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                return;
+            }
 
-                TypeAnalysisFlags flags = CSharpAnalysis.AnalyzeType(declarationExpression, semanticModel, context.CancellationToken);
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (flags.IsExplicit())
+            TypeAnalysisFlags flags = CSharpAnalysis.AnalyzeType(declarationExpression, semanticModel, context.CancellationToken);
+
+            if (flags.IsExplicit())
+            {
+                if (flags.SupportsImplicit()
+                    && flags.IsValidSymbol()
+                    && context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeExplicitTypeToVar))
                 {
-                    if (flags.SupportsImplicit()
-                        && flags.IsValidSymbol()
-                        && context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeExplicitTypeToVar))
-                    {
-                        context.RegisterRefactoring(
-                            "Change type to 'var'",
-                            cancellationToken =>
-                            {
-                                return ChangeTypeRefactoring.ChangeTypeToVarAsync(
-                                    context.Document,
-                                    declarationExpression.Type,
-                                    cancellationToken);
-                            });
-                    }
-                }
-                else if (flags.SupportsExplicit()
-                     && flags.IsValidSymbol()
-                     && context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeVarToExplicitType))
-                {
-                    TypeSyntax type = declarationExpression.Type;
-
-                    var localSymbol = semanticModel.GetDeclaredSymbol(declarationExpression.Designation, context.CancellationToken) as ILocalSymbol;
-
-                    ITypeSymbol typeSymbol = localSymbol.Type;
-
                     context.RegisterRefactoring(
-                        $"Change type to '{SymbolDisplay.GetMinimalString(typeSymbol, semanticModel, type.Span.Start)}'",
-                        cancellationToken => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, typeSymbol, cancellationToken));
+                        "Change type to 'var'",
+                        cancellationToken =>
+                        {
+                            return ChangeTypeRefactoring.ChangeTypeToVarAsync(
+                                context.Document,
+                                declarationExpression.Type,
+                                cancellationToken);
+                        });
                 }
+            }
+            else if (flags.SupportsExplicit()
+                 && flags.IsValidSymbol()
+                 && context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeVarToExplicitType))
+            {
+                TypeSyntax type = declarationExpression.Type;
+
+                var localSymbol = semanticModel.GetDeclaredSymbol(declarationExpression.Designation, context.CancellationToken) as ILocalSymbol;
+
+                ITypeSymbol typeSymbol = localSymbol.Type;
+
+                context.RegisterRefactoring(
+                    $"Change type to '{SymbolDisplay.GetMinimalString(typeSymbol, semanticModel, type.Span.Start)}'",
+                    cancellationToken => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, typeSymbol, cancellationToken));
             }
         }
     }

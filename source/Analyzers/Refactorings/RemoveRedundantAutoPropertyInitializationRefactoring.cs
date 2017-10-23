@@ -20,22 +20,28 @@ namespace Roslynator.CSharp.Refactorings
 
             EqualsValueClauseSyntax initializer = propertyDeclaration.Initializer;
 
-            if (initializer?.SpanOrLeadingTriviaContainsDirectives() == false)
+            if (initializer?.SpanOrLeadingTriviaContainsDirectives() != false)
             {
-                ExpressionSyntax value = initializer.Value;
-
-                if (value != null
-                    && propertyDeclaration.AccessorList?.Accessors.Any(f => !f.IsAutoAccessor()) == false)
-                {
-                    ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(propertyDeclaration.Type, context.CancellationToken);
-
-                    if (typeSymbol?.IsErrorType() == false
-                        && context.SemanticModel.IsDefaultValue(typeSymbol, value, context.CancellationToken))
-                    {
-                        context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantAutoPropertyInitialization, value);
-                    }
-                }
+                return;
             }
+
+            ExpressionSyntax value = initializer.Value;
+
+            if (value == null
+                || propertyDeclaration.AccessorList?.Accessors.Any(f => !f.IsAutoAccessor()) != false)
+            {
+                return;
+            }
+
+            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(propertyDeclaration.Type, context.CancellationToken);
+
+            if (typeSymbol?.IsErrorType() != false
+                || !context.SemanticModel.IsDefaultValue(typeSymbol, value, context.CancellationToken))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantAutoPropertyInitialization, value);
         }
 
         public static Task<Document> RefactorAsync(

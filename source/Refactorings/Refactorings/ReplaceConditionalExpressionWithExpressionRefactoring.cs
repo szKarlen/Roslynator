@@ -14,19 +14,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode parent = expression.Parent;
 
-            if (parent?.IsKind(SyntaxKind.ConditionalExpression) == true
-                && context.Span.IsBetweenSpans(expression))
+            if (parent?.IsKind(SyntaxKind.ConditionalExpression) != true
+                || !context.Span.IsBetweenSpans(expression))
             {
-                var conditionalExpression = (ConditionalExpressionSyntax)parent;
-
-                if (expression.Equals(conditionalExpression.WhenTrue)
-                    || expression.Equals(conditionalExpression.WhenFalse))
-                {
-                    context.RegisterRefactoring(
-                        $"Replace ?: with '{expression}'",
-                        cancellationToken => RefactorAsync(context.Document, expression, cancellationToken));
-                }
+                return;
             }
+
+            var conditionalExpression = (ConditionalExpressionSyntax)parent;
+
+            if (!expression.Equals(conditionalExpression.WhenTrue)
+                && !expression.Equals(conditionalExpression.WhenFalse))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                $"Replace ?: with '{expression}'",
+                cancellationToken => RefactorAsync(context.Document, expression, cancellationToken));
         }
 
         private static Task<Document> RefactorAsync(

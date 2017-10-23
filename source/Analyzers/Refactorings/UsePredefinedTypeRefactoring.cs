@@ -15,24 +15,28 @@ namespace Roslynator.CSharp.Refactorings
         {
             var identifierName = (IdentifierNameSyntax)context.Node;
 
-            if (!identifierName.IsVar
-                && !identifierName.IsParentKind(
+            if (identifierName.IsVar
+                || identifierName.IsParentKind(
                     SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxKind.QualifiedName,
                     SyntaxKind.UsingDirective)
-                && !identifierName.IsPartOfDocumentationComment()
-                && !IsArgumentExpressionOfNameOfExpression(context, identifierName))
+                || identifierName.IsPartOfDocumentationComment()
+                || IsArgumentExpressionOfNameOfExpression(context, identifierName))
             {
-                var typeSymbol = context.SemanticModel.GetSymbol(identifierName, context.CancellationToken) as ITypeSymbol;
-
-                if (typeSymbol?.SupportsPredefinedType() == true)
-                {
-                    IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(identifierName, context.CancellationToken);
-
-                    if (aliasSymbol == null)
-                        ReportDiagnostic(context, identifierName);
-                }
+                return;
             }
+
+            var typeSymbol = context.SemanticModel.GetSymbol(identifierName, context.CancellationToken) as ITypeSymbol;
+
+            if (typeSymbol?.SupportsPredefinedType() != true)
+            {
+                return;
+            }
+
+            IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(identifierName, context.CancellationToken);
+
+            if (aliasSymbol == null)
+                ReportDiagnostic(context, identifierName);
         }
 
         public static void AnalyzeXmlCrefAttribute(SyntaxNodeAnalysisContext context)
@@ -85,71 +89,83 @@ namespace Roslynator.CSharp.Refactorings
         {
             var typeSymbol = context.SemanticModel.GetSymbol(name, context.CancellationToken) as ITypeSymbol;
 
-            if (typeSymbol?.SupportsPredefinedType() == true)
+            if (typeSymbol?.SupportsPredefinedType() != true)
             {
-                IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(name, context.CancellationToken);
-
-                return aliasSymbol == null;
+                return false;
             }
 
-            return false;
+            IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(name, context.CancellationToken);
+
+            return aliasSymbol == null;
         }
 
         public static void Analyze(SyntaxNodeAnalysisContext context, QualifiedNameSyntax qualifiedName)
         {
-            if (!qualifiedName.IsParentKind(SyntaxKind.UsingDirective)
-                && !IsArgumentExpressionOfNameOfExpression(context, qualifiedName))
+            if (qualifiedName.IsParentKind(SyntaxKind.UsingDirective)
+                || IsArgumentExpressionOfNameOfExpression(context, qualifiedName))
             {
-                var typeSymbol = context.SemanticModel.GetSymbol(qualifiedName, context.CancellationToken) as ITypeSymbol;
-
-                if (typeSymbol?.SupportsPredefinedType() == true)
-                {
-                    ReportDiagnostic(context, qualifiedName);
-                }
+                return;
             }
+
+            var typeSymbol = context.SemanticModel.GetSymbol(qualifiedName, context.CancellationToken) as ITypeSymbol;
+
+            if (typeSymbol?.SupportsPredefinedType() != true)
+            {
+                return;
+            }
+
+            ReportDiagnostic(context, qualifiedName);
         }
 
         public static void Analyze(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccess)
         {
-            if (!memberAccess.IsParentKind(SyntaxKind.SimpleMemberAccessExpression))
+            if (memberAccess.IsParentKind(SyntaxKind.SimpleMemberAccessExpression))
             {
-                ExpressionSyntax expression = memberAccess.Expression;
-
-                if (expression?.IsKind(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxKind.IdentifierName) == true)
-                {
-                    var typeSymbol = context.SemanticModel.GetSymbol(expression, context.CancellationToken) as ITypeSymbol;
-
-                    if (typeSymbol?.SupportsPredefinedType() == true)
-                    {
-                        IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(expression, context.CancellationToken);
-
-                        if (aliasSymbol == null)
-                            ReportDiagnostic(context, expression);
-                    }
-                }
+                return;
             }
+
+            ExpressionSyntax expression = memberAccess.Expression;
+
+            if (expression?.IsKind(
+                SyntaxKind.SimpleMemberAccessExpression,
+                SyntaxKind.IdentifierName) != true)
+            {
+                return;
+            }
+
+            var typeSymbol = context.SemanticModel.GetSymbol(expression, context.CancellationToken) as ITypeSymbol;
+
+            if (typeSymbol?.SupportsPredefinedType() != true)
+            {
+                return;
+            }
+
+            IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(expression, context.CancellationToken);
+
+            if (aliasSymbol == null)
+                ReportDiagnostic(context, expression);
         }
 
         private static bool IsArgumentExpressionOfNameOfExpression(SyntaxNodeAnalysisContext context, SyntaxNode node)
         {
             SyntaxNode parent = node.Parent;
 
-            if (parent?.IsKind(SyntaxKind.Argument) == true)
+            if (parent?.IsKind(SyntaxKind.Argument) != true)
             {
-                parent = parent.Parent;
-
-                if (parent?.IsKind(SyntaxKind.ArgumentList) == true)
-                {
-                    parent = parent.Parent;
-
-                    return parent != null
-                        && CSharpUtility.IsNameOfExpression(parent, context.SemanticModel, context.CancellationToken);
-                }
+                return false;
             }
 
-            return false;
+            parent = parent.Parent;
+
+            if (parent?.IsKind(SyntaxKind.ArgumentList) != true)
+            {
+                return false;
+            }
+
+            parent = parent.Parent;
+
+            return parent != null
+                && CSharpUtility.IsNameOfExpression(parent, context.SemanticModel, context.CancellationToken);
         }
 
         private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, SyntaxNode node)

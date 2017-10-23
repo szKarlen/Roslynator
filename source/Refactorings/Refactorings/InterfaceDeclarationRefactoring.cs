@@ -15,11 +15,13 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractTypeDeclarationToNewFile))
                 ExtractTypeDeclarationToNewFileRefactoring.ComputeRefactorings(context, interfaceDeclaration);
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
-                && interfaceDeclaration.BracesSpan().Contains(context.Span))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
+                || !interfaceDeclaration.BracesSpan().Contains(context.Span))
             {
-                SortMemberDeclarationsRefactoring.ComputeRefactoring(context, interfaceDeclaration);
+                return;
             }
+
+            SortMemberDeclarationsRefactoring.ComputeRefactoring(context, interfaceDeclaration);
         }
     }
 }

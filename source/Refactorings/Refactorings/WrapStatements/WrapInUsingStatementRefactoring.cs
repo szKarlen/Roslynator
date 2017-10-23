@@ -17,32 +17,40 @@ namespace Roslynator.CSharp.Refactorings.WrapStatements
         {
             StatementSyntax statement = selectedStatements.FirstOrDefault();
 
-            if (statement?.IsKind(SyntaxKind.LocalDeclarationStatement) == true)
+            if (statement?.IsKind(SyntaxKind.LocalDeclarationStatement) != true)
             {
-                var localDeclaration = (LocalDeclarationStatementSyntax)statement;
-                VariableDeclarationSyntax declaration = localDeclaration.Declaration;
-
-                if (declaration != null)
-                {
-                    VariableDeclaratorSyntax variable = declaration.Variables.SingleOrDefault(throwException: false);
-
-                    if (variable?.Initializer?.Value?.IsKind(SyntaxKind.ObjectCreationExpression) == true
-                        && declaration.Type != null)
-                    {
-                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                        ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, context.CancellationToken);
-
-                        if (typeSymbol?.IsNamedType() == true
-                            && ((INamedTypeSymbol)typeSymbol).Implements(SpecialType.System_IDisposable))
-                        {
-                            context.RegisterRefactoring(
-                                $"Using '{variable.Identifier.ValueText}'",
-                                cancellationToken => RefactorAsync(context.Document, selectedStatements, cancellationToken));
-                        }
-                    }
-                }
+                return;
             }
+
+            var localDeclaration = (LocalDeclarationStatementSyntax)statement;
+            VariableDeclarationSyntax declaration = localDeclaration.Declaration;
+
+            if (declaration == null)
+            {
+                return;
+            }
+
+            VariableDeclaratorSyntax variable = declaration.Variables.SingleOrDefault(throwException: false);
+
+            if (variable?.Initializer?.Value?.IsKind(SyntaxKind.ObjectCreationExpression) != true
+                || declaration.Type == null)
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, context.CancellationToken);
+
+            if (typeSymbol?.IsNamedType() != true
+                || !((INamedTypeSymbol)typeSymbol).Implements(SpecialType.System_IDisposable))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                $"Using '{variable.Identifier.ValueText}'",
+                cancellationToken => RefactorAsync(context.Document, selectedStatements, cancellationToken));
         }
 
         public override UsingStatementSyntax CreateStatement(ImmutableArray<StatementSyntax> statements)

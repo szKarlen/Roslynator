@@ -73,18 +73,15 @@ namespace Roslynator.CSharp.Refactorings
             if (methodSymbol.ReturnsVoid)
                 return true;
 
-            if (expression.IsKind(SyntaxKind.AwaitExpression))
+            if (!expression.IsKind(SyntaxKind.AwaitExpression))
             {
-                ITypeSymbol returnType = methodSymbol.ReturnType;
-
-                if (returnType?.IsNamedType() == true
-                    && !((INamedTypeSymbol)returnType).ConstructedFrom.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T)))
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            ITypeSymbol returnType = methodSymbol.ReturnType;
+
+            return returnType?.IsNamedType() == true
+                && !((INamedTypeSymbol)returnType).ConstructedFrom.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T));
         }
     }
 }

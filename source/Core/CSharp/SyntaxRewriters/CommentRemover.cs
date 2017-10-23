@@ -85,15 +85,17 @@ namespace Roslynator.CSharp.SyntaxRewriters
 
         private bool ShouldRemoveEndOfLine(SyntaxKind kind, ref TextSpan span)
         {
-            if (span.Start > 0)
+            if (span.Start <= 0)
             {
-                SyntaxTrivia trivia = Node.FindTrivia(span.Start - 1);
-
-                if (trivia.Kind() != kind)
-                    return false;
-
-                span = trivia.Span;
+                return true;
             }
+
+            SyntaxTrivia trivia = Node.FindTrivia(span.Start - 1);
+
+            if (trivia.Kind() != kind)
+                return false;
+
+            span = trivia.Span;
 
             return true;
         }

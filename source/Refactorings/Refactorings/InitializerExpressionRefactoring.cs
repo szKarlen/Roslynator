@@ -17,49 +17,53 @@ namespace Roslynator.CSharp.Refactorings
                 initializer = (InitializerExpressionSyntax)initializer.Parent;
             }
 
-            if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer)
-                || context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer.Expressions))
+            if (!context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer)
+                && !context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer.Expressions))
             {
-                SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
+                return;
+            }
 
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatInitializer)
-                    && expressions.Any()
-                    && !initializer.IsKind(SyntaxKind.ComplexElementInitializerExpression)
-                    && initializer.IsParentKind(
-                        SyntaxKind.ArrayCreationExpression,
-                        SyntaxKind.ImplicitArrayCreationExpression,
-                        SyntaxKind.ObjectCreationExpression,
-                        SyntaxKind.CollectionInitializerExpression))
+            SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatInitializer)
+                && expressions.Any()
+                && !initializer.IsKind(SyntaxKind.ComplexElementInitializerExpression)
+                && initializer.IsParentKind(
+                    SyntaxKind.ArrayCreationExpression,
+                    SyntaxKind.ImplicitArrayCreationExpression,
+                    SyntaxKind.ObjectCreationExpression,
+                    SyntaxKind.CollectionInitializerExpression))
+            {
+                if (initializer.IsSingleLine(includeExteriorTrivia: false))
                 {
-                    if (initializer.IsSingleLine(includeExteriorTrivia: false))
-                    {
-                        context.RegisterRefactoring(
-                            "Format initializer on multiple lines",
-                            cancellationToken => CSharpFormatter.ToMultiLineAsync(
-                                context.Document,
-                                initializer,
-                                cancellationToken));
-                    }
-                    else if (expressions.All(expression => expression.IsSingleLine()))
-                    {
-                        context.RegisterRefactoring(
-                            "Format initializer on a single line",
-                            cancellationToken => CSharpFormatter.ToSingleLineAsync(
-                                context.Document,
-                                initializer,
-                                cancellationToken));
-                    }
+                    context.RegisterRefactoring(
+                        "Format initializer on multiple lines",
+                        cancellationToken => CSharpFormatter.ToMultiLineAsync(
+                            context.Document,
+                            initializer,
+                            cancellationToken));
                 }
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandInitializer))
-                    await ExpandInitializerRefactoring.ComputeRefactoringsAsync(context, initializer).ConfigureAwait(false);
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseCSharp6DictionaryInitializer)
-                    && context.SupportsCSharp6)
+                else if (expressions.All(expression => expression.IsSingleLine()))
                 {
-                    await UseCSharp6DictionaryInitializerRefactoring.ComputeRefactoringAsync(context, initializer).ConfigureAwait(false);
+                    context.RegisterRefactoring(
+                        "Format initializer on a single line",
+                        cancellationToken => CSharpFormatter.ToSingleLineAsync(
+                            context.Document,
+                            initializer,
+                            cancellationToken));
                 }
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandInitializer))
+                await ExpandInitializerRefactoring.ComputeRefactoringsAsync(context, initializer).ConfigureAwait(false);
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseCSharp6DictionaryInitializer)
+                || !context.SupportsCSharp6)
+            {
+                return;
+            }
+
+            await UseCSharp6DictionaryInitializerRefactoring.ComputeRefactoringAsync(context, initializer).ConfigureAwait(false);
         }
     }
 }

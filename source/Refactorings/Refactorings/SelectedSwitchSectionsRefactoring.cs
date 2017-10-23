@@ -15,98 +15,104 @@ namespace Roslynator.CSharp.Refactorings
             bool fAddBraces = context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSections);
             bool fRemoveBraces = context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSections);
 
-            if (fRemoveStatements || fAddBraces || fRemoveBraces)
+            if (!fRemoveStatements && !fAddBraces && !fRemoveBraces)
             {
-                SyntaxListSelection<SwitchSectionSyntax> selectedSections;
-                if (SyntaxListSelection<SwitchSectionSyntax>.TryCreate(switchStatement.Sections, context.Span, out selectedSections))
-                {
-                    if (fAddBraces || fRemoveBraces)
-                    {
-                        var addBraces = new List<SwitchSectionSyntax>();
-                        var removeBraces = new List<SwitchSectionSyntax>();
+                return;
+            }
 
-                        foreach (SwitchSectionSyntax section in selectedSections)
-                        {
-                            if (addBraces.Count > 0
-                                && removeBraces.Count > 0)
+            SyntaxListSelection<SwitchSectionSyntax> selectedSections;
+            if (!SyntaxListSelection<SwitchSectionSyntax>.TryCreate(switchStatement.Sections, context.Span, out selectedSections))
+            {
+                return;
+            }
+
+            if (fAddBraces || fRemoveBraces)
+            {
+                var addBraces = new List<SwitchSectionSyntax>();
+                var removeBraces = new List<SwitchSectionSyntax>();
+
+                foreach (SwitchSectionSyntax section in selectedSections)
+                {
+                    if (addBraces.Count > 0
+                        && removeBraces.Count > 0)
+                    {
+                        break;
+                    }
+
+                    switch (CSharpAnalysis.AnalyzeBraces(section))
+                    {
+                        case BracesAnalysisResult.AddBraces:
                             {
+                                addBraces.Add(section);
                                 break;
                             }
-
-                            switch (CSharpAnalysis.AnalyzeBraces(section))
+                        case BracesAnalysisResult.RemoveBraces:
                             {
-                                case BracesAnalysisResult.AddBraces:
-                                    {
-                                        addBraces.Add(section);
-                                        break;
-                                    }
-                                case BracesAnalysisResult.RemoveBraces:
-                                    {
-                                        removeBraces.Add(section);
-                                        break;
-                                    }
+                                removeBraces.Add(section);
+                                break;
                             }
-                        }
-
-                        if (fAddBraces && addBraces.Count > 0)
-                        {
-                            string title = AddBracesToSwitchSectionRefactoring.Title;
-
-                            if (addBraces.Count > 1)
-                                title += "s";
-
-                            context.RegisterRefactoring(
-                                title,
-                                cancellationToken =>
-                                {
-                                    return AddBracesToSwitchSectionsRefactoring.RefactorAsync(
-                                        context.Document,
-                                        switchStatement,
-                                        addBraces.ToArray(),
-                                        cancellationToken);
-                                });
-                        }
-
-                        if (fRemoveBraces && removeBraces.Count > 0)
-                        {
-                            string title = RemoveBracesFromSwitchSectionRefactoring.Title;
-
-                            if (removeBraces.Count > 1)
-                                title += "s";
-
-                            context.RegisterRefactoring(
-                                title,
-                                cancellationToken =>
-                                {
-                                    return RemoveBracesFromSwitchSectionsRefactoring.RefactorAsync(
-                                        context.Document,
-                                        switchStatement,
-                                        removeBraces.ToArray(),
-                                        cancellationToken);
-                                });
-                        }
-                    }
-
-                    if (fRemoveStatements)
-                    {
-                        string title = "Remove statements from section";
-
-                        if (selectedSections.Count > 1)
-                            title += "s";
-
-                        context.RegisterRefactoring(
-                            title,
-                            cancellationToken =>
-                            {
-                                return RemoveStatementsFromSwitchSectionsRefactoring.RefactorAsync(
-                                    context.Document,
-                                    switchStatement,
-                                    selectedSections.ToImmutableArray(),
-                                    cancellationToken);
-                            });
                     }
                 }
+
+                if (fAddBraces && addBraces.Count > 0)
+                {
+                    string title2 = AddBracesToSwitchSectionRefactoring.Title;
+
+                    if (addBraces.Count > 1)
+                        title2 += "s";
+
+                    context.RegisterRefactoring(
+                        title2,
+                        cancellationToken =>
+                        {
+                            return AddBracesToSwitchSectionsRefactoring.RefactorAsync(
+                                context.Document,
+                                switchStatement,
+                                addBraces.ToArray(),
+                                cancellationToken);
+                        });
+                }
+
+                if (fRemoveBraces && removeBraces.Count > 0)
+                {
+                    string title2 = RemoveBracesFromSwitchSectionRefactoring.Title;
+
+                    if (removeBraces.Count > 1)
+                        title2 += "s";
+
+                    context.RegisterRefactoring(
+                        title2,
+                        cancellationToken =>
+                        {
+                            return RemoveBracesFromSwitchSectionsRefactoring.RefactorAsync(
+                                context.Document,
+                                switchStatement,
+                                removeBraces.ToArray(),
+                                cancellationToken);
+                        });
+                }
             }
+
+            if (!fRemoveStatements)
+            {
+                return;
+            }
+
+            string title = "Remove statements from section";
+
+            if (selectedSections.Count > 1)
+                title += "s";
+
+            context.RegisterRefactoring(
+                title,
+                cancellationToken =>
+                {
+                    return RemoveStatementsFromSwitchSectionsRefactoring.RefactorAsync(
+                        context.Document,
+                        switchStatement,
+                        selectedSections.ToImmutableArray(),
+                        cancellationToken);
+                });
         }
     }
 }

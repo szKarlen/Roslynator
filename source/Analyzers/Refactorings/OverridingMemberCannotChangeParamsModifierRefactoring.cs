@@ -15,55 +15,73 @@ namespace Roslynator.CSharp.Refactorings
 
             IMethodSymbol baseSymbol = symbol.OverriddenMethod;
 
-            if (baseSymbol != null)
+            if (baseSymbol == null)
             {
-                IParameterSymbol baseParameterSymbol = baseSymbol.Parameters.LastOrDefault();
-
-                if (baseParameterSymbol != null)
-                {
-                    MethodDeclarationSyntax methodDeclaration;
-                    if (symbol.TryGetSyntax(out methodDeclaration))
-                    {
-                        ParameterSyntax parameter = methodDeclaration.ParameterList?.Parameters.LastOrDefault();
-
-                        if (parameter != null
-                            && parameter.IsParams() != baseParameterSymbol.IsParams)
-                        {
-                            context.ReportDiagnostic(DiagnosticDescriptors.OverridingMemberCannotChangeParamsModifier, parameter);
-                        }
-                    }
-                }
+                return;
             }
+
+            IParameterSymbol baseParameterSymbol = baseSymbol.Parameters.LastOrDefault();
+
+            if (baseParameterSymbol == null)
+            {
+                return;
+            }
+
+            MethodDeclarationSyntax methodDeclaration;
+            if (!symbol.TryGetSyntax(out methodDeclaration))
+            {
+                return;
+            }
+
+            ParameterSyntax parameter = methodDeclaration.ParameterList?.Parameters.LastOrDefault();
+
+            if (parameter == null
+                || parameter.IsParams() == baseParameterSymbol.IsParams)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.OverridingMemberCannotChangeParamsModifier, parameter);
         }
 
         public static void AnalyzePropertySymbol(SymbolAnalysisContext context)
         {
             var symbol = (IPropertySymbol)context.Symbol;
 
-            if (symbol.IsIndexer)
+            if (!symbol.IsIndexer)
             {
-                IPropertySymbol baseSymbol = symbol.OverriddenProperty;
-
-                if (baseSymbol != null)
-                {
-                    IParameterSymbol baseParameterSymbol = baseSymbol.Parameters.LastOrDefault();
-
-                    if (baseParameterSymbol != null)
-                    {
-                        IndexerDeclarationSyntax indexerDeclaration;
-                        if (symbol.TryGetSyntax(out indexerDeclaration))
-                        {
-                            ParameterSyntax parameter = indexerDeclaration.ParameterList?.Parameters.LastOrDefault();
-
-                            if (parameter != null
-                                && parameter.IsParams() != baseParameterSymbol.IsParams)
-                            {
-                                context.ReportDiagnostic(DiagnosticDescriptors.OverridingMemberCannotChangeParamsModifier, parameter);
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            IPropertySymbol baseSymbol = symbol.OverriddenProperty;
+
+            if (baseSymbol == null)
+            {
+                return;
+            }
+
+            IParameterSymbol baseParameterSymbol = baseSymbol.Parameters.LastOrDefault();
+
+            if (baseParameterSymbol == null)
+            {
+                return;
+            }
+
+            IndexerDeclarationSyntax indexerDeclaration;
+            if (!symbol.TryGetSyntax(out indexerDeclaration))
+            {
+                return;
+            }
+
+            ParameterSyntax parameter = indexerDeclaration.ParameterList?.Parameters.LastOrDefault();
+
+            if (parameter == null
+                || parameter.IsParams() == baseParameterSymbol.IsParams)
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.OverridingMemberCannotChangeParamsModifier, parameter);
         }
     }
 }

@@ -25,11 +25,13 @@ namespace Roslynator.VisualStudio
 
             set
             {
-                if (_enabled != value)
+                if (_enabled == value)
                 {
-                    _enabled = value;
-                    OnPropertyChanged(nameof(Enabled));
+                    return;
                 }
+
+                _enabled = value;
+                OnPropertyChanged(nameof(Enabled));
             }
         }
 

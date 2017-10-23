@@ -16,12 +16,14 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatExpressionChain))
                 await FormatExpressionChainRefactoring.ComputeRefactoringsAsync(context, memberAccess).ConfigureAwait(false);
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseEmptyStringLiteralInsteadOfStringEmpty))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseEmptyStringLiteralInsteadOfStringEmpty))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                UseEmptyStringLiteralInsteadOfStringEmpty(context, semanticModel, memberAccess);
+                return;
             }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            UseEmptyStringLiteralInsteadOfStringEmpty(context, semanticModel, memberAccess);
         }
 
         private static void UseEmptyStringLiteralInsteadOfStringEmpty(RefactoringContext context, SemanticModel semanticModel, MemberAccessExpressionSyntax memberAccess)

@@ -43,14 +43,16 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             SyntaxToken token = compilationUnit.EndOfFileToken;
 
-            if (compilationUnit.Span == token.Span
-                && !token.HasTrailingTrivia
-                && token.LeadingTrivia.All(f => !f.IsDirective))
+            if (compilationUnit.Span != token.Span
+                || token.HasTrailingTrivia
+                || !token.LeadingTrivia.All(f => !f.IsDirective))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.RemoveFileWithNoCode,
-                    Location.Create(compilationUnit.SyntaxTree, default(TextSpan)));
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RemoveFileWithNoCode,
+                Location.Create(compilationUnit.SyntaxTree, default(TextSpan)));
         }
     }
 }

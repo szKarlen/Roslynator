@@ -8,19 +8,21 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, ParenthesizedExpressionSyntax parenthesizedExpression)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveParentheses)
-                && ExtractExpressionFromParenthesesRefactoring.CanRefactor(context, parenthesizedExpression))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveParentheses)
+                || !ExtractExpressionFromParenthesesRefactoring.CanRefactor(context, parenthesizedExpression))
             {
-                context.RegisterRefactoring(
-                    "Remove parentheses",
-                    cancellationToken =>
-                    {
-                        return ExtractExpressionFromParenthesesRefactoring.RefactorAsync(
-                            context.Document,
-                            parenthesizedExpression,
-                            cancellationToken);
-                    });
+                return;
             }
+
+            context.RegisterRefactoring(
+                "Remove parentheses",
+                cancellationToken =>
+                {
+                    return ExtractExpressionFromParenthesesRefactoring.RefactorAsync(
+                        context.Document,
+                        parenthesizedExpression,
+                        cancellationToken);
+                });
         }
     }
 }

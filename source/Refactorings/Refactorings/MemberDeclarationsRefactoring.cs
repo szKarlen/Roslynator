@@ -21,71 +21,81 @@ namespace Roslynator.CSharp.Refactorings
                 SyntaxKind.NamespaceDeclaration,
                 SyntaxKind.ClassDeclaration,
                 SyntaxKind.StructDeclaration,
-                SyntaxKind.InterfaceDeclaration) == true)
+                SyntaxKind.InterfaceDeclaration) != true)
             {
-                var parentMember = (MemberDeclarationSyntax)parent;
-
-                SyntaxList<MemberDeclarationSyntax> members = parentMember.GetMembers();
-
-                if (members.Count > 1)
-                {
-                    int index = IndexOfMemberToSwap(member, members, context.Span);
-
-                    if (index != -1)
-                    {
-                        SyntaxTree tree = member.SyntaxTree;
-
-                        FileLinePositionSpan fileLinePositionSpan = tree.GetLineSpan(context.Span, context.CancellationToken);
-
-                        int startLine = fileLinePositionSpan.StartLine();
-                        int endLine = fileLinePositionSpan.EndLine();
-
-                        if (startLine > tree.GetEndLine(members[index].TrimmedSpan(), context.CancellationToken)
-                            && endLine < tree.GetStartLine(members[index + 1].TrimmedSpan(), context.CancellationToken))
-                        {
-                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveMemberDeclarations))
-                            {
-                                context.RegisterRefactoring(
-                                    "Remove members above",
-                                    cancellationToken =>
-                                    {
-                                        return ReplaceMembersAsync(
-                                            context.Document,
-                                            parentMember,
-                                            List(members.Skip(index + 1)),
-                                            cancellationToken);
-                                    });
-
-                                context.RegisterRefactoring(
-                                    "Remove members below",
-                                    cancellationToken =>
-                                    {
-                                        return ReplaceMembersAsync(
-                                            context.Document,
-                                            parentMember,
-                                            List(members.Take(index + 1)),
-                                            cancellationToken);
-                                    });
-                            }
-
-                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SwapMemberDeclarations))
-                            {
-                                context.RegisterRefactoring(
-                                    "Swap members",
-                                    cancellationToken =>
-                                    {
-                                        return RefactorAsync(
-                                            context.Document,
-                                            parentMember,
-                                            members,
-                                            index,
-                                            cancellationToken);
-                                    });
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            var parentMember = (MemberDeclarationSyntax)parent;
+
+            SyntaxList<MemberDeclarationSyntax> members = parentMember.GetMembers();
+
+            if (members.Count <= 1)
+            {
+                return;
+            }
+
+            int index = IndexOfMemberToSwap(member, members, context.Span);
+
+            if (index == -1)
+            {
+                return;
+            }
+
+            SyntaxTree tree = member.SyntaxTree;
+
+            FileLinePositionSpan fileLinePositionSpan = tree.GetLineSpan(context.Span, context.CancellationToken);
+
+            int startLine = fileLinePositionSpan.StartLine();
+            int endLine = fileLinePositionSpan.EndLine();
+
+            if (startLine <= tree.GetEndLine(members[index].TrimmedSpan(), context.CancellationToken)
+                || endLine >= tree.GetStartLine(members[index + 1].TrimmedSpan(), context.CancellationToken))
+            {
+                return;
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveMemberDeclarations))
+            {
+                context.RegisterRefactoring(
+                    "Remove members above",
+                    cancellationToken =>
+                    {
+                        return ReplaceMembersAsync(
+                            context.Document,
+                            parentMember,
+                            List(members.Skip(index + 1)),
+                            cancellationToken);
+                    });
+
+                context.RegisterRefactoring(
+                    "Remove members below",
+                    cancellationToken =>
+                    {
+                        return ReplaceMembersAsync(
+                            context.Document,
+                            parentMember,
+                            List(members.Take(index + 1)),
+                            cancellationToken);
+                    });
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SwapMemberDeclarations))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Swap members",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        parentMember,
+                        members,
+                        index,
+                        cancellationToken);
+                });
         }
 
         private static int IndexOfMemberToSwap(

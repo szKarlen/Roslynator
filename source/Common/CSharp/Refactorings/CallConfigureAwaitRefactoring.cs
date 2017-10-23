@@ -26,15 +26,15 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax expression = awaitExpression.Expression;
 
-            if (expression?.IsKind(SyntaxKind.InvocationExpression) == true)
+            if (expression?.IsKind(SyntaxKind.InvocationExpression) != true)
             {
-                var methodSymbol = semanticModel.GetSymbol(expression, cancellationToken) as IMethodSymbol;
-
-                return methodSymbol?.ReturnType.IsTaskOrInheritsFromTask(semanticModel) == true
-                    && semanticModel.GetTypeByMetadataName(MetadataNames.System_Runtime_CompilerServices_ConfiguredTaskAwaitable_T) != null;
+                return false;
             }
 
-            return false;
+            var methodSymbol = semanticModel.GetSymbol(expression, cancellationToken) as IMethodSymbol;
+
+            return methodSymbol?.ReturnType.IsTaskOrInheritsFromTask(semanticModel) == true
+                && semanticModel.GetTypeByMetadataName(MetadataNames.System_Runtime_CompilerServices_ConfiguredTaskAwaitable_T) != null;
         }
 
         public static Task<Document> RefactorAsync(

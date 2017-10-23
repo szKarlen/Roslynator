@@ -26,30 +26,32 @@ namespace Roslynator.CSharp.Refactorings
             string toMethodName)
         {
             MethodInfo methodInfo;
-            if (semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.None, context.CancellationToken)
-                && methodInfo.IsLinqExtensionOfIEnumerableOfTWithPredicate(fromMethodName))
+            if (!semanticModel.TryGetExtensionMethodInfo(invocation, out methodInfo, ExtensionMethodKind.None, context.CancellationToken)
+                || !methodInfo.IsLinqExtensionOfIEnumerableOfTWithPredicate(fromMethodName))
             {
-                ExpressionSyntax expression = GetExpression(invocation);
-
-                if (expression != null)
-                {
-                    context.RegisterRefactoring(
-                        $"Replace '{fromMethodName}' with '{toMethodName}'",
-                        cancellationToken =>
-                        {
-                            return RefactorAsync(
-                                context.Document,
-                                invocation,
-                                toMethodName,
-                                expression,
-                                cancellationToken);
-                        });
-
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            ExpressionSyntax expression = GetExpression(invocation);
+
+            if (expression == null)
+            {
+                return false;
+            }
+
+            context.RegisterRefactoring(
+                $"Replace '{fromMethodName}' with '{toMethodName}'",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        invocation,
+                        toMethodName,
+                        expression,
+                        cancellationToken);
+                });
+
+            return true;
         }
 
         private static ExpressionSyntax GetExpression(InvocationExpressionSyntax invocation)

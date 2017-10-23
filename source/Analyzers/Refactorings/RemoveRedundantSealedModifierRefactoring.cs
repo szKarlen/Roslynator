@@ -31,20 +31,24 @@ namespace Roslynator.CSharp.Refactorings
 
             var containingSymbol = symbol?.ContainingSymbol as INamedTypeSymbol;
 
-            if (containingSymbol?.IsSealed == true
-                && containingSymbol.IsClass())
+            if (containingSymbol?.IsSealed != true
+                || !containingSymbol.IsClass())
             {
-                SyntaxToken sealedKeyword = declaration
-                    .GetModifiers()
-                    .FirstOrDefault(f => f.IsKind(SyntaxKind.SealedKeyword));
-
-                if (sealedKeyword.IsKind(SyntaxKind.SealedKeyword))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.RemoveRedundantSealedModifier,
-                        Location.Create(context.SyntaxTree(), sealedKeyword.Span));
-                }
+                return;
             }
+
+            SyntaxToken sealedKeyword = declaration
+                .GetModifiers()
+                .FirstOrDefault(f => f.IsKind(SyntaxKind.SealedKeyword));
+
+            if (!sealedKeyword.IsKind(SyntaxKind.SealedKeyword))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.RemoveRedundantSealedModifier,
+                Location.Create(context.SyntaxTree(), sealedKeyword.Span));
         }
     }
 }

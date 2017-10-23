@@ -46,13 +46,15 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             StatementSyntax statement = EmbeddedStatementHelper.GetEmbeddedStatement(node, ifInsideElse: false, usingInsideUsing: false);
 
-            if (statement != null)
+            if (statement == null)
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AvoidEmbeddedStatementInIfElse,
-                    statement,
-                    node.GetTitle());
+                return;
             }
+
+            context.ReportDiagnostic(
+                DiagnosticDescriptors.AvoidEmbeddedStatementInIfElse,
+                statement,
+                node.GetTitle());
         }
     }
 }

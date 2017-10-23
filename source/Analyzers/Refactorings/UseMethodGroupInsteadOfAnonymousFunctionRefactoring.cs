@@ -322,20 +322,22 @@ namespace Roslynator.CSharp.Refactorings
 
             ImmutableArray<ISymbol> candidateSymbols = symbolInfo.CandidateSymbols;
 
-            if (candidateSymbols.Any())
+            if (!candidateSymbols.Any())
             {
-                if (candidateSymbols.Length == 1)
+                return false;
+            }
+
+            if (candidateSymbols.Length == 1)
+            {
+                if (candidateSymbols[0].Equals(methodSymbol))
+                    return true;
+            }
+            else if (!anonymousFunction.WalkUpParentheses().IsParentKind(SyntaxKind.Argument, SyntaxKind.AttributeArgument))
+            {
+                foreach (ISymbol candidateSymbol in candidateSymbols)
                 {
-                    if (candidateSymbols[0].Equals(methodSymbol))
+                    if (candidateSymbol.Equals(methodSymbol))
                         return true;
-                }
-                else if (!anonymousFunction.WalkUpParentheses().IsParentKind(SyntaxKind.Argument, SyntaxKind.AttributeArgument))
-                {
-                    foreach (ISymbol candidateSymbol in candidateSymbols)
-                    {
-                        if (candidateSymbol.Equals(methodSymbol))
-                            return true;
-                    }
                 }
             }
 

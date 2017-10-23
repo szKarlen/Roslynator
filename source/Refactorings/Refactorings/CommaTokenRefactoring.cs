@@ -33,15 +33,17 @@ namespace Roslynator.CSharp.Refactorings
                     await ParameterRefactoring.ComputeRefactoringsAsync(context, parameter).ConfigureAwait(false);
             }
 
-            if (commaToken.IsParentKind(SyntaxKind.ArgumentList))
+            if (!commaToken.IsParentKind(SyntaxKind.ArgumentList))
             {
-                ArgumentSyntax argument = ((ArgumentListSyntax)commaToken.Parent)
-                    .Arguments
-                    .FirstOrDefault(f => f.FullSpan.End == commaToken.FullSpan.Start);
-
-                if (argument != null)
-                    await ArgumentRefactoring.ComputeRefactoringsAsync(context, argument).ConfigureAwait(false);
+                return;
             }
+
+            ArgumentSyntax argument = ((ArgumentListSyntax)commaToken.Parent)
+                .Arguments
+                .FirstOrDefault(f => f.FullSpan.End == commaToken.FullSpan.Start);
+
+            if (argument != null)
+                await ArgumentRefactoring.ComputeRefactoringsAsync(context, argument).ConfigureAwait(false);
         }
     }
 }

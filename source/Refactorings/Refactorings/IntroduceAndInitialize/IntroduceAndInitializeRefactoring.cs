@@ -41,23 +41,27 @@ namespace Roslynator.CSharp.Refactorings.IntroduceAndInitialize
 
         public static void ComputeRefactoring(RefactoringContext context, ParameterSyntax parameter)
         {
-            if (parameter.Identifier.Span.Contains(context.Span)
-                && IsValid(parameter))
+            if (!parameter.Identifier.Span.Contains(context.Span)
+                || !IsValid(parameter))
             {
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeProperty))
-                {
-                    var propertyInfo = new IntroduceAndInitializePropertyInfo(parameter, context.SupportsCSharp6);
-                    var refactoring = new IntroduceAndInitializePropertyRefactoring(propertyInfo);
-                    refactoring.RegisterRefactoring(context);
-                }
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeField))
-                {
-                    var fieldInfo = new IntroduceAndInitializeFieldInfo(parameter, context.Settings.PrefixFieldIdentifierWithUnderscore);
-                    var refactoring = new IntroduceAndInitializeFieldRefactoring(fieldInfo);
-                    refactoring.RegisterRefactoring(context);
-                }
+                return;
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeProperty))
+            {
+                var propertyInfo = new IntroduceAndInitializePropertyInfo(parameter, context.SupportsCSharp6);
+                var refactoring2 = new IntroduceAndInitializePropertyRefactoring(propertyInfo);
+                refactoring2.RegisterRefactoring(context);
+            }
+
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeField))
+            {
+                return;
+            }
+
+            var fieldInfo = new IntroduceAndInitializeFieldInfo(parameter, context.Settings.PrefixFieldIdentifierWithUnderscore);
+            var refactoring = new IntroduceAndInitializeFieldRefactoring(fieldInfo);
+            refactoring.RegisterRefactoring(context);
         }
 
         public static void ComputeRefactoring(RefactoringContext context, ParameterListSyntax parameterList)
@@ -77,18 +81,20 @@ namespace Roslynator.CSharp.Refactorings.IntroduceAndInitialize
                 IEnumerable<IntroduceAndInitializePropertyInfo> propertyInfos = parameters
                     .Select(parameter => new IntroduceAndInitializePropertyInfo(parameter, context.SupportsCSharp6));
 
-                var refactoring = new IntroduceAndInitializePropertyRefactoring(propertyInfos);
-                refactoring.RegisterRefactoring(context);
+                var refactoring2 = new IntroduceAndInitializePropertyRefactoring(propertyInfos);
+                refactoring2.RegisterRefactoring(context);
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeField))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceAndInitializeField))
             {
-                IEnumerable<IntroduceAndInitializeFieldInfo> fieldInfos = parameters
-                    .Select(parameter => new IntroduceAndInitializeFieldInfo(parameter, context.Settings.PrefixFieldIdentifierWithUnderscore));
-
-                var refactoring = new IntroduceAndInitializeFieldRefactoring(fieldInfos);
-                refactoring.RegisterRefactoring(context);
+                return;
             }
+
+            IEnumerable<IntroduceAndInitializeFieldInfo> fieldInfos = parameters
+                .Select(parameter => new IntroduceAndInitializeFieldInfo(parameter, context.Settings.PrefixFieldIdentifierWithUnderscore));
+
+            var refactoring = new IntroduceAndInitializeFieldRefactoring(fieldInfos);
+            refactoring.RegisterRefactoring(context);
         }
 
         private void RegisterRefactoring(RefactoringContext context)
@@ -158,21 +164,23 @@ namespace Roslynator.CSharp.Refactorings.IntroduceAndInitialize
 
         private static bool IsValid(ParameterSyntax parameter)
         {
-            if (parameter.Type != null
-                && !parameter.Identifier.IsMissing)
+            if (parameter.Type == null
+                || parameter.Identifier.IsMissing)
             {
-                SyntaxNode parent = parameter.Parent;
-
-                if (parent?.IsKind(SyntaxKind.ParameterList) == true)
-                {
-                    parent = parent.Parent;
-
-                    return parent?.IsKind(SyntaxKind.ConstructorDeclaration) == true
-                        && !((ConstructorDeclarationSyntax)parent).IsStatic();
-                }
+                return false;
             }
 
-            return false;
+            SyntaxNode parent = parameter.Parent;
+
+            if (parent?.IsKind(SyntaxKind.ParameterList) != true)
+            {
+                return false;
+            }
+
+            parent = parent.Parent;
+
+            return parent?.IsKind(SyntaxKind.ConstructorDeclaration) == true
+                && !((ConstructorDeclarationSyntax)parent).IsStatic();
         }
     }
 }

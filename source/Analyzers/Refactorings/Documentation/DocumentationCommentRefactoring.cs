@@ -73,21 +73,23 @@ namespace Roslynator.CSharp.Refactorings.DocumentationComment
         {
             XmlElementStartTagSyntax startTag = element.StartTag;
 
-            if (startTag != null)
+            if (startTag == null)
             {
-                foreach (XmlAttributeSyntax attribute in startTag.Attributes)
+                return null;
+            }
+
+            foreach (XmlAttributeSyntax attribute in startTag.Attributes)
+            {
+                if (attribute.IsKind(SyntaxKind.XmlNameAttribute))
                 {
-                    if (attribute.IsKind(SyntaxKind.XmlNameAttribute))
+                    var nameAttribute = (XmlNameAttributeSyntax)attribute;
+
+                    if (nameAttribute.Name?.LocalName.ValueText == attributeName)
                     {
-                        var nameAttribute = (XmlNameAttributeSyntax)attribute;
+                        IdentifierNameSyntax identifierName = nameAttribute.Identifier;
 
-                        if (nameAttribute.Name?.LocalName.ValueText == attributeName)
-                        {
-                            IdentifierNameSyntax identifierName = nameAttribute.Identifier;
-
-                            if (identifierName != null)
-                                return identifierName.Identifier.ValueText;
-                        }
+                        if (identifierName != null)
+                            return identifierName.Identifier.ValueText;
                     }
                 }
             }

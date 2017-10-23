@@ -22,54 +22,68 @@ namespace Roslynator.CSharp.Refactorings
         {
             var ifStatement = (IfStatementSyntax)context.Node;
 
-            if (ifStatement.IsSimpleIf()
-                && !ifStatement.ContainsDiagnostics)
+            if (!ifStatement.IsSimpleIf()
+                || ifStatement.ContainsDiagnostics)
             {
-                SyntaxList<StatementSyntax> statements;
-                if (ifStatement.TryGetContainingList(out statements)
-                    && !IsPartOfLazyInitialization(ifStatement, statements))
+                return;
+            }
+
+            SyntaxList<StatementSyntax> statements;
+            if (!ifStatement.TryGetContainingList(out statements)
+                || IsPartOfLazyInitialization(ifStatement, statements))
+            {
+                return;
+            }
+
+            NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(ifStatement.Condition, semanticModel: context.SemanticModel, cancellationToken: context.CancellationToken);
+            if (!nullCheck.Success)
+            {
+                return;
+            }
+
+            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(ifStatement.GetSingleStatementOrDefault());
+            if (!assignmentInfo.Success
+                || !SyntaxComparer.AreEquivalent(assignmentInfo.Left, nullCheck.Expression)
+                || !assignmentInfo.Right.IsSingleLine()
+                || ifStatement.SpanContainsDirectives())
+            {
+                return;
+            }
+
+            int index = statements.IndexOf(ifStatement);
+
+            if (index > 0)
+            {
+                StatementSyntax previousStatement = statements[index - 1];
+
+                if (!previousStatement.ContainsDiagnostics
+                    && CanRefactor(previousStatement, ifStatement, nullCheck.Expression, ifStatement.Parent))
                 {
-                    NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(ifStatement.Condition, semanticModel: context.SemanticModel, cancellationToken: context.CancellationToken);
-                    if (nullCheck.Success)
-                    {
-                        SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(ifStatement.GetSingleStatementOrDefault());
-                        if (assignmentInfo.Success
-                            && SyntaxComparer.AreEquivalent(assignmentInfo.Left, nullCheck.Expression)
-                            && assignmentInfo.Right.IsSingleLine()
-                            && !ifStatement.SpanContainsDirectives())
-                        {
-                            int index = statements.IndexOf(ifStatement);
-
-                            if (index > 0)
-                            {
-                                StatementSyntax previousStatement = statements[index - 1];
-
-                                if (!previousStatement.ContainsDiagnostics
-                                    && CanRefactor(previousStatement, ifStatement, nullCheck.Expression, ifStatement.Parent))
-                                {
-                                    context.ReportDiagnostic(DiagnosticDescriptors.UseCoalesceExpression, previousStatement);
-                                }
-                            }
-
-                            if (index < statements.Count - 1)
-                            {
-                                StatementSyntax nextStatement = statements[index + 1];
-
-                                if (!nextStatement.ContainsDiagnostics)
-                                {
-                                    MemberInvocationStatementInfo invocationInfo = SyntaxInfo.MemberInvocationStatementInfo(nextStatement);
-                                    if (invocationInfo.Success
-                                        && SyntaxComparer.AreEquivalent(nullCheck.Expression, invocationInfo.Expression)
-                                        && !ifStatement.Parent.ContainsDirectives(TextSpan.FromBounds(ifStatement.SpanStart, nextStatement.Span.End)))
-                                    {
-                                        context.ReportDiagnostic(DiagnosticDescriptors.InlineLazyInitialization, ifStatement);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    context.ReportDiagnostic(DiagnosticDescriptors.UseCoalesceExpression, previousStatement);
                 }
             }
+
+            if (index >= statements.Count - 1)
+            {
+                return;
+            }
+
+            StatementSyntax nextStatement = statements[index + 1];
+
+            if (nextStatement.ContainsDiagnostics)
+            {
+                return;
+            }
+
+            MemberInvocationStatementInfo invocationInfo = SyntaxInfo.MemberInvocationStatementInfo(nextStatement);
+            if (!invocationInfo.Success
+                || !SyntaxComparer.AreEquivalent(nullCheck.Expression, invocationInfo.Expression)
+                || ifStatement.Parent.ContainsDirectives(TextSpan.FromBounds(ifStatement.SpanStart, nextStatement.Span.End)))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.InlineLazyInitialization, ifStatement);
         }
 
         private static bool IsPartOfLazyInitialization(IfStatementSyntax ifStatement, SyntaxList<StatementSyntax> statements)
@@ -107,17 +121,17 @@ namespace Roslynator.CSharp.Refactorings
                 .Variables
                 .SingleOrDefault(throwException: false);
 
-            if (declarator != null)
+            if (declarator == null)
             {
-                ExpressionSyntax value = declarator.Initializer?.Value;
-
-                return value != null
-                    && expression.IsKind(SyntaxKind.IdentifierName)
-                    && string.Equals(declarator.Identifier.ValueText, ((IdentifierNameSyntax)expression).Identifier.ValueText, StringComparison.Ordinal)
-                    && !parent.ContainsDirectives(TextSpan.FromBounds(value.Span.End, ifStatement.Span.Start));
+                return false;
             }
 
-            return false;
+            ExpressionSyntax value = declarator.Initializer?.Value;
+
+            return value != null
+                && expression.IsKind(SyntaxKind.IdentifierName)
+                && string.Equals(declarator.Identifier.ValueText, ((IdentifierNameSyntax)expression).Identifier.ValueText, StringComparison.Ordinal)
+                && !parent.ContainsDirectives(TextSpan.FromBounds(value.Span.End, ifStatement.Span.Start));
         }
 
         private static bool CanRefactor(
@@ -128,23 +142,25 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax expression2 = expressionStatement.Expression;
 
-            if (expression2?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
+            if (expression2?.IsKind(SyntaxKind.SimpleAssignmentExpression) != true)
             {
-                var assignment = (AssignmentExpressionSyntax)expression2;
-
-                ExpressionSyntax left = assignment.Left;
-
-                if (left?.IsMissing == false)
-                {
-                    ExpressionSyntax right = assignment.Right;
-
-                    return right?.IsMissing == false
-                        && SyntaxComparer.AreEquivalent(expression, left)
-                        && !parent.ContainsDirectives(TextSpan.FromBounds(right.Span.End, ifStatement.Span.Start));
-                }
+                return false;
             }
 
-            return false;
+            var assignment = (AssignmentExpressionSyntax)expression2;
+
+            ExpressionSyntax left = assignment.Left;
+
+            if (left?.IsMissing != false)
+            {
+                return false;
+            }
+
+            ExpressionSyntax right = assignment.Right;
+
+            return right?.IsMissing == false
+                && SyntaxComparer.AreEquivalent(expression, left)
+                && !parent.ContainsDirectives(TextSpan.FromBounds(right.Span.End, ifStatement.Span.Start));
         }
 
         public static Task<Document> InlineLazyInitializationAsync(

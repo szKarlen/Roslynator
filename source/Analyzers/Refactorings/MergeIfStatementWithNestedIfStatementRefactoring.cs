@@ -16,20 +16,24 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement)
         {
-            if (ifStatement.IsSimpleIf()
-                && CheckCondition(ifStatement.Condition))
+            if (!ifStatement.IsSimpleIf()
+                || !CheckCondition(ifStatement.Condition))
             {
-                IfStatementSyntax nestedIf = GetNestedIfStatement(ifStatement);
-
-                if (nestedIf != null
-                    && nestedIf.Else == null
-                    && CheckCondition(nestedIf.Condition)
-                    && CheckTrivia(ifStatement, nestedIf)
-                    && !ifStatement.SpanContainsDirectives())
-                {
-                    ReportDiagnostic(context, ifStatement, nestedIf);
-                }
+                return;
             }
+
+            IfStatementSyntax nestedIf = GetNestedIfStatement(ifStatement);
+
+            if (nestedIf == null
+                || nestedIf.Else != null
+                || !CheckCondition(nestedIf.Condition)
+                || !CheckTrivia(ifStatement, nestedIf)
+                || ifStatement.SpanContainsDirectives())
+            {
+                return;
+            }
+
+            ReportDiagnostic(context, ifStatement, nestedIf);
         }
 
         private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, IfStatementSyntax ifStatement, IfStatementSyntax nestedIf)
@@ -40,11 +44,13 @@ namespace Roslynator.CSharp.Refactorings
             context.ReportToken(DiagnosticDescriptors.MergeIfStatementWithNestedIfStatementFadeOut, nestedIf.OpenParenToken);
             context.ReportToken(DiagnosticDescriptors.MergeIfStatementWithNestedIfStatementFadeOut, nestedIf.CloseParenToken);
 
-            if (ifStatement.Statement.IsKind(SyntaxKind.Block)
-                && nestedIf.Statement.IsKind(SyntaxKind.Block))
+            if (!ifStatement.Statement.IsKind(SyntaxKind.Block)
+                || !nestedIf.Statement.IsKind(SyntaxKind.Block))
             {
-                context.ReportBraces(DiagnosticDescriptors.MergeIfStatementWithNestedIfStatementFadeOut, (BlockSyntax)nestedIf.Statement);
+                return;
             }
+
+            context.ReportBraces(DiagnosticDescriptors.MergeIfStatementWithNestedIfStatementFadeOut, (BlockSyntax)nestedIf.Statement);
         }
 
         private static bool CheckCondition(ExpressionSyntax condition)
@@ -58,23 +64,23 @@ namespace Roslynator.CSharp.Refactorings
                 nestedIf.FullSpan.Start,
                 nestedIf.CloseParenToken.FullSpan.End);
 
-            if (nestedIf.DescendantTrivia(span).All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            if (!nestedIf.DescendantTrivia(span).All(f => f.IsWhitespaceOrEndOfLineTrivia()))
             {
-                if (ifStatement.Statement.IsKind(SyntaxKind.Block)
-                    && nestedIf.Statement.IsKind(SyntaxKind.Block))
-                {
-                    var block = (BlockSyntax)nestedIf.Statement;
+                return false;
+            }
 
-                    return block.OpenBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
-                        && block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
-                        && block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
-                        && block.CloseBraceToken.TrailingTrivia.IsEmptyOrWhitespace();
-                }
-
+            if (!ifStatement.Statement.IsKind(SyntaxKind.Block)
+                || !nestedIf.Statement.IsKind(SyntaxKind.Block))
+            {
                 return true;
             }
 
-            return false;
+            var block = (BlockSyntax)nestedIf.Statement;
+
+            return block.OpenBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
+                && block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
+                && block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
+                && block.CloseBraceToken.TrailingTrivia.IsEmptyOrWhitespace();
         }
 
         private static IfStatementSyntax GetNestedIfStatement(IfStatementSyntax ifStatement)

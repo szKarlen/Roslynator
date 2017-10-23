@@ -25,43 +25,53 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax type = declarationExpression.Type;
 
-            if (type != null)
+            if (type == null)
             {
-                VariableDesignationSyntax designation = declarationExpression.Designation;
-
-                if (designation?.IsKind(SyntaxKind.SingleVariableDesignation) == true)
-                {
-                    var singleVariableDesignation = (SingleVariableDesignationSyntax)designation;
-
-                    SyntaxToken identifier = singleVariableDesignation.Identifier;
-
-                    if (identifier.Span.Contains(context.Span))
-                    {
-                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                        var localSymbol = semanticModel.GetDeclaredSymbol(singleVariableDesignation, context.CancellationToken) as ILocalSymbol;
-
-                        if (localSymbol?.IsErrorType() == false)
-                        {
-                            string oldName = identifier.ValueText;
-
-                            string newName = NameGenerator.Default.CreateUniqueLocalName(
-                                localSymbol.Type,
-                                oldName,
-                                semanticModel,
-                                singleVariableDesignation.SpanStart,
-                                cancellationToken: context.CancellationToken);
-
-                            if (newName != null)
-                            {
-                                context.RegisterRefactoring(
-                                    $"Rename '{oldName}' to '{newName}'",
-                                    cancellationToken => Renamer.RenameSymbolAsync(context.Solution, localSymbol, newName, default(OptionSet), cancellationToken));
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            VariableDesignationSyntax designation = declarationExpression.Designation;
+
+            if (designation?.IsKind(SyntaxKind.SingleVariableDesignation) != true)
+            {
+                return;
+            }
+
+            var singleVariableDesignation = (SingleVariableDesignationSyntax)designation;
+
+            SyntaxToken identifier = singleVariableDesignation.Identifier;
+
+            if (!identifier.Span.Contains(context.Span))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            var localSymbol = semanticModel.GetDeclaredSymbol(singleVariableDesignation, context.CancellationToken) as ILocalSymbol;
+
+            if (localSymbol?.IsErrorType() != false)
+            {
+                return;
+            }
+
+            string oldName = identifier.ValueText;
+
+            string newName = NameGenerator.Default.CreateUniqueLocalName(
+                localSymbol.Type,
+                oldName,
+                semanticModel,
+                singleVariableDesignation.SpanStart,
+                cancellationToken: context.CancellationToken);
+
+            if (newName == null)
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                $"Rename '{oldName}' to '{newName}'",
+                cancellationToken => Renamer.RenameSymbolAsync(context.Solution, localSymbol, newName, default(OptionSet), cancellationToken));
         }
    }
 }

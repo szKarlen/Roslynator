@@ -17,22 +17,26 @@ namespace Roslynator.CSharp.Refactorings
         {
             var switchStatement = (SwitchStatementSyntax)context.Node;
 
-            if (!switchStatement.ContainsDiagnostics)
+            if (switchStatement.ContainsDiagnostics)
             {
-                SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
-
-                SwitchSectionSyntax defaultSection = FindDefaultSection(sections);
-
-                if (defaultSection != null
-                    && ContainsOnlyBreakStatement(defaultSection)
-                    && !switchStatement.DescendantNodes(sections.Span).Any(f => f.IsKind(SyntaxKind.GotoDefaultStatement))
-                    && defaultSection
-                        .DescendantTrivia(defaultSection.Span)
-                        .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                {
-                    context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantDefaultSwitchSection, defaultSection);
-                }
+                return;
             }
+
+            SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
+
+            SwitchSectionSyntax defaultSection = FindDefaultSection(sections);
+
+            if (defaultSection == null
+                || !ContainsOnlyBreakStatement(defaultSection)
+                || switchStatement.DescendantNodes(sections.Span).Any(f => f.IsKind(SyntaxKind.GotoDefaultStatement))
+                || !defaultSection
+                    .DescendantTrivia(defaultSection.Span)
+                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantDefaultSwitchSection, defaultSection);
         }
 
         private static SwitchSectionSyntax FindDefaultSection(SyntaxList<SwitchSectionSyntax> sections)

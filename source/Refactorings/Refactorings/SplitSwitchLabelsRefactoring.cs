@@ -16,29 +16,37 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, SwitchSectionSyntax switchSection)
         {
-            if (switchSection.IsParentKind(SyntaxKind.SwitchStatement))
+            if (!switchSection.IsParentKind(SyntaxKind.SwitchStatement))
             {
-                SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
-
-                if (labels.Count > 1)
-                {
-                    SyntaxListSelection<SwitchLabelSyntax> selection;
-                    if (SyntaxListSelection<SwitchLabelSyntax>.TryCreate(labels, context.Span, out selection))
-                    {
-                        if (selection.Count > 1 || (selection.First() != labels.Last()))
-                        {
-                            SwitchLabelSyntax[] selectedLabels = selection.ToArray();
-
-                            if (selectedLabels.Last() == labels.Last())
-                                selectedLabels = selectedLabels.Take(selectedLabels.Length - 1).ToArray();
-
-                            context.RegisterRefactoring(
-                                "Split labels",
-                                cancellationToken => RefactorAsync(context.Document, switchSection, selectedLabels, cancellationToken));
-                        }
-                    }
-                }
+                return;
             }
+
+            SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
+
+            if (labels.Count <= 1)
+            {
+                return;
+            }
+
+            SyntaxListSelection<SwitchLabelSyntax> selection;
+            if (!SyntaxListSelection<SwitchLabelSyntax>.TryCreate(labels, context.Span, out selection))
+            {
+                return;
+            }
+
+            if (selection.Count <= 1 && (selection.First() == labels.Last()))
+            {
+                return;
+            }
+
+            SwitchLabelSyntax[] selectedLabels = selection.ToArray();
+
+            if (selectedLabels.Last() == labels.Last())
+                selectedLabels = selectedLabels.Take(selectedLabels.Length - 1).ToArray();
+
+            context.RegisterRefactoring(
+                "Split labels",
+                cancellationToken => RefactorAsync(context.Document, switchSection, selectedLabels, cancellationToken));
         }
 
         private static Task<Document> RefactorAsync(

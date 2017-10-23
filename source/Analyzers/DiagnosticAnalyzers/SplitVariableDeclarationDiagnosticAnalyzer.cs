@@ -34,19 +34,23 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var variableDeclaration = (VariableDeclarationSyntax)context.Node;
 
-            if (SplitVariableDeclarationRefactoring.CanRefactor(variableDeclaration))
+            if (!SplitVariableDeclarationRefactoring.CanRefactor(variableDeclaration))
             {
-                SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
-
-                TextSpan span = TextSpan.FromBounds(variables[1].Span.Start, variables.Last().Span.End);
-
-                if (context.Node
-                    .DescendantTrivia(span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                {
-                    context.ReportDiagnostic(DiagnosticDescriptors.SplitVariableDeclaration, variableDeclaration);
-                }
+                return;
             }
+
+            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
+
+            TextSpan span = TextSpan.FromBounds(variables[1].Span.Start, variables.Last().Span.End);
+
+            if (!context.Node
+                .DescendantTrivia(span)
+                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.SplitVariableDeclaration, variableDeclaration);
         }
     }
 }

@@ -45,11 +45,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var assignment = (AssignmentExpressionSyntax)context.Node;
 
-            if (assignment.Right is AssignmentExpressionSyntax
-                && !(assignment.Parent is AssignmentExpressionSyntax))
+            if (!(assignment.Right is AssignmentExpressionSyntax)
+                || (assignment.Parent is AssignmentExpressionSyntax))
             {
-                context.ReportDiagnostic(DiagnosticDescriptors.AvoidChainOfAssignments, assignment);
+                return;
             }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.AvoidChainOfAssignments, assignment);
         }
 
         private void AnalyzeEqualsValueClause(SyntaxNodeAnalysisContext context)

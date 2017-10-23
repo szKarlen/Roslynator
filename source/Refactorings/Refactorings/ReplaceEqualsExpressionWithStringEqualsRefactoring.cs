@@ -14,40 +14,50 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, BinaryExpressionSyntax binaryExpression)
         {
-            if (binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression))
+            if (!binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression))
             {
-                ExpressionSyntax left = binaryExpression.Left;
-
-                if (left?.IsMissing == false
-                    && !left.IsKind(SyntaxKind.NullLiteralExpression))
-                {
-                    ExpressionSyntax right = binaryExpression.Right;
-
-                    if (right?.IsMissing == false
-                        && !right.IsKind(SyntaxKind.NullLiteralExpression))
-                    {
-                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                        ITypeSymbol leftSymbol = semanticModel.GetTypeInfo(left, context.CancellationToken).ConvertedType;
-
-                        if (leftSymbol?.IsString() == true)
-                        {
-                            ITypeSymbol rightSymbol = semanticModel.GetTypeInfo(right, context.CancellationToken).ConvertedType;
-
-                            if (rightSymbol?.IsString() == true)
-                            {
-                                string title = (binaryExpression.IsKind(SyntaxKind.EqualsExpression))
-                                    ? "Replace == with string.Equals"
-                                    : "Replace != with !string.Equals";
-
-                                context.RegisterRefactoring(
-                                    title,
-                                    cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
-                            }
-                        }
-                    }
-                }
+                return;
             }
+
+            ExpressionSyntax left = binaryExpression.Left;
+
+            if (left?.IsMissing != false
+                || left.IsKind(SyntaxKind.NullLiteralExpression))
+            {
+                return;
+            }
+
+            ExpressionSyntax right = binaryExpression.Right;
+
+            if (right?.IsMissing != false
+                || right.IsKind(SyntaxKind.NullLiteralExpression))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            ITypeSymbol leftSymbol = semanticModel.GetTypeInfo(left, context.CancellationToken).ConvertedType;
+
+            if (leftSymbol?.IsString() != true)
+            {
+                return;
+            }
+
+            ITypeSymbol rightSymbol = semanticModel.GetTypeInfo(right, context.CancellationToken).ConvertedType;
+
+            if (rightSymbol?.IsString() != true)
+            {
+                return;
+            }
+
+            string title = (binaryExpression.IsKind(SyntaxKind.EqualsExpression))
+                ? "Replace == with string.Equals"
+                : "Replace != with !string.Equals";
+
+            context.RegisterRefactoring(
+                title,
+                cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
         }
 
         private static async Task<Document> RefactorAsync(

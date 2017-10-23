@@ -43,22 +43,24 @@ namespace Roslynator.CSharp.Refactorings
                     await UseIfElseInsteadOfConditionalExpressionRefactoring.ComputeRefactoringAsync(context, conditionalExpression).ConfigureAwait(false);
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SwapExpressionsInConditionalExpression)
-                && (context.Span.IsBetweenSpans(conditionalExpression)
-                    || context.Span.IsEmptyAndContainedInSpan(conditionalExpression.QuestionToken)
-                    || context.Span.IsEmptyAndContainedInSpan(conditionalExpression.ColonToken))
-                && SwapExpressionsInConditionalExpressionRefactoring.CanRefactor(conditionalExpression))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SwapExpressionsInConditionalExpression)
+                || (!context.Span.IsBetweenSpans(conditionalExpression)
+                    && !context.Span.IsEmptyAndContainedInSpan(conditionalExpression.QuestionToken)
+                    && !context.Span.IsEmptyAndContainedInSpan(conditionalExpression.ColonToken))
+                || !SwapExpressionsInConditionalExpressionRefactoring.CanRefactor(conditionalExpression))
             {
-                context.RegisterRefactoring(
-                    "Swap expressions in ?:",
-                    cancellationToken =>
-                    {
-                        return SwapExpressionsInConditionalExpressionRefactoring.RefactorAsync(
-                            context.Document,
-                            conditionalExpression,
-                            cancellationToken);
-                    });
+                return;
             }
+
+            context.RegisterRefactoring(
+                "Swap expressions in ?:",
+                cancellationToken =>
+                {
+                    return SwapExpressionsInConditionalExpressionRefactoring.RefactorAsync(
+                        context.Document,
+                        conditionalExpression,
+                        cancellationToken);
+                });
         }
     }
 }

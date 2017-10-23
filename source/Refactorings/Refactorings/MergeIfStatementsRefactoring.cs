@@ -20,19 +20,21 @@ namespace Roslynator.CSharp.Refactorings
         {
             List<IfStatementSyntax> ifStatements = GetIfStatements(selectedStatements);
 
-            if (ifStatements?.Count > 1)
+            if (ifStatements == null || ifStatements.Count <= 1)
             {
-                context.RegisterRefactoring(
-                    "Merge if statements",
-                    cancellationToken =>
-                    {
-                        return RefactorAsync(
-                            context.Document,
-                            selectedStatements.Info,
-                            ifStatements.ToImmutableArray(),
-                            cancellationToken);
-                    });
+                return;
             }
+
+            context.RegisterRefactoring(
+                "Merge if statements",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        selectedStatements.Info,
+                        ifStatements.ToImmutableArray(),
+                        cancellationToken);
+                });
         }
 
         private static List<IfStatementSyntax> GetIfStatements(IEnumerable<StatementSyntax> statements)
@@ -127,18 +129,18 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool AreStatementsEquivalent(List<StatementSyntax> first, List<StatementSyntax> second)
         {
-            if (first.Count == second.Count)
+            if (first.Count != second.Count)
             {
-                for (int i = 0; i < first.Count; i++)
-                {
-                    if (!SyntaxComparer.AreEquivalent(first[i], second[i]))
-                        return false;
-                }
-
-                return true;
+                return false;
             }
 
-            return false;
+            for (int i = 0; i < first.Count; i++)
+            {
+                if (!SyntaxComparer.AreEquivalent(first[i], second[i]))
+                    return false;
+            }
+
+            return true;
         }
 
         private static List<StatementSyntax> GetStatementsFromIfStatement(IfStatementSyntax ifStatement)

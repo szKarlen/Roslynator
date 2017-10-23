@@ -28,19 +28,21 @@ namespace Roslynator.CSharp.Refactorings.UnusedSyntax
 
             ImmutableArray<ParameterSyntax> unusedParameters = UnusedMethodParameterRefactoring.Instance.FindUnusedSyntax(methodDeclaration, context.SemanticModel, context.CancellationToken);
 
-            if (unusedParameters.Any()
-                && !IsReferencedAsMethodGroup(context, methodDeclaration))
+            if (!unusedParameters.Any()
+                || IsReferencedAsMethodGroup(context, methodDeclaration))
             {
-                foreach (ParameterSyntax parameter in unusedParameters)
+                return;
+            }
+
+            foreach (ParameterSyntax parameter in unusedParameters)
+            {
+                if (parameter.IsThis())
                 {
-                    if (parameter.IsThis())
-                    {
-                        ReportUnusedThisParameter(context, parameter);
-                    }
-                    else
-                    {
-                        ReportUnusedParameter(context, parameter);
-                    }
+                    ReportUnusedThisParameter(context, parameter);
+                }
+                else
+                {
+                    ReportUnusedParameter(context, parameter);
                 }
             }
         }

@@ -12,13 +12,15 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, ElseClauseSyntax elseClause)
         {
-            if (elseClause.Statement?.IsKind(SyntaxKind.IfStatement) == true
-                && ((IfStatementSyntax)elseClause.Statement).Else == null)
+            if (elseClause.Statement?.IsKind(SyntaxKind.IfStatement) != true
+                || ((IfStatementSyntax)elseClause.Statement).Else != null)
             {
-                context.RegisterRefactoring(
-                    "Remove condition",
-                    cancellationToken => RefactorAsync(context.Document, elseClause, cancellationToken));
+                return;
             }
+
+            context.RegisterRefactoring(
+                "Remove condition",
+                cancellationToken => RefactorAsync(context.Document, elseClause, cancellationToken));
         }
 
         private static Task<Document> RefactorAsync(

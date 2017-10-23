@@ -11,13 +11,15 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, QualifiedNameSyntax qualifiedName)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
-                && context.Span.IsEmpty
-                && qualifiedName.DotToken.Span.Start == context.Span.Start
-                && qualifiedName.Left?.IsKind(SyntaxKind.IdentifierName) == true)
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
+                || !context.Span.IsEmpty
+                || qualifiedName.DotToken.Span.Start != context.Span.Start
+                || qualifiedName.Left?.IsKind(SyntaxKind.IdentifierName) != true)
             {
-                await AddUsingDirectiveRefactoring.ComputeRefactoringsAsync(context, (IdentifierNameSyntax)qualifiedName.Left).ConfigureAwait(false);
+                return;
             }
+
+            await AddUsingDirectiveRefactoring.ComputeRefactoringsAsync(context, (IdentifierNameSyntax)qualifiedName.Left).ConfigureAwait(false);
         }
     }
 }

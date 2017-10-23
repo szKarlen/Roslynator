@@ -24,34 +24,36 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax left = logicalAnd.Left?.WalkDownParentheses();
 
-            if (IsPropertyOfNullableOfT(left, "HasValue", context.SemanticModel, context.CancellationToken))
+            if (!IsPropertyOfNullableOfT(left, "HasValue", context.SemanticModel, context.CancellationToken))
             {
-                ExpressionSyntax right = logicalAnd.Right?.WalkDownParentheses();
+                return;
+            }
 
-                switch (right?.Kind())
-                {
-                    case SyntaxKind.LogicalNotExpression:
-                        {
-                            var logicalNot = (PrefixUnaryExpressionSyntax)right;
+            ExpressionSyntax right = logicalAnd.Right?.WalkDownParentheses();
 
-                            Analyze(context, logicalAnd, left, logicalNot.Operand?.WalkDownParentheses());
-                            break;
-                        }
-                    case SyntaxKind.EqualsExpression:
-                        {
-                            var equalsExpression = (BinaryExpressionSyntax)right;
+            switch (right?.Kind())
+            {
+                case SyntaxKind.LogicalNotExpression:
+                    {
+                        var logicalNot = (PrefixUnaryExpressionSyntax)right;
 
-                            if (equalsExpression.Right?.WalkDownParentheses().IsKind(SyntaxKind.FalseLiteralExpression) == true)
-                                Analyze(context, logicalAnd, left, equalsExpression.Left?.WalkDownParentheses());
+                        Analyze(context, logicalAnd, left, logicalNot.Operand?.WalkDownParentheses());
+                        break;
+                    }
+                case SyntaxKind.EqualsExpression:
+                    {
+                        var equalsExpression = (BinaryExpressionSyntax)right;
 
-                            break;
-                        }
-                    case SyntaxKind.SimpleMemberAccessExpression:
-                        {
-                            Analyze(context, logicalAnd, left, right);
-                            break;
-                        }
-                }
+                        if (equalsExpression.Right?.WalkDownParentheses().IsKind(SyntaxKind.FalseLiteralExpression) == true)
+                            Analyze(context, logicalAnd, left, equalsExpression.Left?.WalkDownParentheses());
+
+                        break;
+                    }
+                case SyntaxKind.SimpleMemberAccessExpression:
+                    {
+                        Analyze(context, logicalAnd, left, right);
+                        break;
+                    }
             }
         }
 
@@ -61,34 +63,38 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax expression1,
             ExpressionSyntax expression2)
         {
-            if (IsPropertyOfNullableOfT(expression2, "Value", context.SemanticModel, context.CancellationToken)
-                && SyntaxComparer.AreEquivalent(
+            if (!IsPropertyOfNullableOfT(expression2, "Value", context.SemanticModel, context.CancellationToken)
+                || !SyntaxComparer.AreEquivalent(
                     ((MemberAccessExpressionSyntax)expression1).Expression,
                     ((MemberAccessExpressionSyntax)expression2).Expression,
                     requireNotNull: true))
             {
-                context.ReportDiagnostic(DiagnosticDescriptors.SimplifyBooleanExpression, logicalAnd);
+                return;
             }
+
+            context.ReportDiagnostic(DiagnosticDescriptors.SimplifyBooleanExpression, logicalAnd);
         }
 
         private static bool IsPropertyOfNullableOfT(ExpressionSyntax expression, string name, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            if (expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
+            if (expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
             {
-                var memberAccessExpression = (MemberAccessExpressionSyntax)expression;
-
-                SimpleNameSyntax simpleName = memberAccessExpression.Name;
-
-                if (simpleName?.IsKind(SyntaxKind.IdentifierName) == true)
-                {
-                    var identifierName = (IdentifierNameSyntax)simpleName;
-
-                    return string.Equals(identifierName.Identifier.ValueText, name, StringComparison.Ordinal)
-                        && SyntaxUtility.IsPropertyOfNullableOfT(expression, name, semanticModel, cancellationToken);
-                }
+                return false;
             }
 
-            return false;
+            var memberAccessExpression = (MemberAccessExpressionSyntax)expression;
+
+            SimpleNameSyntax simpleName = memberAccessExpression.Name;
+
+            if (simpleName?.IsKind(SyntaxKind.IdentifierName) != true)
+            {
+                return false;
+            }
+
+            var identifierName = (IdentifierNameSyntax)simpleName;
+
+            return string.Equals(identifierName.Identifier.ValueText, name, StringComparison.Ordinal)
+                && SyntaxUtility.IsPropertyOfNullableOfT(expression, name, semanticModel, cancellationToken);
         }
 
         public static Task<Document> RefactorAsync(

@@ -19,13 +19,15 @@ namespace Roslynator.CSharp.Refactorings
                     cancellationToken => MergeInterpolationIntoInterpolatedStringRefactoring.RefactorAsync(context.Document, interpolation, cancellationToken));
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveInterpolation)
-                && (interpolation.OpenBraceToken.Span.Contains(context.Span)
-                    || interpolation.CloseBraceToken.Span.Contains(context.Span)))
+            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveInterpolation)
+                || (!interpolation.OpenBraceToken.Span.Contains(context.Span)
+                    && !interpolation.CloseBraceToken.Span.Contains(context.Span)))
             {
-                context.RegisterRefactoring("Remove interpolation",
-                    cancellationToken => context.Document.RemoveNodeAsync(interpolation, SyntaxRemoveOptions.KeepUnbalancedDirectives, cancellationToken));
+                return;
             }
+
+            context.RegisterRefactoring("Remove interpolation",
+                cancellationToken => context.Document.RemoveNodeAsync(interpolation, SyntaxRemoveOptions.KeepUnbalancedDirectives, cancellationToken));
         }
     }
 }

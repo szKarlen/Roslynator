@@ -95,32 +95,34 @@ namespace Roslynator.CSharp
             if (parameterSymbol == null)
                 throw new ArgumentNullException(nameof(parameterSymbol));
 
-            if (parameterSymbol.HasExplicitDefaultValue)
+            if (!parameterSymbol.HasExplicitDefaultValue)
             {
-                object value = parameterSymbol.ExplicitDefaultValue;
+                return null;
+            }
 
-                ITypeSymbol type = parameterSymbol.Type;
+            object value = parameterSymbol.ExplicitDefaultValue;
 
-                if (type.IsEnum())
+            ITypeSymbol type = parameterSymbol.Type;
+
+            if (type.IsEnum())
+            {
+                if (value != null)
                 {
-                    if (value != null)
-                    {
-                        IFieldSymbol fieldSymbol = type.FindField(f => f.HasConstantValue && value.Equals(f.ConstantValue));
+                    IFieldSymbol fieldSymbol = type.FindField(f => f.HasConstantValue && value.Equals(f.ConstantValue));
 
-                        if (fieldSymbol != null)
-                        {
-                            return SimpleMemberAccessExpression(type.ToTypeSyntax(), IdentifierName(fieldSymbol.Name));
-                        }
-                        else
-                        {
-                            return CastExpression(type.ToTypeSyntax().WithSimplifierAnnotation(), LiteralExpression(value));
-                        }
+                    if (fieldSymbol != null)
+                    {
+                        return SimpleMemberAccessExpression(type.ToTypeSyntax(), IdentifierName(fieldSymbol.Name));
+                    }
+                    else
+                    {
+                        return CastExpression(type.ToTypeSyntax().WithSimplifierAnnotation(), LiteralExpression(value));
                     }
                 }
-                else
-                {
-                    return LiteralExpression(value);
-                }
+            }
+            else
+            {
+                return LiteralExpression(value);
             }
 
             return null;

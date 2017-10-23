@@ -21,24 +21,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax expression = switchStatement.Expression;
 
-            if (expression != null
-                && IsEmptyOrContainsOnlyDefaultSection(switchStatement))
+            if (expression == null
+                || !IsEmptyOrContainsOnlyDefaultSection(switchStatement))
             {
-                ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
-
-                if (symbol?.IsErrorType() == false)
-                {
-                    ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken);
-
-                    if (typeSymbol?.IsEnum() == true
-                        && typeSymbol.ExistsField())
-                    {
-                        return true;
-                    }
-                }
+                return false;
             }
 
-            return false;
+            ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
+
+            if (symbol?.IsErrorType() != false)
+            {
+                return false;
+            }
+
+            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken);
+
+            return typeSymbol?.IsEnum() == true
+                && typeSymbol.ExistsField();
         }
 
         private static bool IsEmptyOrContainsOnlyDefaultSection(SwitchStatementSyntax switchStatement)

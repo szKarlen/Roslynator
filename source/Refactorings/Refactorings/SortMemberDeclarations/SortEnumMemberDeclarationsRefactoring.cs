@@ -20,27 +20,33 @@ namespace Roslynator.CSharp.Refactorings.SortMemberDeclarations
                 .TakeWhile(f => context.Span.End >= f.Span.End)
                 .ToImmutableArray();
 
-            if (selectedMembers.Length > 1)
+            if (selectedMembers.Length <= 1)
             {
-                if (!EnumMemberDeclarationNameComparer.IsSorted(selectedMembers))
-                {
-                    context.RegisterRefactoring(
-                        "Sort enum members by name",
-                        cancellationToken => SortByNameAsync(context.Document, enumDeclaration, selectedMembers, cancellationToken));
-                }
-
-                if (selectedMembers.Any(f => f.EqualsValue?.Value != null))
-                {
-                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                    if (!EnumMemberDeclarationValueComparer.IsSorted(selectedMembers, semanticModel, context.CancellationToken))
-                    {
-                        context.RegisterRefactoring(
-                            "Sort enum members by value",
-                            cancellationToken => SortByValueAsync(context.Document, enumDeclaration, selectedMembers, cancellationToken));
-                    }
-                }
+                return;
             }
+
+            if (!EnumMemberDeclarationNameComparer.IsSorted(selectedMembers))
+            {
+                context.RegisterRefactoring(
+                    "Sort enum members by name",
+                    cancellationToken => SortByNameAsync(context.Document, enumDeclaration, selectedMembers, cancellationToken));
+            }
+
+            if (!selectedMembers.Any(f => f.EqualsValue?.Value != null))
+            {
+                return;
+            }
+
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+            if (EnumMemberDeclarationValueComparer.IsSorted(selectedMembers, semanticModel, context.CancellationToken))
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                "Sort enum members by value",
+                cancellationToken => SortByValueAsync(context.Document, enumDeclaration, selectedMembers, cancellationToken));
         }
 
         private static Task<Document> SortByNameAsync(

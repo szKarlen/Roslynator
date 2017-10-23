@@ -18,73 +18,87 @@ namespace Roslynator.CSharp.Refactorings
 
             ISymbol symbol = semanticModel.GetEnclosingSymbol(localDeclaration.SpanStart, context.CancellationToken);
 
-            if (symbol?.IsMethod() == true)
+            if (symbol?.IsMethod() != true)
             {
-                var methodsymbol = (IMethodSymbol)symbol;
+                return;
+            }
 
-                if (methodsymbol.MethodKind == MethodKind.Ordinary)
+            var methodsymbol = (IMethodSymbol)symbol;
+
+            if (methodsymbol.MethodKind != MethodKind.Ordinary)
+            {
+                return;
+            }
+
+            if (methodsymbol.PartialImplementationPart != null)
+                symbol = methodsymbol.PartialImplementationPart;
+
+            SyntaxNode node = await symbol
+                .DeclaringSyntaxReferences[0]
+                .GetSyntaxAsync(context.CancellationToken)
+                .ConfigureAwait(false);
+
+            var method = node as MethodDeclarationSyntax;
+
+            if (method == null)
+            {
+                return;
+            }
+
+            VariableDeclarationSyntax declaration = localDeclaration.Declaration;
+
+            if (declaration == null)
+            {
+                return;
+            }
+
+            VariableDeclaratorSyntax variable = declaration
+                .Variables
+                .FirstOrDefault(f => !f.IsMissing && f.Identifier.Span.Contains(context.Span));
+
+            if (variable == null)
+            {
+                return;
+            }
+
+            TypeSyntax type = declaration.Type;
+
+            if (type == null)
+            {
+                return;
+            }
+
+            if (type.IsVar)
+            {
+                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+                if (typeSymbol?.SupportsExplicitDeclaration() == true)
                 {
-                    if (methodsymbol.PartialImplementationPart != null)
-                        symbol = methodsymbol.PartialImplementationPart;
-
-                    SyntaxNode node = await symbol
-                        .DeclaringSyntaxReferences[0]
-                        .GetSyntaxAsync(context.CancellationToken)
-                        .ConfigureAwait(false);
-
-                    var method = node as MethodDeclarationSyntax;
-
-                    if (method != null)
-                    {
-                        VariableDeclarationSyntax declaration = localDeclaration.Declaration;
-
-                        if (declaration != null)
-                        {
-                            VariableDeclaratorSyntax variable = declaration
-                                .Variables
-                                .FirstOrDefault(f => !f.IsMissing && f.Identifier.Span.Contains(context.Span));
-
-                            if (variable != null)
-                            {
-                                TypeSyntax type = declaration.Type;
-
-                                if (type != null)
-                                {
-                                    if (type.IsVar)
-                                    {
-                                        ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
-
-                                        if (typeSymbol?.SupportsExplicitDeclaration() == true)
-                                        {
-                                            type = typeSymbol.ToTypeSyntax();
-                                        }
-                                        else
-                                        {
-                                            type = null;
-                                        }
-                                    }
-
-                                    if (type != null)
-                                    {
-                                        context.RegisterRefactoring(
-                                            $"Promote '{variable.Identifier.ValueText}' to parameter",
-                                            cancellationToken =>
-                                            {
-                                                return RefactorAsync(
-                                                    context.Document,
-                                                    method,
-                                                    localDeclaration,
-                                                    type.WithoutTrivia().WithSimplifierAnnotation(),
-                                                    variable,
-                                                    cancellationToken);
-                                            });
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    type = typeSymbol.ToTypeSyntax();
+                }
+                else
+                {
+                    type = null;
                 }
             }
+
+            if (type == null)
+            {
+                return;
+            }
+
+            context.RegisterRefactoring(
+                $"Promote '{variable.Identifier.ValueText}' to parameter",
+                cancellationToken =>
+                {
+                    return RefactorAsync(
+                        context.Document,
+                        method,
+                        localDeclaration,
+                        type.WithoutTrivia().WithSimplifierAnnotation(),
+                        variable,
+                        cancellationToken);
+                });
         }
 
         public static Task<Document> RefactorAsync(

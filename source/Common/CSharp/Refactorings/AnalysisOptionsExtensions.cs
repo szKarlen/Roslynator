@@ -14,16 +14,18 @@ namespace Roslynator.CSharp.Refactorings
 
         public static bool CheckSpanDirectives(this AnalysisOptions options, SyntaxNode node, TextSpan span)
         {
-            if (!options.CanContainDirectives)
+            if (options.CanContainDirectives)
             {
-                if (node.Span.Contains(span))
-                    return !node.ContainsDirectives(span);
+                return true;
+            }
 
-                foreach (SyntaxNode ancestor in node.Ancestors())
-                {
-                    if (ancestor.Span.Contains(span))
-                        return !ancestor.ContainsDirectives(span);
-                }
+            if (node.Span.Contains(span))
+                return !node.ContainsDirectives(span);
+
+            foreach (SyntaxNode ancestor in node.Ancestors())
+            {
+                if (ancestor.Span.Contains(span))
+                    return !ancestor.ContainsDirectives(span);
             }
 
             return true;
