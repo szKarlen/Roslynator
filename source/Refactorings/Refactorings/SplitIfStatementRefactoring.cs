@@ -42,11 +42,11 @@ namespace Roslynator.CSharp.Refactorings
 
             var logicalOr = (BinaryExpressionSyntax)condition;
 
-            BinaryExpressionChainInfo chain = SyntaxInfo.BinaryExpressionChainInfo((BinaryExpressionSyntax)condition);
+            BinaryExpressionChainInfo info = SyntaxInfo.BinaryExpressionChainInfo((BinaryExpressionSyntax)condition);
 
             var ifStatements = new List<IfStatementSyntax>();
 
-            foreach (ExpressionSyntax expression in chain.Expressions)
+            foreach (ExpressionSyntax expression in info.Expressions)
                 ifStatements.Add(SyntaxFactory.IfStatement(expression.TrimTrivia(), statement).WithFormatterAnnotation());
 
             ifStatements[0] = ifStatements[0].WithLeadingTrivia(ifStatement.GetLeadingTrivia());

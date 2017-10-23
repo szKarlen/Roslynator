@@ -47,14 +47,14 @@ namespace Roslynator.CSharp.Refactorings
             {
                 SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                StringConcatenationExpressionInfo concatenation = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel, context.CancellationToken);
-                if (concatenation.Success)
+                StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel, context.CancellationToken);
+                if (concatenationInfo.Success)
                 {
                     if (context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions))
-                        JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenation);
+                        JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenationInfo);
 
                     if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseStringBuilderInsteadOfConcatenation))
-                        UseStringBuilderInsteadOfConcatenationRefactoring.ComputeRefactoring(context, concatenation);
+                        UseStringBuilderInsteadOfConcatenationRefactoring.ComputeRefactoring(context, concatenationInfo);
                 }
             }
 

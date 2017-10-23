@@ -24,21 +24,21 @@ namespace Roslynator.CSharp.Refactorings
 
             var addExpression = (BinaryExpressionSyntax)node;
 
-            StringConcatenationExpressionInfo concatenation = SyntaxInfo.StringConcatenationExpressionInfo(addExpression, context.SemanticModel, context.CancellationToken);
+            StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(addExpression, context.SemanticModel, context.CancellationToken);
 
-            if (concatenation.Success
-                && !concatenation.ContainsNonSpecificExpression
-                && (concatenation.ContainsLiteralExpression ^ concatenation.ContainsInterpolatedStringExpression)
-                && (concatenation.ContainsRegular ^ concatenation.ContainsVerbatim)
-                && (concatenation.ContainsVerbatim || addExpression.IsSingleLine(includeExteriorTrivia: false, cancellationToken: context.CancellationToken)))
+            if (concatenationInfo.Success
+                && !concatenationInfo.ContainsNonSpecificExpression
+                && (concatenationInfo.ContainsLiteralExpression ^ concatenationInfo.ContainsInterpolatedStringExpression)
+                && (concatenationInfo.ContainsRegular ^ concatenationInfo.ContainsVerbatim)
+                && (concatenationInfo.ContainsVerbatim || addExpression.IsSingleLine(includeExteriorTrivia: false, cancellationToken: context.CancellationToken)))
             {
                 context.ReportDiagnostic(DiagnosticDescriptors.JoinStringExpressions, addExpression);
             }
         }
 
-        private static bool ContainsMultiLine(StringConcatenationExpressionInfo concatenation, CancellationToken cancellationToken)
+        private static bool ContainsMultiLine(StringConcatenationExpressionInfo concatenationInfo, CancellationToken cancellationToken)
         {
-            foreach (ExpressionSyntax expression in concatenation.Expressions)
+            foreach (ExpressionSyntax expression in concatenationInfo.Expressions)
             {
                 if (expression.IsMultiLine(includeExteriorTrivia: false, cancellationToken: cancellationToken))
                     return true;
@@ -54,26 +54,26 @@ namespace Roslynator.CSharp.Refactorings
         {
             SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
-            StringConcatenationExpressionInfo concatenation = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel, cancellationToken);
-            if (concatenation.Success)
+            StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(binaryExpression, semanticModel, cancellationToken);
+            if (concatenationInfo.Success)
             {
                 ExpressionSyntax newNode = null;
 
-                if (concatenation.ContainsLiteralExpression)
+                if (concatenationInfo.ContainsLiteralExpression)
                 {
-                    if (concatenation.ContainsVerbatim
-                        && ContainsMultiLine(concatenation, cancellationToken))
+                    if (concatenationInfo.ContainsVerbatim
+                        && ContainsMultiLine(concatenationInfo, cancellationToken))
                     {
-                        newNode = concatenation.ToMultilineStringLiteral();
+                        newNode = concatenationInfo.ToMultilineStringLiteral();
                     }
                     else
                     {
-                        newNode = concatenation.ToStringLiteral();
+                        newNode = concatenationInfo.ToStringLiteral();
                     }
                 }
                 else
                 {
-                    newNode = concatenation.ToInterpolatedString();
+                    newNode = concatenationInfo.ToInterpolatedString();
                 }
 
                 newNode = newNode.WithTriviaFrom(binaryExpression);

@@ -21,7 +21,7 @@ namespace Roslynator.CSharp.Refactorings
 
             int index = statementsInfo.Statements.IndexOf(usingStatement);
 
-            StatementsInfo newContainer = statementsInfo.RemoveAt(index);
+            StatementsInfo newStatementsInfo = statementsInfo.RemoveAt(index);
 
             var statements = new List<StatementSyntax>() { SyntaxFactory.LocalDeclarationStatement(usingStatement.Declaration) };
 
@@ -36,9 +36,9 @@ namespace Roslynator.CSharp.Refactorings
                     .WithTrailingTrivia(usingStatement.GetTrailingTrivia());
             }
 
-            newContainer = newContainer.WithStatements(newContainer.Statements.InsertRange(index, statements));
+            newStatementsInfo = newStatementsInfo.WithStatements(newStatementsInfo.Statements.InsertRange(index, statements));
 
-            return document.ReplaceNodeAsync(statementsInfo.Node, newContainer.Node.WithFormatterAnnotation(), cancellationToken);
+            return document.ReplaceNodeAsync(statementsInfo.Node, newStatementsInfo.Node.WithFormatterAnnotation(), cancellationToken);
         }
 
         private static IEnumerable<StatementSyntax> GetStatements(UsingStatementSyntax usingStatement)

@@ -32,10 +32,10 @@ namespace Roslynator.CSharp.Refactorings
                     NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(ifStatement.Condition, semanticModel: context.SemanticModel, cancellationToken: context.CancellationToken);
                     if (nullCheck.Success)
                     {
-                        SimpleAssignmentStatementInfo assignment = SyntaxInfo.SimpleAssignmentStatementInfo(ifStatement.GetSingleStatementOrDefault());
-                        if (assignment.Success
-                            && SyntaxComparer.AreEquivalent(assignment.Left, nullCheck.Expression)
-                            && assignment.Right.IsSingleLine()
+                        SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(ifStatement.GetSingleStatementOrDefault());
+                        if (assignmentInfo.Success
+                            && SyntaxComparer.AreEquivalent(assignmentInfo.Left, nullCheck.Expression)
+                            && assignmentInfo.Right.IsSingleLine()
                             && !ifStatement.SpanContainsDirectives())
                         {
                             int index = statements.IndexOf(ifStatement);
@@ -160,13 +160,13 @@ namespace Roslynator.CSharp.Refactorings
 
             StatementSyntax expressionStatement = (ExpressionStatementSyntax)statements[index + 1];
 
-            MemberInvocationStatementInfo invocation = SyntaxInfo.MemberInvocationStatementInfo((ExpressionStatementSyntax)expressionStatement);
+            MemberInvocationStatementInfo invocationInfo = SyntaxInfo.MemberInvocationStatementInfo((ExpressionStatementSyntax)expressionStatement);
 
-            ExpressionSyntax expression = invocation.Expression;
+            ExpressionSyntax expression = invocationInfo.Expression;
 
-            SimpleAssignmentStatementInfo assignment = SyntaxInfo.SimpleAssignmentStatementInfo((ExpressionStatementSyntax)ifStatement.GetSingleStatementOrDefault());
+            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo((ExpressionStatementSyntax)ifStatement.GetSingleStatementOrDefault());
 
-            BinaryExpressionSyntax coalesceExpression = CSharpFactory.CoalesceExpression(expression.WithoutTrivia(), ParenthesizedExpression(assignment.AssignmentExpression));
+            BinaryExpressionSyntax coalesceExpression = CSharpFactory.CoalesceExpression(expression.WithoutTrivia(), ParenthesizedExpression(assignmentInfo.AssignmentExpression));
 
             ParenthesizedExpressionSyntax newExpression = ParenthesizedExpression(coalesceExpression)
                 .WithTriviaFrom(expression);

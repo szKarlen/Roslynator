@@ -45,11 +45,11 @@ namespace Roslynator.CSharp.Refactorings
                 }
                 else
                 {
-                    SingleLocalDeclarationStatementInfo localDeclaration = SyntaxInfo.SingleLocalDeclarationStatementInfo(expression);
+                    SingleLocalDeclarationStatementInfo localDeclarationInfo = SyntaxInfo.SingleLocalDeclarationStatementInfo(expression);
 
-                    if (localDeclaration.Success)
+                    if (localDeclarationInfo.Success)
                     {
-                        TypeSyntax type = localDeclaration.Type;
+                        TypeSyntax type = localDeclarationInfo.Type;
 
                         if (type != null)
                         {
@@ -60,7 +60,7 @@ namespace Roslynator.CSharp.Refactorings
                             {
                                 context.RegisterRefactoring(
                                     Title,
-                                    cancellationToken => RefactorAsync(context.Document, localDeclaration.Statement, conditionalExpression, semanticModel, cancellationToken));
+                                    cancellationToken => RefactorAsync(context.Document, localDeclarationInfo.Statement, conditionalExpression, semanticModel, cancellationToken));
                             }
                         }
                     }
@@ -97,15 +97,15 @@ namespace Roslynator.CSharp.Refactorings
                 SimpleAssignmentStatement(left, conditionalExpression.WhenTrue.WithoutTrivia()),
                 SimpleAssignmentStatement(left, conditionalExpression.WhenFalse.WithoutTrivia()));
 
-            StatementsInfo info = SyntaxInfo.StatementsInfo(localDeclaration);
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(localDeclaration);
 
-            SyntaxList<StatementSyntax> statements = info.Statements;
+            SyntaxList<StatementSyntax> statements = statementsInfo.Statements;
 
             SyntaxList<StatementSyntax> newStatements = statements
                 .Replace(localDeclaration, newLocalDeclaration.WithFormatterAnnotation())
                 .Insert(statements.IndexOf(localDeclaration) + 1, ifStatement.WithFormatterAnnotation());
 
-            return document.ReplaceStatementsAsync(info, newStatements, cancellationToken);
+            return document.ReplaceStatementsAsync(statementsInfo, newStatements, cancellationToken);
         }
 
         private static Task<Document> RefactorAsync(

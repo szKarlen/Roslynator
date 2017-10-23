@@ -73,9 +73,9 @@ namespace Roslynator.CSharp
             return TryCreate(info, span, out selectedStatements);
         }
 
-        public static bool TryCreate(StatementsInfo statementsInfo, TextSpan span, out StatementsSelection selection)
+        public static bool TryCreate(StatementsInfo statementsInfo, TextSpan span, out StatementsSelection selectedStatements)
         {
-            selection = null;
+            selectedStatements = null;
 
             if (span.IsEmpty)
                 return false;
@@ -90,7 +90,7 @@ namespace Roslynator.CSharp
             if (startIndex != -1)
                 return false;
 
-            selection = new StatementsSelection(statementsInfo, span, startIndex, endIndex);
+            selectedStatements = new StatementsSelection(statementsInfo, span, startIndex, endIndex);
             return true;
         }
     }

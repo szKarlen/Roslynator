@@ -50,18 +50,18 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveConstraintClauses))
                                 break;
 
-                            GenericInfo info = SyntaxInfo.GenericInfo(constraintClause);
+                            GenericInfo genericInfo = SyntaxInfo.GenericInfo(constraintClause);
 
-                            if (!info.Success)
+                            if (!genericInfo.Success)
                                 break;
 
                             CodeAction codeAction = CodeAction.Create(
                                 "Remove constraints",
                                 cancellationToken =>
                                 {
-                                    GenericInfo newInfo = info.RemoveConstraintClauses();
+                                    GenericInfo newGenericInfo = genericInfo.RemoveConstraintClauses();
 
-                                    return context.Document.ReplaceNodeAsync(info.Declaration, newInfo.Declaration, cancellationToken);
+                                    return context.Document.ReplaceNodeAsync(genericInfo.Declaration, newGenericInfo.Declaration, cancellationToken);
                                 },
                                 GetEquivalenceKey(diagnostic));
 

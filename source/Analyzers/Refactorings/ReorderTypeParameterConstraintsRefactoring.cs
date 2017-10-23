@@ -15,26 +15,26 @@ namespace Roslynator.CSharp.Refactorings
         {
             var typeParameterList = (TypeParameterListSyntax)context.Node;
 
-            GenericInfo info = SyntaxInfo.GenericInfo(typeParameterList);
+            GenericInfo genericInfo = SyntaxInfo.GenericInfo(typeParameterList);
 
-            if (!info.Success)
+            if (!genericInfo.Success)
                 return;
 
-            if (!info.TypeParameters.Any())
+            if (!genericInfo.TypeParameters.Any())
                 return;
 
-            if (!info.ConstraintClauses.Any())
+            if (!genericInfo.ConstraintClauses.Any())
                 return;
 
-            if (info.ConstraintClauses.SpanContainsDirectives())
+            if (genericInfo.ConstraintClauses.SpanContainsDirectives())
                 return;
 
-            if (!IsFixable(info.TypeParameters, info.ConstraintClauses))
+            if (!IsFixable(genericInfo.TypeParameters, genericInfo.ConstraintClauses))
                 return;
 
             context.ReportDiagnostic(
                 DiagnosticDescriptors.ReorderTypeParameterConstraints,
-                info.ConstraintClauses.First());
+                genericInfo.ConstraintClauses.First());
         }
 
         private static bool IsFixable(
@@ -77,13 +77,13 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxNode node,
             CancellationToken cancellationToken)
         {
-            GenericInfo info = SyntaxInfo.GenericInfo(node);
+            GenericInfo genericInfo = SyntaxInfo.GenericInfo(node);
 
-            SyntaxList<TypeParameterConstraintClauseSyntax> newConstraintClauses = SortConstraints(info.TypeParameters, info.ConstraintClauses);
+            SyntaxList<TypeParameterConstraintClauseSyntax> newConstraintClauses = SortConstraints(genericInfo.TypeParameters, genericInfo.ConstraintClauses);
 
-            GenericInfo newInfo = info.WithConstraintClauses(newConstraintClauses);
+            GenericInfo newInfo = genericInfo.WithConstraintClauses(newConstraintClauses);
 
-            return document.ReplaceNodeAsync(info.Declaration, newInfo.Declaration, cancellationToken);
+            return document.ReplaceNodeAsync(genericInfo.Declaration, newInfo.Declaration, cancellationToken);
         }
 
         private static SyntaxList<TypeParameterConstraintClauseSyntax> SortConstraints(

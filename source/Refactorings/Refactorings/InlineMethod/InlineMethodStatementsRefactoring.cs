@@ -37,13 +37,13 @@ namespace Roslynator.CSharp.Refactorings.InlineMethod
             newStatements[0] = newStatements[0].WithLeadingTrivia(expressionStatement.GetLeadingTrivia());
             newStatements[count - 1] = newStatements[count - 1].WithTrailingTrivia(expressionStatement.GetTrailingTrivia());
 
-            StatementsInfo info = SyntaxInfo.StatementsInfo(expressionStatement);
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(expressionStatement);
 
-            if (info.Success)
+            if (statementsInfo.Success)
             {
-                StatementsInfo newInfo = info.WithStatements(info.Statements.ReplaceRange(expressionStatement, newStatements));
+                StatementsInfo newInfo = statementsInfo.WithStatements(statementsInfo.Statements.ReplaceRange(expressionStatement, newStatements));
 
-                return Document.ReplaceNodeAsync(info.Node, newInfo.Node, CancellationToken);
+                return Document.ReplaceNodeAsync(statementsInfo.Node, newInfo.Node, CancellationToken);
             }
             else
             {
@@ -66,13 +66,13 @@ namespace Roslynator.CSharp.Refactorings.InlineMethod
                 newStatements[0] = newStatements[0].WithLeadingTrivia(expressionStatement.GetLeadingTrivia());
                 newStatements[count - 1] = newStatements[count - 1].WithTrailingTrivia(expressionStatement.GetTrailingTrivia());
 
-                StatementsInfo info = SyntaxInfo.StatementsInfo(expressionStatement);
+                StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(expressionStatement);
 
-                if (info.Success)
+                if (statementsInfo.Success)
                 {
-                    StatementsInfo newInfo = info.WithStatements(info.Statements.ReplaceRange(expressionStatement, newStatements));
+                    StatementsInfo newStatementsInfo = statementsInfo.WithStatements(statementsInfo.Statements.ReplaceRange(expressionStatement, newStatements));
 
-                    editor.ReplaceNode(info.Node, newInfo.Node);
+                    editor.ReplaceNode(statementsInfo.Node, newStatementsInfo.Node);
                 }
                 else
                 {

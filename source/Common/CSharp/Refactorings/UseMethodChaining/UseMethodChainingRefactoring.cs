@@ -122,11 +122,11 @@ namespace Roslynator.CSharp.Refactorings.UseMethodChaining
         {
             while (true)
             {
-                MemberInvocationExpressionInfo memberInvocation2 = SyntaxInfo.MemberInvocationExpressionInfo(invocationInfo.Expression);
+                MemberInvocationExpressionInfo invocationInfo2 = SyntaxInfo.MemberInvocationExpressionInfo(invocationInfo.Expression);
 
-                if (memberInvocation2.Success)
+                if (invocationInfo2.Success)
                 {
-                    invocationInfo = memberInvocation2;
+                    invocationInfo = invocationInfo2;
                 }
                 else
                 {

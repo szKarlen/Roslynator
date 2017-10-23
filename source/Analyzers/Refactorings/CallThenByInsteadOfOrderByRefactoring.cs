@@ -19,17 +19,17 @@ namespace Roslynator.CSharp.Refactorings
 
             if (expression.IsKind(SyntaxKind.InvocationExpression))
             {
-                MemberInvocationExpressionInfo memberInvocation2 = SyntaxInfo.MemberInvocationExpressionInfo((InvocationExpressionSyntax)expression);
+                MemberInvocationExpressionInfo invocationInfo2 = SyntaxInfo.MemberInvocationExpressionInfo((InvocationExpressionSyntax)expression);
 
-                if (memberInvocation2.Success)
+                if (invocationInfo2.Success)
                 {
-                    switch (memberInvocation2.NameText)
+                    switch (invocationInfo2.NameText)
                     {
                         case "OrderBy":
                         case "OrderByDescending":
                             {
                                 if (IsLinqExtensionOfIEnumerableOfT(context, invocationInfo.InvocationExpression)
-                                    && IsLinqExtensionOfIEnumerableOfT(context, memberInvocation2.InvocationExpression))
+                                    && IsLinqExtensionOfIEnumerableOfT(context, invocationInfo2.InvocationExpression))
                                 {
                                     context.ReportDiagnostic(
                                         DiagnosticDescriptors.CallThenByInsteadOfOrderBy,

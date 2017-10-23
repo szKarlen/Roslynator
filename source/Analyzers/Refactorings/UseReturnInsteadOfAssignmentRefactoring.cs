@@ -185,10 +185,10 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsSymbolAssignedInStatement(ISymbol symbol, StatementSyntax statement, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            SimpleAssignmentStatementInfo assignment = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
+            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
 
-            return assignment.Success
-                && symbol.Equals(semanticModel.GetSymbol(assignment.Left, cancellationToken));
+            return assignmentInfo.Success
+                && symbol.Equals(semanticModel.GetSymbol(assignmentInfo.Left, cancellationToken));
         }
 
         private static StatementSyntax GetLastStatementOrDefault(StatementSyntax statement)
@@ -261,7 +261,7 @@ namespace Roslynator.CSharp.Refactorings
                                 return ReturnStatement(assignment.Right).WithTriviaFrom(f);
                             });
 
-                        StatementsInfo newContainer = await RefactorAsync(
+                        StatementsInfo newStatementsInfo = await RefactorAsync(
                             document,
                             statementsInfo,
                             ifStatement,
@@ -272,7 +272,7 @@ namespace Roslynator.CSharp.Refactorings
                             cancellationToken,
                             ifStatementInfo.EndsWithElse).ConfigureAwait(false);
 
-                        return await document.ReplaceNodeAsync(statementsInfo.Node, newContainer.Node, cancellationToken).ConfigureAwait(false);
+                        return await document.ReplaceNodeAsync(statementsInfo.Node, newStatementsInfo.Node, cancellationToken).ConfigureAwait(false);
                     }
                 case SyntaxKind.SwitchStatement:
                     {
@@ -285,7 +285,7 @@ namespace Roslynator.CSharp.Refactorings
 
                         SwitchStatementSyntax newSwitchStatement = switchStatement.WithSections(newSections);
 
-                        StatementsInfo newContainer = await RefactorAsync(
+                        StatementsInfo newStatementsInfo = await RefactorAsync(
                             document,
                             statementsInfo,
                             switchStatement,
@@ -296,7 +296,7 @@ namespace Roslynator.CSharp.Refactorings
                             cancellationToken,
                             switchStatement.Sections.Any(f => f.ContainsDefaultLabel())).ConfigureAwait(false);
 
-                        return await document.ReplaceNodeAsync(statementsInfo.Node, newContainer.Node, cancellationToken).ConfigureAwait(false);
+                        return await document.ReplaceNodeAsync(statementsInfo.Node, newStatementsInfo.Node, cancellationToken).ConfigureAwait(false);
                     }
             }
 

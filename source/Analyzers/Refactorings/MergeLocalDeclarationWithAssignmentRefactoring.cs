@@ -37,14 +37,14 @@ namespace Roslynator.CSharp.Refactorings
                         if (nextStatement?.ContainsDiagnostics == false
                             && nextStatement?.SpanOrLeadingTriviaContainsDirectives() == false)
                         {
-                            SimpleAssignmentStatementInfo assignment = SyntaxInfo.SimpleAssignmentStatementInfo(nextStatement);
-                            if (assignment.Success
-                                && assignment.Left.IsKind(SyntaxKind.IdentifierName))
+                            SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(nextStatement);
+                            if (assignmentInfo.Success
+                                && assignmentInfo.Left.IsKind(SyntaxKind.IdentifierName))
                             {
                                 SemanticModel semanticModel = context.SemanticModel;
                                 CancellationToken cancellationToken = context.CancellationToken;
 
-                                LocalInfo localInfo = FindInitializedVariable((IdentifierNameSyntax)assignment.Left, variables[0], semanticModel, cancellationToken);
+                                LocalInfo localInfo = FindInitializedVariable((IdentifierNameSyntax)assignmentInfo.Left, variables[0], semanticModel, cancellationToken);
 
                                 if (localInfo.IsValid)
                                 {
@@ -53,18 +53,18 @@ namespace Roslynator.CSharp.Refactorings
 
                                     if (value == null
                                         || (IsDefaultValue(declaration.Type, value, semanticModel, cancellationToken)
-                                            && !IsReferenced(localInfo.Symbol, assignment.Right, semanticModel, cancellationToken)))
+                                            && !IsReferenced(localInfo.Symbol, assignmentInfo.Right, semanticModel, cancellationToken)))
                                     {
                                         context.ReportDiagnostic(DiagnosticDescriptors.MergeLocalDeclarationWithAssignment, localInfo.Declarator.Identifier);
 
                                         if (value != null)
                                         {
                                             context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, initializer);
-                                            context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignment.AssignmentExpression.OperatorToken);
+                                            context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.AssignmentExpression.OperatorToken);
                                         }
 
                                         context.ReportToken(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, localDeclaration.SemicolonToken);
-                                        context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignment.Left);
+                                        context.ReportNode(DiagnosticDescriptors.MergeLocalDeclarationWithAssignmentFadeOut, assignmentInfo.Left);
                                     }
                                 }
                             }
@@ -211,6 +211,7 @@ namespace Roslynator.CSharp.Refactorings
             }
 
             public VariableDeclaratorSyntax Declarator { get; }
+
             public ILocalSymbol Symbol { get; }
         }
     }

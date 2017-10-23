@@ -52,12 +52,12 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.MoveConstraint))
                                 break;
 
-                            TypeParameterConstraintInfo info = SyntaxInfo.TypeParameterConstraintInfo(constraint);
+                            TypeParameterConstraintInfo constraintInfo = SyntaxInfo.TypeParameterConstraintInfo(constraint);
 
-                            if (!info.Success)
+                            if (!constraintInfo.Success)
                                 break;
 
-                            MoveConstraint(context, diagnostic, info, info.Constraints.Count - 1);
+                            MoveConstraint(context, diagnostic, constraintInfo, constraintInfo.Constraints.Count - 1);
 
                             break;
                         }
@@ -73,18 +73,18 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.MoveConstraint))
                                 break;
 
-                            TypeParameterConstraintInfo info = SyntaxInfo.TypeParameterConstraintInfo(constraint);
+                            TypeParameterConstraintInfo constraintInfo = SyntaxInfo.TypeParameterConstraintInfo(constraint);
 
-                            if (!info.Success)
+                            if (!constraintInfo.Success)
                                 break;
 
-                            if (info.IsDuplicateConstraint)
+                            if (constraintInfo.IsDuplicateConstraint)
                             {
                                 RemoveConstraint(context, diagnostic, constraint);
                             }
                             else
                             {
-                                MoveConstraint(context, diagnostic, info, 0);
+                                MoveConstraint(context, diagnostic, constraintInfo, 0);
                             }
 
                             break;
@@ -94,19 +94,19 @@ namespace Roslynator.CSharp.CodeFixes
                             if (!Settings.IsCodeFixEnabled(CodeFixIdentifiers.RemoveConstraint))
                                 break;
 
-                            TypeParameterConstraintInfo info = SyntaxInfo.TypeParameterConstraintInfo(constraint);
+                            TypeParameterConstraintInfo constraintInfo = SyntaxInfo.TypeParameterConstraintInfo(constraint);
 
-                            if (!info.Success)
+                            if (!constraintInfo.Success)
                                 break;
 
                             RemoveConstraint(context, diagnostic, constraint);
 
-                            TypeParameterConstraintSyntax classConstraint = info.Constraints.Find(SyntaxKind.ClassConstraint);
+                            TypeParameterConstraintSyntax classConstraint = constraintInfo.Constraints.Find(SyntaxKind.ClassConstraint);
 
                             if (classConstraint != null)
                                 RemoveConstraint(context, diagnostic, classConstraint);
 
-                            TypeParameterConstraintSyntax structConstraint = info.Constraints.Find(SyntaxKind.StructConstraint);
+                            TypeParameterConstraintSyntax structConstraint = constraintInfo.Constraints.Find(SyntaxKind.StructConstraint);
 
                             if (structConstraint != null)
                                 RemoveConstraint(context, diagnostic, structConstraint);
@@ -120,12 +120,12 @@ namespace Roslynator.CSharp.CodeFixes
 
                             RemoveConstraint(context, diagnostic, constraint);
 
-                            TypeParameterConstraintInfo info = SyntaxInfo.TypeParameterConstraintInfo(constraint);
+                            TypeParameterConstraintInfo constraintInfo = SyntaxInfo.TypeParameterConstraintInfo(constraint);
 
-                            if (!info.Success)
+                            if (!constraintInfo.Success)
                                 break;
 
-                            TypeParameterConstraintSyntax structConstraint = info.Constraints.Find(SyntaxKind.StructConstraint);
+                            TypeParameterConstraintSyntax structConstraint = constraintInfo.Constraints.Find(SyntaxKind.StructConstraint);
 
                             RemoveConstraint(context, diagnostic, structConstraint);
                             break;
@@ -137,22 +137,22 @@ namespace Roslynator.CSharp.CodeFixes
         private void MoveConstraint(
             CodeFixContext context,
             Diagnostic diagnostic,
-            TypeParameterConstraintInfo info,
+            TypeParameterConstraintInfo constraintInfo,
             int index)
         {
             CodeAction codeAction = CodeAction.Create(
-                $"Move constraint '{info.Constraint}'",
+                $"Move constraint '{constraintInfo.Constraint}'",
                 cancellationToken =>
                 {
-                    SeparatedSyntaxList<TypeParameterConstraintSyntax> newConstraints = info.Constraints
-                        .Remove(info.Constraint)
-                        .Insert(index, info.Constraint);
+                    SeparatedSyntaxList<TypeParameterConstraintSyntax> newConstraints = constraintInfo.Constraints
+                        .Remove(constraintInfo.Constraint)
+                        .Insert(index, constraintInfo.Constraint);
 
-                    TypeParameterConstraintClauseSyntax newNode = info.ConstraintClause
+                    TypeParameterConstraintClauseSyntax newNode = constraintInfo.ConstraintClause
                         .WithConstraints(newConstraints)
                         .WithFormatterAnnotation();
 
-                    return context.Document.ReplaceNodeAsync(info.ConstraintClause, newNode, cancellationToken);
+                    return context.Document.ReplaceNodeAsync(constraintInfo.ConstraintClause, newNode, cancellationToken);
                 },
                 GetEquivalenceKey(diagnostic));
 

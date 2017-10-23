@@ -81,13 +81,13 @@ namespace Roslynator.CSharp.Refactorings
 
                             if (fieldSymbol != null)
                             {
-                                SimpleAssignmentStatementInfo assignment = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
-                                if (assignment.Success)
+                                SimpleAssignmentStatementInfo assignmentInfo = SyntaxInfo.SimpleAssignmentStatementInfo(statement);
+                                if (assignmentInfo.Success)
                                 {
                                     string fieldName = identifierName.Identifier.ValueText;
 
-                                    return assignment.Right.IsSingleLine()
-                                        && IsBackingField(GetIdentifierName(assignment.Left), fieldName, fieldSymbol, semanticModel, cancellationToken)
+                                    return assignmentInfo.Right.IsSingleLine()
+                                        && IsBackingField(GetIdentifierName(assignmentInfo.Left), fieldName, fieldSymbol, semanticModel, cancellationToken)
                                         && IsBackingField(GetIdentifierName(returnStatement.Expression), fieldName, fieldSymbol, semanticModel, cancellationToken);
                                 }
                             }

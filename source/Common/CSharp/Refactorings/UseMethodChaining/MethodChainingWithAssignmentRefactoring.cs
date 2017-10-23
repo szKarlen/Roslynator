@@ -23,15 +23,15 @@ namespace Roslynator.CSharp.Refactorings.UseMethodChaining
             if (!(statement is ExpressionStatementSyntax expressionStatement))
                 return false;
 
-            SimpleAssignmentExpressionInfo simpleAssignment = SyntaxInfo.SimpleAssignmentExpressionInfo(expressionStatement.Expression);
+            SimpleAssignmentExpressionInfo assignmentInfo = SyntaxInfo.SimpleAssignmentExpressionInfo(expressionStatement.Expression);
 
-            if (!simpleAssignment.Success)
+            if (!assignmentInfo.Success)
                 return false;
 
-            if (name != (simpleAssignment.Left as IdentifierNameSyntax)?.Identifier.ValueText)
+            if (name != (assignmentInfo.Left as IdentifierNameSyntax)?.Identifier.ValueText)
                 return false;
 
-            MemberInvocationExpressionInfo invocationInfo = SyntaxInfo.MemberInvocationExpressionInfo(simpleAssignment.Right);
+            MemberInvocationExpressionInfo invocationInfo = SyntaxInfo.MemberInvocationExpressionInfo(assignmentInfo.Right);
 
             if (!invocationInfo.Success)
                 return false;

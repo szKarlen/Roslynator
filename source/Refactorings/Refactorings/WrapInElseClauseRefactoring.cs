@@ -83,12 +83,12 @@ namespace Roslynator.CSharp.Refactorings
             StatementsSelection selectedStatements,
             CancellationToken cancellationToken)
         {
-            IfStatementInfo ifElse = SyntaxInfo.IfStatementInfo(ifStatement);
+            IfStatementInfo ifStatementInfo = SyntaxInfo.IfStatementInfo(ifStatement);
 
             StatementSyntax newStatement = null;
 
             if (selectedStatements.Count == 1
-                && !ifElse.Nodes.Any(f => f.Statement?.IsKind(SyntaxKind.Block) == true))
+                && !ifStatementInfo.Nodes.Any(f => f.Statement?.IsKind(SyntaxKind.Block) == true))
             {
                 newStatement = selectedStatements.First();
             }
@@ -99,7 +99,7 @@ namespace Roslynator.CSharp.Refactorings
 
             ElseClauseSyntax elseClause = SyntaxFactory.ElseClause(newStatement).WithFormatterAnnotation();
 
-            IfStatementSyntax lastIfStatement = ifElse.Nodes.Last();
+            IfStatementSyntax lastIfStatement = ifStatementInfo.Nodes.Last();
 
             IfStatementSyntax newIfStatement = ifStatement.ReplaceNode(
                 lastIfStatement,

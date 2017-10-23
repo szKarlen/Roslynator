@@ -182,23 +182,23 @@ namespace Roslynator.CSharp.Refactorings
             StatementSyntax statement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            StatementsInfo info = SyntaxInfo.StatementsInfo(statement);
-            if (info.Success)
+            StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(statement);
+            if (statementsInfo.Success)
             {
-                int index = info.Statements.IndexOf(statement);
+                int index = statementsInfo.Statements.IndexOf(statement);
 
                 if (index == 0
-                    && info.IsInBlock
-                    && info.Block.OpenBraceToken.GetFullSpanEndLine() == statement.GetFullSpanStartLine())
+                    && statementsInfo.IsInBlock
+                    && statementsInfo.Block.OpenBraceToken.GetFullSpanEndLine() == statement.GetFullSpanStartLine())
                 {
                     statement = statement.PrependToLeadingTrivia(CSharpFactory.NewLine());
                 }
 
-                SyntaxList<StatementSyntax> newStatements = info.Statements.Insert(index + 1, statement);
+                SyntaxList<StatementSyntax> newStatements = statementsInfo.Statements.Insert(index + 1, statement);
 
-                StatementsInfo newInfo = info.WithStatements(newStatements);
+                StatementsInfo newInfo = statementsInfo.WithStatements(newStatements);
 
-                return document.ReplaceNodeAsync(info.Node, newInfo.Node, cancellationToken);
+                return document.ReplaceNodeAsync(statementsInfo.Node, newInfo.Node, cancellationToken);
             }
             else
             {
