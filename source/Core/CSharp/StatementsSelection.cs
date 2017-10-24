@@ -87,7 +87,7 @@ namespace Roslynator.CSharp
 
             (int startIndex, int endIndex) = GetIndexes(statements, span);
 
-            if (startIndex != -1)
+            if (startIndex == -1)
                 return false;
 
             selectedStatements = new StatementsSelection(statementsInfo, span, startIndex, endIndex);
