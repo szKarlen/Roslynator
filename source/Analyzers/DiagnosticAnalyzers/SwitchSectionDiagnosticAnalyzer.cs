@@ -50,14 +50,12 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             SyntaxList<StatementSyntax> statements = switchSection.Statements;
 
-            if (statements.Count <= 1)
+            if (statements.Count > 1)
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AddBracesToSwitchSectionWithMultipleStatements,
+                    Location.Create(switchSection.SyntaxTree, statements.Span));
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AddBracesToSwitchSectionWithMultipleStatements,
-                Location.Create(switchSection.SyntaxTree, statements.Span));
         }
     }
 }

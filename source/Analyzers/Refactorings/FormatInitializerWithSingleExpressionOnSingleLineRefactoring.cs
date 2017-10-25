@@ -18,20 +18,18 @@ namespace Roslynator.CSharp.Refactorings
 
             SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
 
-            if (expressions.Count != 1
-                || initializer.SpanContainsDirectives()
-                || !expressions[0].IsSingleLine()
-                || initializer.IsSingleLine()
-                || !initializer
+            if (expressions.Count == 1
+                && !initializer.SpanContainsDirectives()
+                && expressions[0].IsSingleLine()
+                && !initializer.IsSingleLine()
+                && initializer
                     .DescendantTrivia(TextSpan.FromBounds(initializer.FullSpan.Start, initializer.Span.End))
                     .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.FormatInitializerWithSingleExpressionOnSingleLine,
+                    initializer);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.FormatInitializerWithSingleExpressionOnSingleLine,
-                initializer);
         }
 
         public static Task<Document> RefactorAsync(

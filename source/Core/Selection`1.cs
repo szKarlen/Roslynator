@@ -97,13 +97,11 @@ namespace Roslynator
 
         private IEnumerable<T> Enumerate()
         {
-            if (!Any())
+            if (Any())
             {
-                yield break;
+                for (int i = StartIndex; i <= EndIndex; i++)
+                    yield return Items[i];
             }
-
-            for (int i = StartIndex; i <= EndIndex; i++)
-                yield return Items[i];
         }
 
         public IEnumerator<T> GetEnumerator()

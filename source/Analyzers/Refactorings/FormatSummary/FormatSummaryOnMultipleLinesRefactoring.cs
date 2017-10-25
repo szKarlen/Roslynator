@@ -18,16 +18,14 @@ namespace Roslynator.CSharp.Refactorings.FormatSummary
 
             XmlElementSyntax summaryElement = documentationComment.SummaryElement();
 
-            if (summaryElement?.StartTag?.IsMissing != false
-                || summaryElement.EndTag?.IsMissing != false
-                || !summaryElement.IsSingleLine(includeExteriorTrivia: false, trim: false))
+            if (summaryElement?.StartTag?.IsMissing == false
+                && summaryElement.EndTag?.IsMissing == false
+                && summaryElement.IsSingleLine(includeExteriorTrivia: false, trim: false))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.FormatDocumentationSummaryOnMultipleLines,
+                    summaryElement);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.FormatDocumentationSummaryOnMultipleLines,
-                summaryElement);
         }
 
         public static async Task<Document> RefactorAsync(

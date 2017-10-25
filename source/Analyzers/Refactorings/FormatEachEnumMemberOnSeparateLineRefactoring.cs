@@ -18,29 +18,27 @@ namespace Roslynator.CSharp.Refactorings
         {
             SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
 
-            if (members.Count <= 1)
+            if (members.Count > 1)
             {
-                return;
-            }
+                int previousIndex = members[0].GetSpanStartLine();
 
-            int previousIndex = members[0].GetSpanStartLine();
-
-            for (int i = 1; i < members.Count; i++)
-            {
-                if (members[i].GetSpanStartLine() == previousIndex)
+                for (int i = 1; i < members.Count; i++)
                 {
-                    TextSpan span = TextSpan.FromBounds(
-                        members.First().Span.Start,
-                        members.Last().Span.End);
+                    if (members[i].GetSpanStartLine() == previousIndex)
+                    {
+                        TextSpan span = TextSpan.FromBounds(
+                            members.First().Span.Start,
+                            members.Last().Span.End);
 
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.FormatEachEnumMemberOnSeparateLine,
-                        Location.Create(enumDeclaration.SyntaxTree, span));
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.FormatEachEnumMemberOnSeparateLine,
+                            Location.Create(enumDeclaration.SyntaxTree, span));
 
-                    return;
+                        return;
+                    }
+
+                    previousIndex = members[i].GetSpanEndLine();
                 }
-
-                previousIndex = members[i].GetSpanEndLine();
             }
         }
 

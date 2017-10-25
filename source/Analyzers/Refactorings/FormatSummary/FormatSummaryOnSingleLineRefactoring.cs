@@ -39,39 +39,31 @@ namespace Roslynator.CSharp.Refactorings.FormatSummary
 
             XmlElementSyntax summaryElement = documentationComment.SummaryElement();
 
-            if (summaryElement == null)
+            if (summaryElement != null)
             {
-                return;
+                XmlElementStartTagSyntax startTag = summaryElement?.StartTag;
+
+                if (startTag?.IsMissing == false)
+                {
+                    XmlElementEndTagSyntax endTag = summaryElement.EndTag;
+
+                    if (endTag?.IsMissing == false
+                        && startTag.GetSpanEndLine() < endTag.GetSpanStartLine())
+                    {
+                        Match match = _regex.Match(
+                            summaryElement.ToString(),
+                            startTag.Span.End - summaryElement.Span.Start,
+                            endTag.Span.Start - startTag.Span.End);
+
+                        if (match.Success)
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.FormatDocumentationSummaryOnSingleLine,
+                                summaryElement);
+                        }
+                    }
+                }
             }
-
-            XmlElementStartTagSyntax startTag = summaryElement?.StartTag;
-
-            if (startTag?.IsMissing != false)
-            {
-                return;
-            }
-
-            XmlElementEndTagSyntax endTag = summaryElement.EndTag;
-
-            if (endTag?.IsMissing != false
-                || startTag.GetSpanEndLine() >= endTag.GetSpanStartLine())
-            {
-                return;
-            }
-
-            Match match = _regex.Match(
-                summaryElement.ToString(),
-                startTag.Span.End - summaryElement.Span.Start,
-                endTag.Span.Start - startTag.Span.End);
-
-            if (!match.Success)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.FormatDocumentationSummaryOnSingleLine,
-                summaryElement);
         }
 
         public static async Task<Document> RefactorAsync(

@@ -20,29 +20,30 @@ namespace Roslynator.CSharp.Refactorings
 
             CSharpSyntaxNode body = lambda.Body;
 
-            if (body?.IsKind(SyntaxKind.Block) != true)
+            if (body?.IsKind(SyntaxKind.Block) == true)
             {
-                return false;
+                var block = (BlockSyntax)body;
+
+                StatementSyntax statement = block.Statements.SingleOrDefault(throwException: false);
+
+                if (statement != null)
+                {
+                    ExpressionSyntax expression = GetExpression(statement);
+
+                    if (expression?.IsSingleLine() == true
+                        && lambda
+                            .DescendantTrivia(TextSpan.FromBounds(lambda.ArrowToken.Span.End, expression.Span.Start))
+                            .All(f => f.IsWhitespaceOrEndOfLineTrivia())
+                        && lambda
+                            .DescendantTrivia(TextSpan.FromBounds(expression.Span.End, block.Span.End))
+                            .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                    {
+                        return true;
+                    }
+                }
             }
 
-            var block = (BlockSyntax)body;
-
-            StatementSyntax statement = block.Statements.SingleOrDefault(throwException: false);
-
-            if (statement == null)
-            {
-                return false;
-            }
-
-            ExpressionSyntax expression = GetExpression(statement);
-
-            return expression?.IsSingleLine() == true
-                && lambda
-                    .DescendantTrivia(TextSpan.FromBounds(lambda.ArrowToken.Span.End, expression.Span.Start))
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia())
-                && lambda
-                    .DescendantTrivia(TextSpan.FromBounds(expression.Span.End, block.Span.End))
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia());
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

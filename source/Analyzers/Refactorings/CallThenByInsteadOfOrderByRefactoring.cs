@@ -17,34 +17,30 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax expression = invocationInfo.Expression;
 
-            if (!expression.IsKind(SyntaxKind.InvocationExpression))
+            if (expression.IsKind(SyntaxKind.InvocationExpression))
             {
-                return;
-            }
+                MemberInvocationExpressionInfo invocationInfo2 = SyntaxInfo.MemberInvocationExpressionInfo((InvocationExpressionSyntax)expression);
 
-            MemberInvocationExpressionInfo invocationInfo2 = SyntaxInfo.MemberInvocationExpressionInfo((InvocationExpressionSyntax)expression);
-
-            if (!invocationInfo2.Success)
-            {
-                return;
-            }
-
-            switch (invocationInfo2.NameText)
-            {
-                case "OrderBy":
-                case "OrderByDescending":
+                if (invocationInfo2.Success)
+                {
+                    switch (invocationInfo2.NameText)
                     {
-                        if (IsLinqExtensionOfIEnumerableOfT(context, invocationInfo.InvocationExpression)
-                            && IsLinqExtensionOfIEnumerableOfT(context, invocationInfo2.InvocationExpression))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.CallThenByInsteadOfOrderBy,
-                                invocationInfo.Name,
-                                (invocationInfo.NameText == "OrderByDescending") ? "Descending" : null);
-                        }
+                        case "OrderBy":
+                        case "OrderByDescending":
+                            {
+                                if (IsLinqExtensionOfIEnumerableOfT(context, invocationInfo.InvocationExpression)
+                                    && IsLinqExtensionOfIEnumerableOfT(context, invocationInfo2.InvocationExpression))
+                                {
+                                    context.ReportDiagnostic(
+                                        DiagnosticDescriptors.CallThenByInsteadOfOrderBy,
+                                        invocationInfo.Name,
+                                        (invocationInfo.NameText == "OrderByDescending") ? "Descending" : null);
+                                }
 
-                        break;
+                                break;
+                            }
                     }
+                }
             }
         }
 

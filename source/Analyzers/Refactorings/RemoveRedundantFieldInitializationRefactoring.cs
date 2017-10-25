@@ -15,37 +15,33 @@ namespace Roslynator.CSharp.Refactorings
         {
             var fieldDeclaration = (FieldDeclarationSyntax)context.Node;
 
-            if (fieldDeclaration.ContainsDiagnostics
-                || fieldDeclaration.Modifiers.Contains(SyntaxKind.ConstKeyword))
+            if (!fieldDeclaration.ContainsDiagnostics
+                && !fieldDeclaration.Modifiers.Contains(SyntaxKind.ConstKeyword))
             {
-                return;
-            }
-
-            VariableDeclarationSyntax declaration = fieldDeclaration.Declaration;
-            if (declaration == null)
-            {
-                return;
-            }
-
-            foreach (VariableDeclaratorSyntax declarator in declaration.Variables)
-            {
-                EqualsValueClauseSyntax initializer = declarator.Initializer;
-                if (initializer?.ContainsDirectives == false)
+                VariableDeclarationSyntax declaration = fieldDeclaration.Declaration;
+                if (declaration != null)
                 {
-                    ExpressionSyntax value = initializer.Value;
-                    if (value != null)
+                    foreach (VariableDeclaratorSyntax declarator in declaration.Variables)
                     {
-                        SemanticModel semanticModel = context.SemanticModel;
-                        CancellationToken cancellationToken = context.CancellationToken;
-
-                        ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, cancellationToken);
-
-                        if (typeSymbol?.IsErrorType() == false
-                            && semanticModel.IsDefaultValue(typeSymbol, value, cancellationToken))
+                        EqualsValueClauseSyntax initializer = declarator.Initializer;
+                        if (initializer?.ContainsDirectives == false)
                         {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.RemoveRedundantFieldInitialization,
-                                initializer);
+                            ExpressionSyntax value = initializer.Value;
+                            if (value != null)
+                            {
+                                SemanticModel semanticModel = context.SemanticModel;
+                                CancellationToken cancellationToken = context.CancellationToken;
+
+                                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, cancellationToken);
+
+                                if (typeSymbol?.IsErrorType() == false
+                                    && semanticModel.IsDefaultValue(typeSymbol, value, cancellationToken))
+                                {
+                                    context.ReportDiagnostic(
+                                        DiagnosticDescriptors.RemoveRedundantFieldInitialization,
+                                        initializer);
+                                }
+                            }
                         }
                     }
                 }

@@ -15,57 +15,51 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol symbol)
         {
-            if (!symbol.IsClass()
-                || !symbol.IsStatic
-                || symbol.IsImplicitClass
-                || symbol.IsImplicitlyDeclared)
+            if (symbol.IsClass()
+                && symbol.IsStatic
+                && !symbol.IsImplicitClass
+                && !symbol.IsImplicitlyDeclared)
             {
-                return;
-            }
+                ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
 
-            ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
-
-            if (syntaxReferences.Length <= 1)
-            {
-                return;
-            }
-
-            bool isStatic = false;
-            List<ClassDeclarationSyntax> classDeclarations = null;
-
-            foreach (SyntaxReference syntaxReference in syntaxReferences)
-            {
-                SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
-
-                Debug.Assert(node.IsKind(SyntaxKind.ClassDeclaration), node.Kind().ToString());
-
-                if (node.IsKind(SyntaxKind.ClassDeclaration))
+                if (syntaxReferences.Length > 1)
                 {
-                    var classDeclaration = (ClassDeclarationSyntax)node;
-                    SyntaxTokenList modifiers = classDeclaration.Modifiers;
+                    bool isStatic = false;
+                    List<ClassDeclarationSyntax> classDeclarations = null;
 
-                    if (modifiers.Contains(SyntaxKind.StaticKeyword))
+                    foreach (SyntaxReference syntaxReference in syntaxReferences)
                     {
-                        isStatic = true;
+                        SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+
+                        Debug.Assert(node.IsKind(SyntaxKind.ClassDeclaration), node.Kind().ToString());
+
+                        if (node.IsKind(SyntaxKind.ClassDeclaration))
+                        {
+                            var classDeclaration = (ClassDeclarationSyntax)node;
+                            SyntaxTokenList modifiers = classDeclaration.Modifiers;
+
+                            if (modifiers.Contains(SyntaxKind.StaticKeyword))
+                            {
+                                isStatic = true;
+                            }
+                            else if (!classDeclaration.ContainsDirectives(modifiers.Span))
+                            {
+                                (classDeclarations ?? (classDeclarations = new List<ClassDeclarationSyntax>())).Add(classDeclaration);
+                            }
+                        }
                     }
-                    else if (!classDeclaration.ContainsDirectives(modifiers.Span))
+
+                    if (isStatic
+                        && classDeclarations != null)
                     {
-                        (classDeclarations ?? (classDeclarations = new List<ClassDeclarationSyntax>())).Add(classDeclaration);
+                        foreach (ClassDeclarationSyntax classDeclaration in classDeclarations)
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.AddStaticModifierToAllPartialClassDeclarations,
+                                classDeclaration.Identifier);
+                        }
                     }
                 }
-            }
-
-            if (!isStatic
-                || classDeclarations == null)
-            {
-                return;
-            }
-
-            foreach (ClassDeclarationSyntax classDeclaration in classDeclarations)
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddStaticModifierToAllPartialClassDeclarations,
-                    classDeclaration.Identifier);
             }
         }
     }

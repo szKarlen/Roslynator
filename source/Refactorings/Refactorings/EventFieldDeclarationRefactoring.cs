@@ -27,13 +27,11 @@ namespace Roslynator.CSharp.Refactorings
                     });
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
-                || !eventFieldDeclaration.Span.Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && eventFieldDeclaration.Span.Contains(context.Span))
             {
-                return;
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, eventFieldDeclaration).ConfigureAwait(false);
             }
-
-            await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, eventFieldDeclaration).ConfigureAwait(false);
         }
     }
 }

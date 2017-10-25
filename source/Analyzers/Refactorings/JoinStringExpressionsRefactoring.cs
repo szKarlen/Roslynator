@@ -26,16 +26,14 @@ namespace Roslynator.CSharp.Refactorings
 
             StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(addExpression, context.SemanticModel, context.CancellationToken);
 
-            if (!concatenationInfo.Success
-                || concatenationInfo.ContainsNonSpecificExpression
-                || (!(concatenationInfo.ContainsLiteralExpression ^ concatenationInfo.ContainsInterpolatedStringExpression))
-                || (!(concatenationInfo.ContainsRegular ^ concatenationInfo.ContainsVerbatim))
-                || (!concatenationInfo.ContainsVerbatim && !addExpression.IsSingleLine(includeExteriorTrivia: false, cancellationToken: context.CancellationToken)))
+            if (concatenationInfo.Success
+                && !concatenationInfo.ContainsNonSpecificExpression
+                && (concatenationInfo.ContainsLiteralExpression ^ concatenationInfo.ContainsInterpolatedStringExpression)
+                && (concatenationInfo.ContainsRegular ^ concatenationInfo.ContainsVerbatim)
+                && (concatenationInfo.ContainsVerbatim || addExpression.IsSingleLine(includeExteriorTrivia: false, cancellationToken: context.CancellationToken)))
             {
-                return;
+                context.ReportDiagnostic(DiagnosticDescriptors.JoinStringExpressions, addExpression);
             }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.JoinStringExpressions, addExpression);
         }
 
         private static bool ContainsMultiLine(StringConcatenationExpressionInfo concatenationInfo, CancellationToken cancellationToken)

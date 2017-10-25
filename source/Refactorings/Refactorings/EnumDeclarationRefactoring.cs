@@ -25,14 +25,12 @@ namespace Roslynator.CSharp.Refactorings
                 await GenerateCombinedEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember)
-                || !context.Span.IsEmpty
-                || !enumDeclaration.BracesSpan().Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember)
+                && context.Span.IsEmpty
+                && enumDeclaration.BracesSpan().Contains(context.Span))
             {
-                return;
+                await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
             }
-
-            await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
         }
     }
 }

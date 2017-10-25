@@ -17,37 +17,31 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode node = context.Node;
 
-            if (node.IsKind(SyntaxKind.IfStatement)
-                && !((IfStatementSyntax)node).IsSimpleIf())
+            if (!node.IsKind(SyntaxKind.IfStatement)
+                || ((IfStatementSyntax)node).IsSimpleIf())
             {
-                return;
+                BlockSyntax block = EmbeddedStatementHelper.AnalyzeBlockToEmbeddedStatement(node);
+
+                if (block != null)
+                {
+                    SyntaxToken openBrace = block.OpenBraceToken;
+                    SyntaxToken closeBrace = block.CloseBraceToken;
+
+                    if (!openBrace.IsMissing
+                        && !closeBrace.IsMissing
+                        && openBrace.LeadingTrivia.IsEmptyOrWhitespace()
+                        && openBrace.TrailingTrivia.IsEmptyOrWhitespace()
+                        && closeBrace.LeadingTrivia.IsEmptyOrWhitespace()
+                        && closeBrace.TrailingTrivia.IsEmptyOrWhitespace())
+                    {
+                        string title = node.GetTitle();
+
+                        context.ReportDiagnostic(DiagnosticDescriptors.RemoveBraces, block, title);
+
+                        context.ReportBraces(DiagnosticDescriptors.RemoveBracesFadeOut, block, title);
+                    }
+                }
             }
-
-            BlockSyntax block = EmbeddedStatementHelper.AnalyzeBlockToEmbeddedStatement(node);
-
-            if (block == null)
-            {
-                return;
-            }
-
-            SyntaxToken openBrace = block.OpenBraceToken;
-            SyntaxToken closeBrace = block.CloseBraceToken;
-
-            if (openBrace.IsMissing
-                || closeBrace.IsMissing
-                || !openBrace.LeadingTrivia.IsEmptyOrWhitespace()
-                || !openBrace.TrailingTrivia.IsEmptyOrWhitespace()
-                || !closeBrace.LeadingTrivia.IsEmptyOrWhitespace()
-                || !closeBrace.TrailingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            string title = node.GetTitle();
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveBraces, block, title);
-
-            context.ReportBraces(DiagnosticDescriptors.RemoveBracesFadeOut, block, title);
         }
 
         public static Task<Document> RefactorAsync(

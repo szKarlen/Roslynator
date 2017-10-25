@@ -20,33 +20,27 @@ namespace Roslynator.CSharp.Refactorings
         {
             var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            if (!namedTypeSymbol.IsEnumWithFlagsAttribute(context.Compilation)
-                || ContainsMemberWithZeroValue(namedTypeSymbol))
+            if (namedTypeSymbol.IsEnumWithFlagsAttribute(context.Compilation)
+                && !ContainsMemberWithZeroValue(namedTypeSymbol))
             {
-                return;
+                SyntaxReference syntaxReference = namedTypeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+
+                Debug.Assert(syntaxReference != null, "");
+
+                if (syntaxReference != null)
+                {
+                    SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+
+                    Debug.Assert(node.IsKind(SyntaxKind.EnumDeclaration), node.Kind().ToString());
+
+                    if (node.IsKind(SyntaxKind.EnumDeclaration))
+                    {
+                        var enumDeclaration = (EnumDeclarationSyntax)node;
+
+                        context.ReportDiagnostic(DiagnosticDescriptors.DeclareEnumMemberWithZeroValue, enumDeclaration.Identifier);
+                    }
+                }
             }
-
-            SyntaxReference syntaxReference = namedTypeSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-
-            Debug.Assert(syntaxReference != null, "");
-
-            if (syntaxReference == null)
-            {
-                return;
-            }
-
-            SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
-
-            Debug.Assert(node.IsKind(SyntaxKind.EnumDeclaration), node.Kind().ToString());
-
-            if (!node.IsKind(SyntaxKind.EnumDeclaration))
-            {
-                return;
-            }
-
-            var enumDeclaration = (EnumDeclarationSyntax)node;
-
-            context.ReportDiagnostic(DiagnosticDescriptors.DeclareEnumMemberWithZeroValue, enumDeclaration.Identifier);
         }
 
         private static bool ContainsMemberWithZeroValue(INamedTypeSymbol namedTypeSymbol)

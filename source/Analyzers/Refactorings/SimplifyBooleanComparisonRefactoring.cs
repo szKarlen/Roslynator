@@ -28,60 +28,56 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax right,
             bool fadeOut)
         {
-            if (binaryExpression.SpanContainsDirectives())
+            if (!binaryExpression.SpanContainsDirectives())
             {
-                return;
-            }
+                context.ReportDiagnostic(DiagnosticDescriptors.SimplifyBooleanComparison, binaryExpression);
 
-            context.ReportDiagnostic(DiagnosticDescriptors.SimplifyBooleanComparison, binaryExpression);
+                if (fadeOut)
+                {
+                    context.ReportToken(FadeOutDescriptor, binaryExpression.OperatorToken);
 
-            if (!fadeOut)
-            {
-                return;
-            }
-
-            context.ReportToken(FadeOutDescriptor, binaryExpression.OperatorToken);
-
-            switch (binaryExpression.Kind())
-            {
-                case SyntaxKind.EqualsExpression:
+                    switch (binaryExpression.Kind())
                     {
-                        if (left.IsKind(SyntaxKind.FalseLiteralExpression))
-                        {
-                            context.ReportNode(FadeOutDescriptor, left);
+                        case SyntaxKind.EqualsExpression:
+                            {
+                                if (left.IsKind(SyntaxKind.FalseLiteralExpression))
+                                {
+                                    context.ReportNode(FadeOutDescriptor, left);
 
-                            if (right.IsKind(SyntaxKind.LogicalNotExpression))
-                                context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
-                        }
-                        else if (right.IsKind(SyntaxKind.FalseLiteralExpression))
-                        {
-                            context.ReportNode(FadeOutDescriptor, right);
+                                    if (right.IsKind(SyntaxKind.LogicalNotExpression))
+                                        context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
+                                }
+                                else if (right.IsKind(SyntaxKind.FalseLiteralExpression))
+                                {
+                                    context.ReportNode(FadeOutDescriptor, right);
 
-                            if (left.IsKind(SyntaxKind.LogicalNotExpression))
-                                context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
-                        }
+                                    if (left.IsKind(SyntaxKind.LogicalNotExpression))
+                                        context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
+                                }
 
-                        break;
+                                break;
+                            }
+                        case SyntaxKind.NotEqualsExpression:
+                            {
+                                if (left.IsKind(SyntaxKind.TrueLiteralExpression))
+                                {
+                                    context.ReportNode(FadeOutDescriptor, left);
+
+                                    if (right.IsKind(SyntaxKind.LogicalNotExpression))
+                                        context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
+                                }
+                                else if (right.IsKind(SyntaxKind.TrueLiteralExpression))
+                                {
+                                    context.ReportNode(FadeOutDescriptor, right);
+
+                                    if (left.IsKind(SyntaxKind.LogicalNotExpression))
+                                        context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
+                                }
+
+                                break;
+                            }
                     }
-                case SyntaxKind.NotEqualsExpression:
-                    {
-                        if (left.IsKind(SyntaxKind.TrueLiteralExpression))
-                        {
-                            context.ReportNode(FadeOutDescriptor, left);
-
-                            if (right.IsKind(SyntaxKind.LogicalNotExpression))
-                                context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
-                        }
-                        else if (right.IsKind(SyntaxKind.TrueLiteralExpression))
-                        {
-                            context.ReportNode(FadeOutDescriptor, right);
-
-                            if (left.IsKind(SyntaxKind.LogicalNotExpression))
-                                context.ReportToken(FadeOutDescriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
-                        }
-
-                        break;
-                    }
+                }
             }
         }
 

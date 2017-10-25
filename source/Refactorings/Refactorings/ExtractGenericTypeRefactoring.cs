@@ -13,15 +13,18 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeArgumentListSyntax typeArgumentList = genericName.TypeArgumentList;
 
-            if (typeArgumentList == null)
+            if (typeArgumentList != null)
             {
-                return false;
+                SeparatedSyntaxList<TypeSyntax> arguments = typeArgumentList.Arguments;
+
+                if (arguments.Count == 1
+                    && context.Span.IsBetweenSpans(arguments[0]))
+                {
+                    return true;
+                }
             }
 
-            SeparatedSyntaxList<TypeSyntax> arguments = typeArgumentList.Arguments;
-
-            return arguments.Count == 1
-                && context.Span.IsBetweenSpans(arguments[0]);
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

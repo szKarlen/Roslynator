@@ -17,18 +17,16 @@ namespace Roslynator.CSharp.Refactorings
         {
             ConstructorInitializerSyntax initializer = constructor.Initializer;
 
-            if (initializer?.IsKind(SyntaxKind.BaseConstructorInitializer) != true
-                || initializer.ArgumentList?.Arguments.Count != 0
-                || !initializer
+            if (initializer?.IsKind(SyntaxKind.BaseConstructorInitializer) == true
+                && initializer.ArgumentList?.Arguments.Count == 0
+                && initializer
                     .DescendantTrivia(initializer.Span)
                     .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.RemoveRedundantBaseConstructorCall,
+                    initializer);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveRedundantBaseConstructorCall,
-                initializer);
         }
 
         public static Task<Document> RefactorAsync(

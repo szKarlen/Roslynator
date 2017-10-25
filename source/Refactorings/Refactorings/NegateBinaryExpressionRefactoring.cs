@@ -13,21 +13,17 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, BinaryExpressionSyntax binaryExpression)
         {
-            if (!CanRefactor(binaryExpression))
+            if (CanRefactor(binaryExpression))
             {
-                return;
+                binaryExpression = GetBinaryExpression(binaryExpression, context.Span);
+
+                if (binaryExpression != null)
+                {
+                    context.RegisterRefactoring(
+                        "Negate binary expression",
+                        cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
+                }
             }
-
-            binaryExpression = GetBinaryExpression(binaryExpression, context.Span);
-
-            if (binaryExpression == null)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Negate binary expression",
-                cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
         }
 
         private static bool CanRefactor(SyntaxNode node)
@@ -36,15 +32,15 @@ namespace Roslynator.CSharp.Refactorings
                     SyntaxKind.LogicalAndExpression,
                     SyntaxKind.LogicalOrExpression,
                     SyntaxKind.BitwiseAndExpression,
-                    SyntaxKind.BitwiseOrExpression) != true)
+                    SyntaxKind.BitwiseOrExpression) == true)
             {
-                return false;
+                var binaryExpression = (BinaryExpressionSyntax)node;
+
+                return binaryExpression.Left?.IsMissing == false
+                    && binaryExpression.Right?.IsMissing == false;
             }
 
-            var binaryExpression = (BinaryExpressionSyntax)node;
-
-            return binaryExpression.Left?.IsMissing == false
-                && binaryExpression.Right?.IsMissing == false;
+            return false;
         }
 
         private static BinaryExpressionSyntax GetBinaryExpression(BinaryExpressionSyntax binaryExpression, TextSpan span)

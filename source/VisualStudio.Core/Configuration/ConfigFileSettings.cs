@@ -55,14 +55,12 @@ namespace Roslynator.Configuration
         {
             XElement element = parent.Element("PrefixFieldIdentifierWithUnderscore");
 
-            if (element == null)
+            if (element != null)
             {
-                return;
+                bool isEnabled;
+                if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
+                    settings.PrefixFieldIdentifierWithUnderscore = isEnabled;
             }
-
-            bool isEnabled;
-            if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
-                settings.PrefixFieldIdentifierWithUnderscore = isEnabled;
         }
 
         private static void LoadRefactorings(XElement element, ConfigFileSettings settings)
@@ -74,14 +72,12 @@ namespace Roslynator.Configuration
         private static void LoadRefactoring(XElement element, ConfigFileSettings settings)
         {
             string id;
-            if (!element.TryGetAttributeValueAsString("Id", out id))
+            if (element.TryGetAttributeValueAsString("Id", out id))
             {
-                return;
+                bool isEnabled;
+                if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
+                    settings.Refactorings[id] = isEnabled;
             }
-
-            bool isEnabled;
-            if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
-                settings.Refactorings[id] = isEnabled;
         }
 
         private static void LoadCodeFixes(XElement element, ConfigFileSettings settings)
@@ -93,14 +89,12 @@ namespace Roslynator.Configuration
         private static void LoadCodeFix(XElement element, ConfigFileSettings settings)
         {
             string id;
-            if (!element.TryGetAttributeValueAsString("Id", out id))
+            if (element.TryGetAttributeValueAsString("Id", out id))
             {
-                return;
+                bool isEnabled;
+                if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
+                    settings.CodeFixes[id] = isEnabled;
             }
-
-            bool isEnabled;
-            if (element.TryGetAttributeValueAsBoolean("IsEnabled", out isEnabled))
-                settings.CodeFixes[id] = isEnabled;
         }
     }
 }

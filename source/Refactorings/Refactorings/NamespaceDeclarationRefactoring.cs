@@ -9,13 +9,11 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, NamespaceDeclarationSyntax namespaceDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
-                || !namespaceDeclaration.BracesSpan().Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
+                && namespaceDeclaration.BracesSpan().Contains(context.Span))
             {
-                return;
+                SortMemberDeclarationsRefactoring.ComputeRefactoring(context, namespaceDeclaration);
             }
-
-            SortMemberDeclarationsRefactoring.ComputeRefactoring(context, namespaceDeclaration);
         }
     }
 }

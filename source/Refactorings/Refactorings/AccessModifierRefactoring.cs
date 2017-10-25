@@ -23,53 +23,51 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode node = modifier.Parent;
 
-            if (node.IsKind(SyntaxKind.DestructorDeclaration))
+            if (!node.IsKind(SyntaxKind.DestructorDeclaration))
             {
-                return;
-            }
+                AccessibilityInfo info = SyntaxInfo.AccessibilityInfo(node);
 
-            AccessibilityInfo info = SyntaxInfo.AccessibilityInfo(node);
-
-            if (node.IsKind(
-                SyntaxKind.ClassDeclaration,
-                SyntaxKind.InterfaceDeclaration,
-                SyntaxKind.StructDeclaration))
-            {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-                var symbol = (INamedTypeSymbol)semanticModel.GetDeclaredSymbol(node, context.CancellationToken);
-
-                ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
-
-                if (syntaxReferences.Length > 1)
+                if (node.IsKind(
+                    SyntaxKind.ClassDeclaration,
+                    SyntaxKind.InterfaceDeclaration,
+                    SyntaxKind.StructDeclaration))
                 {
-                    ImmutableArray<MemberDeclarationSyntax> memberDeclarations = ImmutableArray.CreateRange(
-                        syntaxReferences,
-                        f => (MemberDeclarationSyntax)f.GetSyntax(context.CancellationToken));
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                    foreach (Accessibility accessibility in _accessibilities)
+                    var symbol = (INamedTypeSymbol)semanticModel.GetDeclaredSymbol(node, context.CancellationToken);
+
+                    ImmutableArray<SyntaxReference> syntaxReferences = symbol.DeclaringSyntaxReferences;
+
+                    if (syntaxReferences.Length > 1)
                     {
-                        if (accessibility != info.Accessibility
-                            && CSharpUtility.IsAllowedAccessibility(node, accessibility))
+                        ImmutableArray<MemberDeclarationSyntax> memberDeclarations = ImmutableArray.CreateRange(
+                            syntaxReferences,
+                            f => (MemberDeclarationSyntax)f.GetSyntax(context.CancellationToken));
+
+                        foreach (Accessibility accessibility in _accessibilities)
                         {
-                            context.RegisterRefactoring(
-                                GetTitle(accessibility),
-                                cancellationToken => ChangeAccessibilityRefactoring.RefactorAsync(context.Solution, memberDeclarations, accessibility, cancellationToken));
+                            if (accessibility != info.Accessibility
+                                && CSharpUtility.IsAllowedAccessibility(node, accessibility))
+                            {
+                                context.RegisterRefactoring(
+                                    GetTitle(accessibility),
+                                    cancellationToken => ChangeAccessibilityRefactoring.RefactorAsync(context.Solution, memberDeclarations, accessibility, cancellationToken));
+                            }
                         }
+
+                        return;
                     }
-
-                    return;
                 }
-            }
 
-            foreach (Accessibility accessibility in _accessibilities)
-            {
-                if (accessibility != info.Accessibility
-                    && CSharpUtility.IsAllowedAccessibility(node, accessibility))
+                foreach (Accessibility accessibility in _accessibilities)
                 {
-                    context.RegisterRefactoring(
-                        GetTitle(accessibility),
-                        cancellationToken => ChangeAccessibilityRefactoring.RefactorAsync(context.Document, node, accessibility, cancellationToken));
+                    if (accessibility != info.Accessibility
+                        && CSharpUtility.IsAllowedAccessibility(node, accessibility))
+                    {
+                        context.RegisterRefactoring(
+                            GetTitle(accessibility),
+                            cancellationToken => ChangeAccessibilityRefactoring.RefactorAsync(context.Document, node, accessibility, cancellationToken));
+                    }
                 }
             }
         }

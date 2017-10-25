@@ -330,33 +330,27 @@ namespace Roslynator.CSharp.CodeFixes
         {
             SyntaxNode parent = expression.Parent;
 
-            if (parent?.IsKind(SyntaxKind.EqualsValueClause) != true)
+            if (parent?.IsKind(SyntaxKind.EqualsValueClause) == true)
             {
-                return null;
+                parent = parent.Parent;
+
+                if (parent?.IsKind(SyntaxKind.VariableDeclarator) == true)
+                {
+                    parent = parent.Parent;
+
+                    if (parent?.IsKind(SyntaxKind.VariableDeclaration) == true)
+                    {
+                        parent = parent.Parent;
+
+                        if (parent?.IsKind(SyntaxKind.LocalDeclarationStatement) == true)
+                        {
+                            return (LocalDeclarationStatementSyntax)parent;
+                        }
+                    }
+                }
             }
 
-            parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.VariableDeclarator) != true)
-            {
-                return null;
-            }
-
-            parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.VariableDeclaration) != true)
-            {
-                return null;
-            }
-
-            parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.LocalDeclarationStatement) != true)
-            {
-                return null;
-            }
-
-            return (LocalDeclarationStatementSyntax)parent;
+            return null;
         }
     }
 }

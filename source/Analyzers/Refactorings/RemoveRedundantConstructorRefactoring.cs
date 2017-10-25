@@ -14,37 +14,29 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, ConstructorDeclarationSyntax constructor)
         {
-            if (constructor.ContainsDiagnostics
-                || constructor.ParameterList?.Parameters.Any() != false
-                || constructor.Body?.Statements.Any() != false)
+            if (!constructor.ContainsDiagnostics
+                && constructor.ParameterList?.Parameters.Any() == false
+                && constructor.Body?.Statements.Any() == false)
             {
-                return;
+                SyntaxTokenList modifiers = constructor.Modifiers;
+
+                if (modifiers.Contains(SyntaxKind.PublicKeyword)
+                    && !modifiers.Contains(SyntaxKind.StaticKeyword))
+                {
+                    ConstructorInitializerSyntax initializer = constructor.Initializer;
+
+                    if (initializer == null
+                        || initializer.ArgumentList?.Arguments.Any() == false)
+                    {
+                        if (IsSingleInstanceConstructor(constructor)
+                            && !constructor.HasDocumentationComment()
+                            && constructor.DescendantTrivia(constructor.Span).All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                        {
+                            context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantConstructor, constructor);
+                        }
+                    }
+                }
             }
-
-            SyntaxTokenList modifiers = constructor.Modifiers;
-
-            if (!modifiers.Contains(SyntaxKind.PublicKeyword)
-                || modifiers.Contains(SyntaxKind.StaticKeyword))
-            {
-                return;
-            }
-
-            ConstructorInitializerSyntax initializer = constructor.Initializer;
-
-            if (initializer != null
-                && initializer.ArgumentList?.Arguments.Any() != false)
-            {
-                return;
-            }
-
-            if (!IsSingleInstanceConstructor(constructor)
-                || constructor.HasDocumentationComment()
-                || !constructor.DescendantTrivia(constructor.Span).All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantConstructor, constructor);
         }
 
         private static bool IsSingleInstanceConstructor(ConstructorDeclarationSyntax constructor)

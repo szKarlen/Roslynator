@@ -71,17 +71,17 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
                 if (argumentList?.IsMissing == false)
                 {
-                    int argumentCount2 = argumentList.Arguments.Count;
+                    int argumentCount = argumentList.Arguments.Count;
 
-                    string methodName2 = memberAccess.Name?.Identifier.ValueText;
+                    string methodName = memberAccess.Name?.Identifier.ValueText;
 
-                    if (argumentCount2 == 0)
+                    if (argumentCount == 0)
                     {
-                        switch (methodName2)
+                        switch (methodName)
                         {
                             case "Any":
                                 {
-                                    SimplifyLinqMethodChainRefactoring.Analyze(context, invocation, memberAccess, methodName2);
+                                    SimplifyLinqMethodChainRefactoring.Analyze(context, invocation, memberAccess, methodName);
                                     break;
                                 }
                             case "Cast":
@@ -98,14 +98,14 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
                             case "Single":
                             case "SingleOrDefault":
                                 {
-                                    SimplifyLinqMethodChainRefactoring.Analyze(context, invocation, memberAccess, methodName2);
+                                    SimplifyLinqMethodChainRefactoring.Analyze(context, invocation, memberAccess, methodName);
                                     break;
                                 }
                         }
                     }
-                    else if (argumentCount2 == 1)
+                    else if (argumentCount == 1)
                     {
-                        switch (methodName2)
+                        switch (methodName)
                         {
                             case "FirstOrDefault":
                                 {
@@ -132,140 +132,136 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             CombineEnumerableWhereAndAnyRefactoring.AnalyzeInvocationExpression(context);
 
-            if (invocation.ContainsDiagnostics)
+            if (!invocation.ContainsDiagnostics)
             {
-                return;
-            }
-
-            if (!invocation.SpanContainsDirectives())
-            {
-                CallExtensionMethodAsInstanceMethodAnalysis analysis = CallExtensionMethodAsInstanceMethodRefactoring.Analyze(invocation, context.SemanticModel, context.CancellationToken);
-
-                if (analysis.Success
-                    && context.SemanticModel
-                        .GetEnclosingNamedType(analysis.InvocationExpression.SpanStart, context.CancellationToken)?
-                        .Equals(analysis.MethodSymbol.ContainingType) == false)
+                if (!invocation.SpanContainsDirectives())
                 {
-                    context.ReportDiagnostic(DiagnosticDescriptors.CallExtensionMethodAsInstanceMethod, invocation);
+                    CallExtensionMethodAsInstanceMethodAnalysis analysis = CallExtensionMethodAsInstanceMethodRefactoring.Analyze(invocation, context.SemanticModel, context.CancellationToken);
+
+                    if (analysis.Success
+                        && context.SemanticModel
+                            .GetEnclosingNamedType(analysis.InvocationExpression.SpanStart, context.CancellationToken)?
+                            .Equals(analysis.MethodSymbol.ContainingType) == false)
+                    {
+                        context.ReportDiagnostic(DiagnosticDescriptors.CallExtensionMethodAsInstanceMethod, invocation);
+                    }
+                }
+
+                MemberInvocationExpressionInfo invocationInfo = SyntaxInfo.MemberInvocationExpressionInfo(invocation);
+
+                if (invocationInfo.Success)
+                {
+                    if (!invocation.SpanContainsDirectives())
+                        UseRegexInstanceInsteadOfStaticMethodRefactoring.Analyze(context, invocationInfo);
+
+                    string methodName = invocationInfo.NameText;
+
+                    AvoidNullReferenceExceptionRefactoring.Analyze(context, invocationInfo);
+
+                    int argumentCount = invocationInfo.Arguments.Count;
+
+                    switch (argumentCount)
+                    {
+                        case 0:
+                            {
+                                switch (methodName)
+                                {
+                                    case "Any":
+                                        {
+                                            UseCountOrLengthPropertyInsteadOfAnyMethodRefactoring.Analyze(context, invocationInfo);
+                                            break;
+                                        }
+                                    case "Count":
+                                        {
+                                            UseInsteadOfCountMethodRefactoring.Analyze(context, invocationInfo);
+                                            break;
+                                        }
+                                    case "First":
+                                        {
+                                            if (!invocationInfo.Expression.IsKind(SyntaxKind.InvocationExpression)
+                                                && UseElementAccessInsteadOfFirstRefactoring.CanRefactor(invocationInfo, context.SemanticModel, context.CancellationToken))
+                                            {
+                                                context.ReportDiagnostic(DiagnosticDescriptors.UseElementAccessInsteadOfFirst, invocationInfo.Name);
+                                            }
+
+                                            break;
+                                        }
+                                    case "ToString":
+                                        {
+                                            RemoveRedundantToStringCallRefactoring.Analyze(context, invocationInfo);
+                                            UseNameOfOperatorRefactoring.Analyze(context, invocationInfo);
+                                            break;
+                                        }
+                                    case "ToLower":
+                                    case "ToLowerInvariant":
+                                    case "ToUpper":
+                                    case "ToUpperInvariant":
+                                        {
+                                            UseStringComparisonRefactoring.Analyze(context, invocationInfo);
+                                            break;
+                                        }
+                                }
+
+                                break;
+                            }
+                        case 1:
+                            {
+                                switch (methodName)
+                                {
+                                    case "ElementAt":
+                                        {
+                                            if (!invocationInfo.Expression.IsKind(SyntaxKind.InvocationExpression)
+                                                && UseElementAccessInsteadOfElementAtRefactoring.CanRefactor(invocationInfo, context.SemanticModel, context.CancellationToken))
+                                            {
+                                                context.ReportDiagnostic(DiagnosticDescriptors.UseElementAccessInsteadOfElementAt, invocationInfo.Name);
+                                            }
+
+                                            break;
+                                        }
+                                }
+
+                                break;
+                            }
+                    }
+
+                    switch (methodName)
+                    {
+                        case "Append":
+                        case "AppendLine":
+                        case "AppendFormat":
+                        case "Insert":
+                            {
+                                OptimizeStringBuilderAppendCallRefactoring.Analyze(context, invocationInfo);
+                                break;
+                            }
+                        case "Select":
+                            {
+                                if (argumentCount == 1
+                                    || argumentCount == 2)
+                                {
+                                    CallCastInsteadOfSelectRefactoring.Analyze(context, invocationInfo);
+                                }
+
+                                break;
+                            }
+                        case "OrderBy":
+                        case "OrderByDescending":
+                            {
+                                if (argumentCount == 1
+                                    || argumentCount == 2
+                                    || argumentCount == 3)
+                                {
+                                    CallThenByInsteadOfOrderByRefactoring.Analyze(context, invocationInfo);
+                                }
+
+                                break;
+                            }
+                    }
+
+                    if (UseMethodChainingRefactoring.IsFixable(invocationInfo, context.SemanticModel, context.CancellationToken))
+                        context.ReportDiagnostic(DiagnosticDescriptors.UseMethodChaining, invocationInfo.InvocationExpression);
                 }
             }
-
-            MemberInvocationExpressionInfo invocationInfo = SyntaxInfo.MemberInvocationExpressionInfo(invocation);
-
-            if (!invocationInfo.Success)
-            {
-                return;
-            }
-
-            if (!invocation.SpanContainsDirectives())
-                UseRegexInstanceInsteadOfStaticMethodRefactoring.Analyze(context, invocationInfo);
-
-            string methodName = invocationInfo.NameText;
-
-            AvoidNullReferenceExceptionRefactoring.Analyze(context, invocationInfo);
-
-            int argumentCount = invocationInfo.Arguments.Count;
-
-            switch (argumentCount)
-            {
-                case 0:
-                    {
-                        switch (methodName)
-                        {
-                            case "Any":
-                                {
-                                    UseCountOrLengthPropertyInsteadOfAnyMethodRefactoring.Analyze(context, invocationInfo);
-                                    break;
-                                }
-                            case "Count":
-                                {
-                                    UseInsteadOfCountMethodRefactoring.Analyze(context, invocationInfo);
-                                    break;
-                                }
-                            case "First":
-                                {
-                                    if (!invocationInfo.Expression.IsKind(SyntaxKind.InvocationExpression)
-                                        && UseElementAccessInsteadOfFirstRefactoring.CanRefactor(invocationInfo, context.SemanticModel, context.CancellationToken))
-                                    {
-                                        context.ReportDiagnostic(DiagnosticDescriptors.UseElementAccessInsteadOfFirst, invocationInfo.Name);
-                                    }
-
-                                    break;
-                                }
-                            case "ToString":
-                                {
-                                    RemoveRedundantToStringCallRefactoring.Analyze(context, invocationInfo);
-                                    UseNameOfOperatorRefactoring.Analyze(context, invocationInfo);
-                                    break;
-                                }
-                            case "ToLower":
-                            case "ToLowerInvariant":
-                            case "ToUpper":
-                            case "ToUpperInvariant":
-                                {
-                                    UseStringComparisonRefactoring.Analyze(context, invocationInfo);
-                                    break;
-                                }
-                        }
-
-                        break;
-                    }
-                case 1:
-                    {
-                        switch (methodName)
-                        {
-                            case "ElementAt":
-                                {
-                                    if (!invocationInfo.Expression.IsKind(SyntaxKind.InvocationExpression)
-                                        && UseElementAccessInsteadOfElementAtRefactoring.CanRefactor(invocationInfo, context.SemanticModel, context.CancellationToken))
-                                    {
-                                        context.ReportDiagnostic(DiagnosticDescriptors.UseElementAccessInsteadOfElementAt, invocationInfo.Name);
-                                    }
-
-                                    break;
-                                }
-                        }
-
-                        break;
-                    }
-            }
-
-            switch (methodName)
-            {
-                case "Append":
-                case "AppendLine":
-                case "AppendFormat":
-                case "Insert":
-                    {
-                        OptimizeStringBuilderAppendCallRefactoring.Analyze(context, invocationInfo);
-                        break;
-                    }
-                case "Select":
-                    {
-                        if (argumentCount == 1
-                            || argumentCount == 2)
-                        {
-                            CallCastInsteadOfSelectRefactoring.Analyze(context, invocationInfo);
-                        }
-
-                        break;
-                    }
-                case "OrderBy":
-                case "OrderByDescending":
-                    {
-                        if (argumentCount == 1
-                            || argumentCount == 2
-                            || argumentCount == 3)
-                        {
-                            CallThenByInsteadOfOrderByRefactoring.Analyze(context, invocationInfo);
-                        }
-
-                        break;
-                    }
-            }
-
-            if (UseMethodChainingRefactoring.IsFixable(invocationInfo, context.SemanticModel, context.CancellationToken))
-                context.ReportDiagnostic(DiagnosticDescriptors.UseMethodChaining, invocationInfo.InvocationExpression);
         }
     }
 }

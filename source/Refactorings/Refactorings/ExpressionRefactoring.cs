@@ -37,13 +37,11 @@ namespace Roslynator.CSharp.Refactorings
                 await CheckExpressionForNullRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceExpressionWithConstantValue)
-                || !context.Span.IsBetweenSpans(expression))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceExpressionWithConstantValue)
+                && context.Span.IsBetweenSpans(expression))
             {
-                return;
+                await ReplaceExpressionWithConstantValueRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
             }
-
-            await ReplaceExpressionWithConstantValueRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
         }
     }
 }

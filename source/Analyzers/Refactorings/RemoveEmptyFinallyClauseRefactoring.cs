@@ -16,30 +16,24 @@ namespace Roslynator.CSharp.Refactorings
         {
             var finallyClause = (FinallyClauseSyntax)context.Node;
 
-            if (!finallyClause.IsParentKind(SyntaxKind.TryStatement))
+            if (finallyClause.IsParentKind(SyntaxKind.TryStatement))
             {
-                return;
+                var tryStatement = (TryStatementSyntax)finallyClause.Parent;
+
+                if (tryStatement.Catches.Any())
+                {
+                    BlockSyntax block = finallyClause.Block;
+
+                    if (block?.Statements.Any() == false
+                        && finallyClause.FinallyKeyword.TrailingTrivia.IsEmptyOrWhitespace()
+                        && block.OpenBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
+                        && block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
+                        && block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace())
+                    {
+                        context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyFinallyClause, finallyClause);
+                    }
+                }
             }
-
-            var tryStatement = (TryStatementSyntax)finallyClause.Parent;
-
-            if (!tryStatement.Catches.Any())
-            {
-                return;
-            }
-
-            BlockSyntax block = finallyClause.Block;
-
-            if (block?.Statements.Any() != false
-                || !finallyClause.FinallyKeyword.TrailingTrivia.IsEmptyOrWhitespace()
-                || !block.OpenBraceToken.LeadingTrivia.IsEmptyOrWhitespace()
-                || !block.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
-                || !block.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyFinallyClause, finallyClause);
         }
 
         public static async Task<Document> RefactorAsync(

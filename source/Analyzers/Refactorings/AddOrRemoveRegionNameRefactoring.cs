@@ -19,32 +19,30 @@ namespace Roslynator.CSharp.Refactorings
 
             RegionDirectiveTriviaSyntax regionDirective = endRegionDirective.GetRegionDirective();
 
-            if (regionDirective == null)
+            if (regionDirective != null)
             {
-                return;
-            }
+                SyntaxTrivia trivia = regionDirective.GetPreprocessingMessageTrivia();
 
-            SyntaxTrivia trivia = regionDirective.GetPreprocessingMessageTrivia();
+                SyntaxTrivia endTrivia = endRegionDirective.GetPreprocessingMessageTrivia();
 
-            SyntaxTrivia endTrivia = endRegionDirective.GetPreprocessingMessageTrivia();
-
-            if (trivia.IsKind(SyntaxKind.PreprocessingMessageTrivia))
-            {
-                if (!endTrivia.IsKind(SyntaxKind.PreprocessingMessageTrivia)
-                    || !string.Equals(trivia.ToString(), endTrivia.ToString(), StringComparison.Ordinal))
+                if (trivia.IsKind(SyntaxKind.PreprocessingMessageTrivia))
+                {
+                    if (!endTrivia.IsKind(SyntaxKind.PreprocessingMessageTrivia)
+                        || !string.Equals(trivia.ToString(), endTrivia.ToString(), StringComparison.Ordinal))
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.AddOrRemoveRegionName,
+                            endRegionDirective,
+                            "Add", "to");
+                    }
+                }
+                else if (endTrivia.IsKind(SyntaxKind.PreprocessingMessageTrivia))
                 {
                     context.ReportDiagnostic(
                         DiagnosticDescriptors.AddOrRemoveRegionName,
                         endRegionDirective,
-                        "Add", "to");
+                        "Remove", "from");
                 }
-            }
-            else if (endTrivia.IsKind(SyntaxKind.PreprocessingMessageTrivia))
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddOrRemoveRegionName,
-                    endRegionDirective,
-                    "Remove", "from");
             }
         }
 

@@ -18,37 +18,31 @@ namespace Roslynator.CSharp.Refactorings
 
             ImmutableArray<IParameterSymbol> parameters = methodSymbol.Parameters;
 
-            if (!parameters.Any())
+            if (parameters.Any())
             {
-                return;
+                IMethodSymbol baseSymbol = methodSymbol.OverriddenMethod ?? methodSymbol.FindImplementedInterfaceMember<IMethodSymbol>();
+
+                if (baseSymbol != null)
+                    Analyze(context, parameters, baseSymbol.Parameters);
             }
-
-            IMethodSymbol baseSymbol = methodSymbol.OverriddenMethod ?? methodSymbol.FindImplementedInterfaceMember<IMethodSymbol>();
-
-            if (baseSymbol != null)
-                Analyze(context, parameters, baseSymbol.Parameters);
         }
 
         public static void AnalyzePropertySymbol(SymbolAnalysisContext context)
         {
             var propertySymbol = (IPropertySymbol)context.Symbol;
 
-            if (!propertySymbol.IsIndexer)
+            if (propertySymbol.IsIndexer)
             {
-                return;
+                ImmutableArray<IParameterSymbol> parameters = propertySymbol.Parameters;
+
+                if (parameters.Any())
+                {
+                    IPropertySymbol baseSymbol = propertySymbol.OverriddenProperty ?? propertySymbol.FindImplementedInterfaceMember<IPropertySymbol>();
+
+                    if (baseSymbol != null)
+                        Analyze(context, parameters, baseSymbol.Parameters);
+                }
             }
-
-            ImmutableArray<IParameterSymbol> parameters = propertySymbol.Parameters;
-
-            if (!parameters.Any())
-            {
-                return;
-            }
-
-            IPropertySymbol baseSymbol = propertySymbol.OverriddenProperty ?? propertySymbol.FindImplementedInterfaceMember<IPropertySymbol>();
-
-            if (baseSymbol != null)
-                Analyze(context, parameters, baseSymbol.Parameters);
         }
 
         private static void Analyze(
@@ -58,30 +52,28 @@ namespace Roslynator.CSharp.Refactorings
         {
             Debug.Assert(parameters.Length == parameters2.Length, "");
 
-            if (parameters.Length != parameters2.Length)
+            if (parameters.Length == parameters2.Length)
             {
-                return;
-            }
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                string name = parameters[i].Name;
-
-                if (!string.IsNullOrEmpty(name)
-                    && !string.Equals(name, parameters2[i].Name, StringComparison.Ordinal))
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    var parameterSyntax = parameters[i]
-                        .DeclaringSyntaxReferences
-                        .FirstOrDefault()?
-                        .GetSyntax(context.CancellationToken) as ParameterSyntax;
+                    string name = parameters[i].Name;
 
-                    if (parameterSyntax != null)
+                    if (!string.IsNullOrEmpty(name)
+                        && !string.Equals(name, parameters2[i].Name, StringComparison.Ordinal))
                     {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.ParameterNameDiffersFromBase,
-                            parameterSyntax.Identifier,
-                            name,
-                            parameters2[i].Name);
+                        var parameterSyntax = parameters[i]
+                            .DeclaringSyntaxReferences
+                            .FirstOrDefault()?
+                            .GetSyntax(context.CancellationToken) as ParameterSyntax;
+
+                        if (parameterSyntax != null)
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.ParameterNameDiffersFromBase,
+                                parameterSyntax.Identifier,
+                                name,
+                                parameters2[i].Name);
+                        }
                     }
                 }
             }

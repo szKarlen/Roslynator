@@ -11,8 +11,8 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, DirectiveTriviaSyntax directiveTrivia)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveDirectiveAndRelatedDirectives)
-                || !directiveTrivia.IsKind(
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveDirectiveAndRelatedDirectives)
+                && directiveTrivia.IsKind(
                     SyntaxKind.IfDirectiveTrivia,
                     SyntaxKind.ElseDirectiveTrivia,
                     SyntaxKind.ElifDirectiveTrivia,
@@ -20,29 +20,25 @@ namespace Roslynator.CSharp.Refactorings
                     SyntaxKind.RegionDirectiveTrivia,
                     SyntaxKind.EndRegionDirectiveTrivia))
             {
-                return;
-            }
+                List<DirectiveTriviaSyntax> directives = directiveTrivia.GetRelatedDirectives();
 
-            List<DirectiveTriviaSyntax> directives = directiveTrivia.GetRelatedDirectives();
-
-            if (directives.Count <= 1)
-            {
-                return;
-            }
-
-            string title = "Remove directive and related directive";
-
-            if (directives.Count > 2)
-                title += "s";
-
-            context.RegisterRefactoring(
-                title,
-                cancellationToken =>
+                if (directives.Count > 1)
                 {
-                    return context.Document.RemoveDirectivesAsync(
-                        directives.ToImmutableArray(),
-                        cancellationToken);
-                });
+                    string title = "Remove directive and related directive";
+
+                    if (directives.Count > 2)
+                        title += "s";
+
+                    context.RegisterRefactoring(
+                        title,
+                        cancellationToken =>
+                        {
+                            return context.Document.RemoveDirectivesAsync(
+                                directives.ToImmutableArray(),
+                                cancellationToken);
+                        });
+                }
+            }
         }
     }
 }

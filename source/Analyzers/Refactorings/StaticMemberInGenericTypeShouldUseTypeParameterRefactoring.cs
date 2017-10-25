@@ -17,70 +17,68 @@ namespace Roslynator.CSharp.Refactorings
         {
             var namedType = (INamedTypeSymbol)context.Symbol;
 
-            if (!namedType.IsTypeKind(TypeKind.Class, TypeKind.Struct)
-                || namedType.Arity <= 0
-                || namedType.IsStatic
-                || namedType.IsImplicitClass
-                || namedType.IsImplicitlyDeclared)
+            if (namedType.IsTypeKind(TypeKind.Class, TypeKind.Struct)
+                && namedType.Arity > 0
+                && !namedType.IsStatic
+                && !namedType.IsImplicitClass
+                && !namedType.IsImplicitlyDeclared)
             {
-                return;
-            }
-
-            foreach (ISymbol member in namedType.GetMembers())
-            {
-                if (!member.IsImplicitlyDeclared
-                    && member.IsStatic
-                    && member.IsDeclaredAccessibility(Accessibility.Public, Accessibility.Internal, Accessibility.ProtectedOrInternal))
+                foreach (ISymbol member in namedType.GetMembers())
                 {
-                    switch (member.Kind)
+                    if (!member.IsImplicitlyDeclared
+                        && member.IsStatic
+                        && member.IsDeclaredAccessibility(Accessibility.Public, Accessibility.Internal, Accessibility.ProtectedOrInternal))
                     {
-                        case SymbolKind.Event:
-                            {
-                                var eventSymbol = (IEventSymbol)member;
-
-                                if (!ContainsAnyTypeParameter(namedType.TypeParameters, eventSymbol.Type))
-                                    ReportDiagnostic(context, eventSymbol);
-
-                                break;
-                            }
-                        case SymbolKind.Field:
-                            {
-                                var fieldSymbol = (IFieldSymbol)member;
-
-                                if (!ContainsAnyTypeParameter(namedType.TypeParameters, fieldSymbol.Type))
-                                    ReportDiagnostic(context, fieldSymbol);
-
-                                break;
-                            }
-                        case SymbolKind.Method:
-                            {
-                                var methodsymbol = (IMethodSymbol)member;
-
-                                if (methodsymbol.MethodKind == MethodKind.Ordinary)
+                        switch (member.Kind)
+                        {
+                            case SymbolKind.Event:
                                 {
-                                    ImmutableArray<ITypeParameterSymbol> typeParameters = namedType.TypeParameters;
+                                    var eventSymbol = (IEventSymbol)member;
 
-                                    if (!ContainsAnyTypeParameter(typeParameters, methodsymbol.ReturnType)
-                                        && !methodsymbol.Parameters.Any(parameter => ContainsAnyTypeParameter(typeParameters, parameter.Type)))
+                                    if (!ContainsAnyTypeParameter(namedType.TypeParameters, eventSymbol.Type))
+                                        ReportDiagnostic(context, eventSymbol);
+
+                                    break;
+                                }
+                            case SymbolKind.Field:
+                                {
+                                    var fieldSymbol = (IFieldSymbol)member;
+
+                                    if (!ContainsAnyTypeParameter(namedType.TypeParameters, fieldSymbol.Type))
+                                        ReportDiagnostic(context, fieldSymbol);
+
+                                    break;
+                                }
+                            case SymbolKind.Method:
+                                {
+                                    var methodsymbol = (IMethodSymbol)member;
+
+                                    if (methodsymbol.MethodKind == MethodKind.Ordinary)
                                     {
-                                        ReportDiagnostic(context, methodsymbol);
+                                        ImmutableArray<ITypeParameterSymbol> typeParameters = namedType.TypeParameters;
+
+                                        if (!ContainsAnyTypeParameter(typeParameters, methodsymbol.ReturnType)
+                                            && !methodsymbol.Parameters.Any(parameter => ContainsAnyTypeParameter(typeParameters, parameter.Type)))
+                                        {
+                                            ReportDiagnostic(context, methodsymbol);
+                                        }
                                     }
+
+                                    break;
                                 }
-
-                                break;
-                            }
-                        case SymbolKind.Property:
-                            {
-                                var propertySymbol = (IPropertySymbol)member;
-
-                                if (!propertySymbol.IsIndexer
-                                    && !ContainsAnyTypeParameter(namedType.TypeParameters, propertySymbol.Type))
+                            case SymbolKind.Property:
                                 {
-                                    ReportDiagnostic(context, propertySymbol);
-                                }
+                                    var propertySymbol = (IPropertySymbol)member;
 
-                                break;
-                            }
+                                    if (!propertySymbol.IsIndexer
+                                        && !ContainsAnyTypeParameter(namedType.TypeParameters, propertySymbol.Type))
+                                    {
+                                        ReportDiagnostic(context, propertySymbol);
+                                    }
+
+                                    break;
+                                }
+                        }
                     }
                 }
             }
@@ -111,38 +109,36 @@ namespace Roslynator.CSharp.Refactorings
         {
             ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
 
-            if (!typeArguments.Any())
+            if (typeArguments.Any())
             {
-                return false;
-            }
-
-            if (typeArguments.Length == 1
-                && typeArguments[0].IsTypeParameter())
-            {
-                var typeArgument = (ITypeParameterSymbol)typeArguments[0];
-
-                return typeParameters.Any(f => f.Equals(typeArgument));
-            }
-
-            var stack = new Stack<ITypeSymbol>(typeArguments);
-
-            while (stack.Count > 0)
-            {
-                ITypeSymbol type = stack.Pop();
-
-                SymbolKind kind = type.Kind;
-
-                if (kind == SymbolKind.TypeParameter)
+                if (typeArguments.Length == 1
+                    && typeArguments[0].IsTypeParameter())
                 {
-                    if (typeParameters.Any(f => f.Equals(type)))
-                        return true;
+                    var typeArgument = (ITypeParameterSymbol)typeArguments[0];
+
+                    return typeParameters.Any(f => f.Equals(typeArgument));
                 }
-                else if (kind == SymbolKind.NamedType)
-                {
-                    typeArguments = ((INamedTypeSymbol)type).TypeArguments;
 
-                    for (int i = 0; i < typeArguments.Length; i++)
-                        stack.Push(typeArguments[i]);
+                var stack = new Stack<ITypeSymbol>(typeArguments);
+
+                while (stack.Count > 0)
+                {
+                    ITypeSymbol type = stack.Pop();
+
+                    SymbolKind kind = type.Kind;
+
+                    if (kind == SymbolKind.TypeParameter)
+                    {
+                        if (typeParameters.Any(f => f.Equals(type)))
+                            return true;
+                    }
+                    else if (kind == SymbolKind.NamedType)
+                    {
+                        typeArguments = ((INamedTypeSymbol)type).TypeArguments;
+
+                        for (int i = 0; i < typeArguments.Length; i++)
+                            stack.Push(typeArguments[i]);
+                    }
                 }
             }
 
@@ -155,23 +151,19 @@ namespace Roslynator.CSharp.Refactorings
 
             Debug.Assert(node != null, member.ToString());
 
-            if (node == null)
+            if (node != null)
             {
-                return;
+                SyntaxToken identifier = GetIdentifier(node);
+
+                Debug.Assert(!identifier.IsKind(SyntaxKind.None), node.ToString());
+
+                if (!identifier.IsKind(SyntaxKind.None))
+                {
+                    context.ReportDiagnostic(
+                       DiagnosticDescriptors.StaticMemberInGenericTypeShouldUseTypeParameter,
+                       identifier);
+                }
             }
-
-            SyntaxToken identifier = GetIdentifier(node);
-
-            Debug.Assert(!identifier.IsKind(SyntaxKind.None), node.ToString());
-
-            if (identifier.IsKind(SyntaxKind.None))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-               DiagnosticDescriptors.StaticMemberInGenericTypeShouldUseTypeParameter,
-               identifier);
         }
 
         private static SyntaxToken GetIdentifier(SyntaxNode node)

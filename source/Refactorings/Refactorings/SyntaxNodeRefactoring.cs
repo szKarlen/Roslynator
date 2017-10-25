@@ -45,21 +45,19 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveEmptyLines)
-                || !await RemoveEmptyLinesRefactoring.CanRefactorAsync(context, node).ConfigureAwait(false))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveEmptyLines)
+                && await RemoveEmptyLinesRefactoring.CanRefactorAsync(context, node).ConfigureAwait(false))
             {
-                return;
+                context.RegisterRefactoring(
+                   "Remove empty lines",
+                   cancellationToken =>
+                   {
+                       return RemoveEmptyLinesRefactoring.RefactorAsync(
+                           context.Document,
+                           context.Span,
+                           cancellationToken);
+                   });
             }
-
-            context.RegisterRefactoring(
-               "Remove empty lines",
-               cancellationToken =>
-               {
-                   return RemoveEmptyLinesRefactoring.RefactorAsync(
-                       context.Document,
-                       context.Span,
-                       cancellationToken);
-               });
         }
     }
 }

@@ -8,21 +8,17 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, UsingStatementSyntax usingStatement)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceLocalVariable))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceLocalVariable))
             {
-                return;
+                ExpressionSyntax expression = usingStatement.Expression;
+
+                if (expression != null)
+                {
+                    context.RegisterRefactoring(
+                        IntroduceLocalVariableRefactoring.GetTitle(expression),
+                        cancellationToken => IntroduceLocalVariableRefactoring.RefactorAsync(context.Document, usingStatement, expression, cancellationToken));
+                }
             }
-
-            ExpressionSyntax expression = usingStatement.Expression;
-
-            if (expression == null)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                IntroduceLocalVariableRefactoring.GetTitle(expression),
-                cancellationToken => IntroduceLocalVariableRefactoring.RefactorAsync(context.Document, usingStatement, expression, cancellationToken));
         }
     }
 }

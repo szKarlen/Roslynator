@@ -17,24 +17,20 @@ namespace Roslynator.CSharp.Refactorings
             TypeSyntax type = objectCreationExpression.Type;
             InitializerExpressionSyntax initializer = objectCreationExpression.Initializer;
 
-            if (type?.IsMissing != false
-                || initializer?.IsMissing != false)
+            if (type?.IsMissing == false
+                && initializer?.IsMissing == false)
             {
-                return;
+                ArgumentListSyntax argumentList = objectCreationExpression.ArgumentList;
+
+                if (argumentList == null)
+                {
+                    var span = new TextSpan(type.Span.End, 1);
+
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.AddArgumentListToObjectCreation,
+                        Location.Create(context.SyntaxTree(), span));
+                }
             }
-
-            ArgumentListSyntax argumentList = objectCreationExpression.ArgumentList;
-
-            if (argumentList != null)
-            {
-                return;
-            }
-
-            var span = new TextSpan(type.Span.End, 1);
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AddArgumentListToObjectCreation,
-                Location.Create(context.SyntaxTree(), span));
         }
 
         public static Task<Document> RefactorAsync(

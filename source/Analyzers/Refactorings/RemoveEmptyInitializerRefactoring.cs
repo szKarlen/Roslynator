@@ -16,28 +16,22 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, ObjectCreationExpressionSyntax objectCreationExpression)
         {
-            if (objectCreationExpression.ContainsDiagnostics)
+            if (!objectCreationExpression.ContainsDiagnostics)
             {
-                return;
+                TypeSyntax type = objectCreationExpression.Type;
+
+                if (type?.IsMissing == false)
+                {
+                    InitializerExpressionSyntax initializer = objectCreationExpression.Initializer;
+
+                    if (initializer?.Expressions.Any() == false
+                        && initializer.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
+                        && initializer.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace())
+                    {
+                        context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyInitializer, initializer);
+                    }
+                }
             }
-
-            TypeSyntax type = objectCreationExpression.Type;
-
-            if (type?.IsMissing != false)
-            {
-                return;
-            }
-
-            InitializerExpressionSyntax initializer = objectCreationExpression.Initializer;
-
-            if (initializer?.Expressions.Any() != false
-                || !initializer.OpenBraceToken.TrailingTrivia.IsEmptyOrWhitespace()
-                || !initializer.CloseBraceToken.LeadingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyInitializer, initializer);
         }
 
         public static Task<Document> RefactorAsync(

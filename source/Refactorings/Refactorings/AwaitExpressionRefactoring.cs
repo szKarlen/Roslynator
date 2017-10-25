@@ -10,27 +10,23 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, AwaitExpressionSyntax awaitExpression)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CallConfigureAwait))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallConfigureAwait))
             {
-                return;
-            }
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            if (!CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, semanticModel, context.CancellationToken))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Call 'ConfigureAwait(false)'",
-                cancellationToken =>
+                if (CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, semanticModel, context.CancellationToken))
                 {
-                    return CallConfigureAwaitRefactoring.RefactorAsync(
-                        context.Document,
-                        awaitExpression,
-                        context.CancellationToken);
-                });
+                    context.RegisterRefactoring(
+                        "Call 'ConfigureAwait(false)'",
+                        cancellationToken =>
+                        {
+                            return CallConfigureAwaitRefactoring.RefactorAsync(
+                                context.Document,
+                                awaitExpression,
+                                context.CancellationToken);
+                        });
+                }
+            }
         }
     }
 }

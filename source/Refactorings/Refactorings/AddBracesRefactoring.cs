@@ -14,41 +14,35 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, StatementSyntax statement)
         {
-            if (!context.IsAnyRefactoringEnabled(
+            if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.AddBraces,
                     RefactoringIdentifiers.AddBracesToIfElse)
-                || !CanRefactor(context, statement))
+                && CanRefactor(context, statement))
             {
-                return;
-            }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBraces))
-            {
-                RegisterRefactoring(context, statement);
-            }
-
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToIfElse))
-            {
-                return;
-            }
-
-            IfStatementSyntax topmostIf = GetTopmostIf(statement);
-
-            if (topmostIf?.Else == null
-                || !GetEmbeddedStatements(topmostIf).Any(f => f != statement))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Add braces to if-else",
-                cancellationToken =>
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBraces))
                 {
-                    return AddBracesToIfElseRefactoring.RefactorAsync(
-                        context.Document,
-                        topmostIf,
-                        cancellationToken);
-                });
+                    RegisterRefactoring(context, statement);
+                }
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToIfElse))
+                {
+                    IfStatementSyntax topmostIf = GetTopmostIf(statement);
+
+                    if (topmostIf?.Else != null
+                        && GetEmbeddedStatements(topmostIf).Any(f => f != statement))
+                    {
+                        context.RegisterRefactoring(
+                            "Add braces to if-else",
+                            cancellationToken =>
+                            {
+                                return AddBracesToIfElseRefactoring.RefactorAsync(
+                                    context.Document,
+                                    topmostIf,
+                                    cancellationToken);
+                            });
+                    }
+                }
+            }
         }
 
         private static IEnumerable<StatementSyntax> GetEmbeddedStatements(IfStatementSyntax topmostIf)
@@ -79,21 +73,19 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode parent = statement.Parent;
 
-            if (parent == null)
+            if (parent != null)
             {
-                return null;
-            }
+                if (parent.IsKind(SyntaxKind.ElseClause))
+                {
+                    return ((ElseClauseSyntax)parent).GetTopmostIf();
+                }
+                else
+                {
+                    var parentStatement = parent as IfStatementSyntax;
 
-            if (parent.IsKind(SyntaxKind.ElseClause))
-            {
-                return ((ElseClauseSyntax)parent).GetTopmostIf();
-            }
-            else
-            {
-                var parentStatement = parent as IfStatementSyntax;
-
-                if (parentStatement != null)
-                    return parentStatement.GetTopmostIf();
+                    if (parentStatement != null)
+                        return parentStatement.GetTopmostIf();
+                }
             }
 
             return null;

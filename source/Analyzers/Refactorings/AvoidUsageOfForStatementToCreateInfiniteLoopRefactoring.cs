@@ -17,21 +17,19 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, ForStatementSyntax forStatement)
         {
-            if (forStatement.Declaration != null
-                || forStatement.Condition != null
-                || forStatement.Incrementors.Count != 0
-                || forStatement.Initializers.Count != 0
-                || forStatement.ContainsDirectives(
+            if (forStatement.Declaration == null
+                && forStatement.Condition == null
+                && forStatement.Incrementors.Count == 0
+                && forStatement.Initializers.Count == 0
+                && !forStatement.ContainsDirectives(
                     TextSpan.FromBounds(
                         forStatement.OpenParenToken.Span.End,
                         forStatement.CloseParenToken.Span.Start)))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AvoidUsageOfForStatementToCreateInfiniteLoop,
+                    forStatement.ForKeyword);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AvoidUsageOfForStatementToCreateInfiniteLoop,
-                forStatement.ForKeyword);
         }
 
         public static Task<Document> RefactorAsync(

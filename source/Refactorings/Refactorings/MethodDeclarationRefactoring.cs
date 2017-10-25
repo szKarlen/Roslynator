@@ -64,15 +64,13 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameMethodAccordingToTypeName))
                 await RenameMethodAccoringToTypeNameAsync(context, methodDeclaration).ConfigureAwait(false);
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseListInsteadOfYield)
-                || !methodDeclaration.Identifier.Span.Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseListInsteadOfYield)
+                && methodDeclaration.Identifier.Span.Contains(context.Span))
             {
-                return;
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                UseListInsteadOfYieldRefactoring.ComputeRefactoring(context, methodDeclaration, semanticModel);
             }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            UseListInsteadOfYieldRefactoring.ComputeRefactoring(context, methodDeclaration, semanticModel);
         }
 
         private static async Task RenameMethodAccoringToTypeNameAsync(
@@ -81,56 +79,46 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax returnType = methodDeclaration.ReturnType;
 
-            if (returnType?.IsVoid() != false)
+            if (returnType?.IsVoid() == false)
             {
-                return;
+                SyntaxToken identifier = methodDeclaration.Identifier;
+
+                if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(identifier))
+                {
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                    IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
+
+                    ITypeSymbol typeSymbol = GetType(returnType, semanticModel, context.CancellationToken);
+
+                    if (typeSymbol != null)
+                    {
+                        string newName = NameGenerator.CreateName(typeSymbol);
+
+                        if (!string.IsNullOrEmpty(newName))
+                        {
+                            newName = "Get" + newName;
+
+                            if (methodSymbol.IsAsync)
+                                newName += "Async";
+
+                            string oldName = identifier.ValueText;
+
+                            if (!string.Equals(oldName, newName, StringComparison.Ordinal)
+                                && await NameGenerator.IsUniqueMemberNameAsync(
+                                    newName,
+                                    methodSymbol,
+                                    context.Solution,
+                                    cancellationToken: context.CancellationToken).ConfigureAwait(false))
+                            {
+                                context.RegisterRefactoring(
+                                   $"Rename '{oldName}' to '{newName}'",
+                                   cancellationToken => Renamer.RenameSymbolAsync(context.Solution, methodSymbol, newName, default(OptionSet), cancellationToken));
+                            }
+                        }
+                    }
+                }
             }
-
-            SyntaxToken identifier = methodDeclaration.Identifier;
-
-            if (!context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(identifier))
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
-
-            ITypeSymbol typeSymbol = GetType(returnType, semanticModel, context.CancellationToken);
-
-            if (typeSymbol == null)
-            {
-                return;
-            }
-
-            string newName = NameGenerator.CreateName(typeSymbol);
-
-            if (string.IsNullOrEmpty(newName))
-            {
-                return;
-            }
-
-            newName = "Get" + newName;
-
-            if (methodSymbol.IsAsync)
-                newName += "Async";
-
-            string oldName = identifier.ValueText;
-
-            if (string.Equals(oldName, newName, StringComparison.Ordinal)
-                || !await NameGenerator.IsUniqueMemberNameAsync(
-                    newName,
-                    methodSymbol,
-                    context.Solution,
-                    cancellationToken: context.CancellationToken).ConfigureAwait(false))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-               $"Rename '{oldName}' to '{newName}'",
-               cancellationToken => Renamer.RenameSymbolAsync(context.Solution, methodSymbol, newName, default(OptionSet), cancellationToken));
         }
 
         private static ITypeSymbol GetType(

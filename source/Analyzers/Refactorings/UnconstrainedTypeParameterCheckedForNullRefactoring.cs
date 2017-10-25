@@ -34,14 +34,12 @@ namespace Roslynator.CSharp.Refactorings
         private static void Analyze(SyntaxNodeAnalysisContext context, BinaryExpressionSyntax binaryExpression, NullCheckKind allowedKinds)
         {
             NullCheckExpressionInfo nullCheck = SyntaxInfo.NullCheckExpressionInfo(binaryExpression, allowedKinds: allowedKinds);
-            if (!nullCheck.Success
-                || !IsUnconstrainedTypeParameter(context.SemanticModel.GetTypeSymbol(nullCheck.Expression, context.CancellationToken))
-                || binaryExpression.SpanContainsDirectives())
+            if (nullCheck.Success
+                && IsUnconstrainedTypeParameter(context.SemanticModel.GetTypeSymbol(nullCheck.Expression, context.CancellationToken))
+                && !binaryExpression.SpanContainsDirectives())
             {
-                return;
+                context.ReportDiagnostic(DiagnosticDescriptors.UnconstrainedTypeParameterCheckedForNull, binaryExpression);
             }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.UnconstrainedTypeParameterCheckedForNull, binaryExpression);
         }
 
         private static bool IsUnconstrainedTypeParameter(ITypeSymbol typeSymbol)

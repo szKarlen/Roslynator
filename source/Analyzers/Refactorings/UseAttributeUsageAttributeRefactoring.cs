@@ -20,15 +20,13 @@ namespace Roslynator.CSharp.Refactorings
         {
             var symbol = (INamedTypeSymbol)context.Symbol;
 
-            if (!symbol.InheritsFrom(attributeSymbol)
-                || symbol.HasAttribute(attributeUsageAttributeSymbol))
+            if (symbol.InheritsFrom(attributeSymbol)
+                && !symbol.HasAttribute(attributeUsageAttributeSymbol))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.UseAttributeUsageAttribute,
+                    ((ClassDeclarationSyntax)symbol.GetSyntax()).Identifier);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.UseAttributeUsageAttribute,
-                ((ClassDeclarationSyntax)symbol.GetSyntax()).Identifier);
         }
 
         public static async Task<Document> RefactorAsync(

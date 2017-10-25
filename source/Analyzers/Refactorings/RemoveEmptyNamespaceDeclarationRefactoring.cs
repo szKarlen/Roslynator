@@ -13,25 +13,21 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, NamespaceDeclarationSyntax declaration)
         {
-            if (declaration.Members.Any())
+            if (!declaration.Members.Any())
             {
-                return;
+                SyntaxToken openBrace = declaration.OpenBraceToken;
+                SyntaxToken closeBrace = declaration.CloseBraceToken;
+
+                if (!openBrace.IsMissing
+                    && !closeBrace.IsMissing
+                    && openBrace.TrailingTrivia.IsEmptyOrWhitespace()
+                    && closeBrace.LeadingTrivia.IsEmptyOrWhitespace())
+                {
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.RemoveEmptyNamespaceDeclaration,
+                        declaration);
+                }
             }
-
-            SyntaxToken openBrace = declaration.OpenBraceToken;
-            SyntaxToken closeBrace = declaration.CloseBraceToken;
-
-            if (openBrace.IsMissing
-                || closeBrace.IsMissing
-                || !openBrace.TrailingTrivia.IsEmptyOrWhitespace()
-                || !closeBrace.LeadingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveEmptyNamespaceDeclaration,
-                declaration);
         }
 
         public static Task<Document> RefactorAsync(

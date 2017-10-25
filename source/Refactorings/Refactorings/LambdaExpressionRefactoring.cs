@@ -23,21 +23,19 @@ namespace Roslynator.CSharp.Refactorings
                     });
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SimplifyLambdaExpression)
-                || !SimplifyLambdaExpressionRefactoring.CanRefactor(lambda))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SimplifyLambdaExpression)
+                && SimplifyLambdaExpressionRefactoring.CanRefactor(lambda))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Simplify lambda expression",
+                    cancellationToken =>
+                    {
+                        return SimplifyLambdaExpressionRefactoring.RefactorAsync(
+                            context.Document,
+                            lambda,
+                            cancellationToken);
+                    });
             }
-
-            context.RegisterRefactoring(
-                "Simplify lambda expression",
-                cancellationToken =>
-                {
-                    return SimplifyLambdaExpressionRefactoring.RefactorAsync(
-                        context.Document,
-                        lambda,
-                        cancellationToken);
-                });
         }
     }
 }

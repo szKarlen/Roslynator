@@ -124,15 +124,13 @@ namespace Roslynator.CSharp.CodeFixes
             BlockSyntax body,
             SemanticModel semanticModel)
         {
-            if (type == null
-                || !(body?.Statements.Count > 0))
+            if (type != null
+                && body?.Statements.Count > 0)
             {
-                return;
+                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+                ComputeCodeFix(context, diagnostic, typeSymbol, body, semanticModel);
             }
-
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
-
-            ComputeCodeFix(context, diagnostic, typeSymbol, body, semanticModel);
         }
 
         private void ComputeCodeFix(
@@ -142,19 +140,17 @@ namespace Roslynator.CSharp.CodeFixes
             BlockSyntax body,
             SemanticModel semanticModel)
         {
-            if (typeSymbol?.IsErrorType() != false
-                || typeSymbol.IsVoid()
-                || typeSymbol.IsIEnumerableOrConstructedFromIEnumerableOfT())
+            if (typeSymbol?.IsErrorType() == false
+                && !typeSymbol.IsVoid()
+                && !typeSymbol.IsIEnumerableOrConstructedFromIEnumerableOfT())
             {
-                return;
+                CodeAction codeAction = CodeAction.Create(
+                    "Add return statement that returns default value",
+                    cancellationToken => RefactorAsync(context.Document, body, typeSymbol, semanticModel, cancellationToken),
+                    GetEquivalenceKey(diagnostic));
+
+                context.RegisterCodeFix(codeAction, diagnostic);
             }
-
-            CodeAction codeAction = CodeAction.Create(
-                "Add return statement that returns default value",
-                cancellationToken => RefactorAsync(context.Document, body, typeSymbol, semanticModel, cancellationToken),
-                GetEquivalenceKey(diagnostic));
-
-            context.RegisterCodeFix(codeAction, diagnostic);
         }
 
         private static Task<Document> RefactorAsync(

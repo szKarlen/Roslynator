@@ -37,20 +37,18 @@ namespace Roslynator
                     return hasIndexer.Value;
             }
 
-            if (!typeSymbol.ImplementsAny(
+            if (typeSymbol.ImplementsAny(
                 SpecialType.System_Collections_Generic_IList_T,
                 SpecialType.System_Collections_Generic_IReadOnlyList_T))
             {
-                return false;
-            }
-
-            if (typeSymbol.TypeKind == TypeKind.Interface)
-                return true;
-
-            foreach (ISymbol symbol in typeSymbol.GetMembers("this[]"))
-            {
-                if (semanticModel.IsAccessible(position, symbol))
+                if (typeSymbol.TypeKind == TypeKind.Interface)
                     return true;
+
+                foreach (ISymbol symbol in typeSymbol.GetMembers("this[]"))
+                {
+                    if (semanticModel.IsAccessible(position, symbol))
+                        return true;
+                }
             }
 
             return false;
@@ -86,25 +84,23 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!symbol.IsNamedType())
+            if (symbol.IsNamedType())
             {
-                return false;
+                INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T2);
+
+                var namedTypeSymbol = (INamedTypeSymbol)symbol;
+
+                if (namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
+                {
+                    ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
+
+                    return typeArguments.Length == 2
+                        && typeArguments[0].Equals(parameter1)
+                        && typeArguments[1].Equals(parameter2);
+                }
             }
 
-            INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T2);
-
-            var namedTypeSymbol = (INamedTypeSymbol)symbol;
-
-            if (!namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
-            {
-                return false;
-            }
-
-            ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
-
-            return typeArguments.Length == 2
-                && typeArguments[0].Equals(parameter1)
-                && typeArguments[1].Equals(parameter2);
+            return false;
         }
 
         public static bool IsFunc(ISymbol symbol, ITypeSymbol parameter1, ITypeSymbol parameter2, ITypeSymbol parameter3, SemanticModel semanticModel)
@@ -121,26 +117,24 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!symbol.IsNamedType())
+            if (symbol.IsNamedType())
             {
-                return false;
+                INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T3);
+
+                var namedTypeSymbol = (INamedTypeSymbol)symbol;
+
+                if (namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
+                {
+                    ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
+
+                    return typeArguments.Length == 3
+                        && typeArguments[0].Equals(parameter1)
+                        && typeArguments[1].Equals(parameter2)
+                        && typeArguments[2].Equals(parameter3);
+                }
             }
 
-            INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T3);
-
-            var namedTypeSymbol = (INamedTypeSymbol)symbol;
-
-            if (!namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
-            {
-                return false;
-            }
-
-            ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
-
-            return typeArguments.Length == 3
-                && typeArguments[0].Equals(parameter1)
-                && typeArguments[1].Equals(parameter2)
-                && typeArguments[2].Equals(parameter3);
+            return false;
         }
 
         public static bool IsPredicateFunc(ISymbol symbol, ITypeSymbol parameter, SemanticModel semanticModel)
@@ -154,25 +148,23 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!symbol.IsNamedType())
+            if (symbol.IsNamedType())
             {
-                return false;
+                INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T2);
+
+                var namedTypeSymbol = (INamedTypeSymbol)symbol;
+
+                if (namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
+                {
+                    ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
+
+                    return typeArguments.Length == 2
+                        && typeArguments[0].Equals(parameter)
+                        && typeArguments[1].IsBoolean();
+                }
             }
 
-            INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T2);
-
-            var namedTypeSymbol = (INamedTypeSymbol)symbol;
-
-            if (!namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
-            {
-                return false;
-            }
-
-            ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
-
-            return typeArguments.Length == 2
-                && typeArguments[0].Equals(parameter)
-                && typeArguments[1].IsBoolean();
+            return false;
         }
 
         public static bool IsPredicateFunc(ISymbol symbol, ITypeSymbol parameter1, ITypeSymbol parameter2, SemanticModel semanticModel)
@@ -189,26 +181,24 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!symbol.IsNamedType())
+            if (symbol.IsNamedType())
             {
-                return false;
+                INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T3);
+
+                var namedTypeSymbol = (INamedTypeSymbol)symbol;
+
+                if (namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
+                {
+                    ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
+
+                    return typeArguments.Length == 3
+                        && typeArguments[0].Equals(parameter1)
+                        && typeArguments[1].Equals(parameter2)
+                        && typeArguments[2].IsBoolean();
+                }
             }
 
-            INamedTypeSymbol funcSymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Func_T3);
-
-            var namedTypeSymbol = (INamedTypeSymbol)symbol;
-
-            if (!namedTypeSymbol.ConstructedFrom.Equals(funcSymbol))
-            {
-                return false;
-            }
-
-            ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
-
-            return typeArguments.Length == 3
-                && typeArguments[0].Equals(parameter1)
-                && typeArguments[1].Equals(parameter2)
-                && typeArguments[2].IsBoolean();
+            return false;
         }
     }
 }

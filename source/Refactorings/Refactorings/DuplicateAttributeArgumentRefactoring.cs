@@ -13,36 +13,32 @@ namespace Roslynator.CSharp.Refactorings
         {
             AttributeArgumentSyntax argument = GetArgument(context, argumentList);
 
-            if (argument == null)
+            if (argument != null)
             {
-                return;
+                context.RegisterRefactoring(
+                    "Duplicate argument",
+                    cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Duplicate argument",
-                cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
         }
 
         private static AttributeArgumentSyntax GetArgument(RefactoringContext context, AttributeArgumentListSyntax argumentList)
         {
-            if (!context.Span.IsEmpty)
+            if (context.Span.IsEmpty)
             {
-                return null;
-            }
+                SeparatedSyntaxList<AttributeArgumentSyntax> arguments = argumentList.Arguments;
 
-            SeparatedSyntaxList<AttributeArgumentSyntax> arguments = argumentList.Arguments;
-
-            foreach (AttributeArgumentSyntax argument in arguments)
-            {
-                if (argument.IsMissing
-                    && context.Span.Contains(argument.Span))
+                foreach (AttributeArgumentSyntax argument in arguments)
                 {
-                    int index = arguments.IndexOf(argument);
-
-                    if (index > 0
-                        && !arguments[index - 1].IsMissing)
+                    if (argument.IsMissing
+                        && context.Span.Contains(argument.Span))
                     {
-                        return argument;
+                        int index = arguments.IndexOf(argument);
+
+                        if (index > 0
+                            && !arguments[index - 1].IsMissing)
+                        {
+                            return argument;
+                        }
                     }
                 }
             }

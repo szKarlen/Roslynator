@@ -14,38 +14,32 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, StatementSyntax statement)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractStatement)
-                || !context.Span.IsEmpty)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractStatement)
+                && context.Span.IsEmpty)
             {
-                return;
+                if (!statement.IsKind(SyntaxKind.Block)
+                    || ((BlockSyntax)statement).Statements.Any())
+                {
+                    SyntaxNode parent = statement.Parent;
+
+                    if (parent?.IsKind(SyntaxKind.Block) == true)
+                    {
+                        statement = (BlockSyntax)parent;
+                        parent = statement.Parent;
+                    }
+
+                    if (parent != null
+                        && (CheckContainingNode(parent)
+                        && GetContainingBlock(parent)?.IsKind(SyntaxKind.Block) == true))
+                    {
+                        context.RegisterRefactoring(
+                            (parent.IsKind(SyntaxKind.ElseClause))
+                                ? "Extract from containing else clause"
+                                : "Extract from containing statement",
+                            cancellationToken => RefactorAsync(context.Document, statement, cancellationToken));
+                    }
+                }
             }
-
-            if (statement.IsKind(SyntaxKind.Block)
-                && !((BlockSyntax)statement).Statements.Any())
-            {
-                return;
-            }
-
-            SyntaxNode parent = statement.Parent;
-
-            if (parent?.IsKind(SyntaxKind.Block) == true)
-            {
-                statement = (BlockSyntax)parent;
-                parent = statement.Parent;
-            }
-
-            if (parent == null
-                || (!CheckContainingNode(parent)
-                || GetContainingBlock(parent)?.IsKind(SyntaxKind.Block) != true))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                (parent.IsKind(SyntaxKind.ElseClause))
-                    ? "Extract from containing else clause"
-                    : "Extract from containing statement",
-                cancellationToken => RefactorAsync(context.Document, statement, cancellationToken));
         }
 
         private static SyntaxNode GetContainingBlock(SyntaxNode node)

@@ -49,14 +49,14 @@ namespace Roslynator.CSharp.Refactorings.UnusedSyntax
         {
             StatementSyntax statement = body?.Statements.SingleOrDefault(throwException: false);
 
-            if (statement?.IsKind(SyntaxKind.ThrowStatement) != true)
+            if (statement?.IsKind(SyntaxKind.ThrowStatement) == true)
             {
-                return false;
+                var throwStatement = (ThrowStatementSyntax)statement;
+
+                return IsThrowNewException(throwStatement.Expression, semanticModel, cancellationToken);
             }
 
-            var throwStatement = (ThrowStatementSyntax)statement;
-
-            return IsThrowNewException(throwStatement.Expression, semanticModel, cancellationToken);
+            return false;
         }
 
         public static bool ContainsOnlyThrowNewException(
@@ -66,36 +66,32 @@ namespace Roslynator.CSharp.Refactorings.UnusedSyntax
         {
             ExpressionSyntax expression = expressionBody?.Expression;
 
-            if (expression?.IsKind(SyntaxKind.ThrowExpression) != true)
+            if (expression?.IsKind(SyntaxKind.ThrowExpression) == true)
             {
-                return false;
+                var throwExpression = (ThrowExpressionSyntax)expression;
+
+                return IsThrowNewException(throwExpression.Expression, semanticModel, cancellationToken);
             }
 
-            var throwExpression = (ThrowExpressionSyntax)expression;
-
-            return IsThrowNewException(throwExpression.Expression, semanticModel, cancellationToken);
+            return false;
         }
 
         private static bool IsThrowNewException(ExpressionSyntax expression, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            if (expression?.IsKind(SyntaxKind.ObjectCreationExpression) != true)
+            if (expression?.IsKind(SyntaxKind.ObjectCreationExpression) == true)
             {
-                return false;
-            }
+                var objectCreation = (ObjectCreationExpressionSyntax)expression;
 
-            var objectCreation = (ObjectCreationExpressionSyntax)expression;
+                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(objectCreation, cancellationToken);
 
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(objectCreation, cancellationToken);
-
-            if (typeSymbol == null)
-            {
-                return false;
-            }
-
-            if (typeSymbol.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_NotImplementedException))
-                || typeSymbol.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_NotSupportedException)))
-            {
-                return true;
+                if (typeSymbol != null)
+                {
+                    if (typeSymbol.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_NotImplementedException))
+                        || typeSymbol.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_NotSupportedException)))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;

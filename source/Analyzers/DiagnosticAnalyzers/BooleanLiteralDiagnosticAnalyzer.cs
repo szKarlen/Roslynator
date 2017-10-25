@@ -46,15 +46,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             ExpressionSyntax left = binaryExpression.Left;
 
-            if (left?.IsMissing != false)
+            if (left?.IsMissing == false)
             {
-                return;
+                ExpressionSyntax right = binaryExpression.Right;
+
+                if (right?.IsMissing == false)
+                    AnalyzeEqualsNotEquals(context, binaryExpression, left, right, SyntaxKind.FalseLiteralExpression, SyntaxKind.TrueLiteralExpression);
             }
-
-            ExpressionSyntax right = binaryExpression.Right;
-
-            if (right?.IsMissing == false)
-                AnalyzeEqualsNotEquals(context, binaryExpression, left, right, SyntaxKind.FalseLiteralExpression, SyntaxKind.TrueLiteralExpression);
         }
 
         private void AnalyzeNotEqualsExpression(SyntaxNodeAnalysisContext context)
@@ -63,15 +61,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             ExpressionSyntax left = binaryExpression.Left;
 
-            if (left?.IsMissing != false)
+            if (left?.IsMissing == false)
             {
-                return;
+                ExpressionSyntax right = binaryExpression.Right;
+
+                if (right?.IsMissing == false)
+                    AnalyzeEqualsNotEquals(context, binaryExpression, left, right, SyntaxKind.TrueLiteralExpression, SyntaxKind.FalseLiteralExpression);
             }
-
-            ExpressionSyntax right = binaryExpression.Right;
-
-            if (right?.IsMissing == false)
-                AnalyzeEqualsNotEquals(context, binaryExpression, left, right, SyntaxKind.TrueLiteralExpression, SyntaxKind.FalseLiteralExpression);
         }
 
         private void AnalyzeLogicalAndExpression(SyntaxNodeAnalysisContext context)
@@ -80,15 +76,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             ExpressionSyntax left = binaryExpression.Left;
 
-            if (left?.IsMissing != false)
+            if (left?.IsMissing == false)
             {
-                return;
+                ExpressionSyntax right = binaryExpression.Right;
+
+                if (right?.IsMissing == false)
+                    AnalyzeLogicalAndLogicalOr(context, binaryExpression, left, right, SyntaxKind.TrueLiteralExpression);
             }
-
-            ExpressionSyntax right = binaryExpression.Right;
-
-            if (right?.IsMissing == false)
-                AnalyzeLogicalAndLogicalOr(context, binaryExpression, left, right, SyntaxKind.TrueLiteralExpression);
         }
 
         private void AnalyzeLogicalOrExpression(SyntaxNodeAnalysisContext context)
@@ -97,15 +91,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             ExpressionSyntax left = binaryExpression.Left;
 
-            if (left?.IsMissing != false)
+            if (left?.IsMissing == false)
             {
-                return;
+                ExpressionSyntax right = binaryExpression.Right;
+
+                if (right?.IsMissing == false)
+                    AnalyzeLogicalAndLogicalOr(context, binaryExpression, left, right, SyntaxKind.FalseLiteralExpression);
             }
-
-            ExpressionSyntax right = binaryExpression.Right;
-
-            if (right?.IsMissing == false)
-                AnalyzeLogicalAndLogicalOr(context, binaryExpression, left, right, SyntaxKind.FalseLiteralExpression);
         }
 
         private static void AnalyzeEqualsNotEquals(
@@ -196,13 +188,11 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
             ExpressionSyntax right,
             SyntaxKind kind)
         {
-            if (!left.IsKind(kind)
-                && !right.IsKind(kind))
+            if (left.IsKind(kind)
+                || right.IsKind(kind))
             {
-                return;
+                RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, left, right);
             }
-
-            RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, left, right);
         }
 
         private static AnalysisResult AnalyzeExpression(

@@ -20,27 +20,25 @@ namespace Roslynator.CSharp.Refactorings
 
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, AttributeArgumentListSyntax argumentList)
         {
-            if (!context.IsAnyRefactoringEnabled(
+            if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.AddParameterNameToArgument,
                     RefactoringIdentifiers.RemoveParameterNameFromArgument)
-                || context.Span.IsEmpty)
+                && !context.Span.IsEmpty)
             {
-                return;
-            }
+                List<AttributeArgumentSyntax> arguments = null;
 
-            List<AttributeArgumentSyntax> arguments = null;
-
-            foreach (AttributeArgumentSyntax argument in argumentList.Arguments)
-            {
-                if (argument.Expression != null
-                    && context.Span.Contains(argument.Expression.Span))
+                foreach (AttributeArgumentSyntax argument in argumentList.Arguments)
                 {
-                    (arguments ?? (arguments = new List<AttributeArgumentSyntax>())).Add(argument);
+                    if (argument.Expression != null
+                        && context.Span.Contains(argument.Expression.Span))
+                    {
+                        (arguments ?? (arguments = new List<AttributeArgumentSyntax>())).Add(argument);
+                    }
                 }
-            }
 
-            if (arguments?.Count > 0)
-                await AddOrRemoveParameterNameAsync(context, argumentList, arguments.ToArray()).ConfigureAwait(false);
+                if (arguments?.Count > 0)
+                    await AddOrRemoveParameterNameAsync(context, argumentList, arguments.ToArray()).ConfigureAwait(false);
+            }
         }
 
         private static async Task AddOrRemoveParameterNameAsync(
@@ -63,22 +61,20 @@ namespace Roslynator.CSharp.Refactorings
                     });
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveParameterNameFromArgument)
-                || !arguments.Any(f => f.NameColon != null))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveParameterNameFromArgument)
+                && arguments.Any(f => f.NameColon != null))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Remove parameter name",
+                    cancellationToken =>
+                    {
+                        return RemoveParameterNameFromArgumentsAsync(
+                            context.Document,
+                            argumentList,
+                            arguments,
+                            cancellationToken);
+                    });
             }
-
-            context.RegisterRefactoring(
-                "Remove parameter name",
-                cancellationToken =>
-                {
-                    return RemoveParameterNameFromArgumentsAsync(
-                        context.Document,
-                        argumentList,
-                        arguments,
-                        cancellationToken);
-                });
         }
 
         private static async Task<Document> AddParameterNameToArgumentsAsync(

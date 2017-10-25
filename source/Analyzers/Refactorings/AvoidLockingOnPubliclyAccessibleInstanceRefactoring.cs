@@ -17,31 +17,25 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax expression = lockStatement.Expression;
 
-            if (expression?.IsKind(SyntaxKind.ThisExpression, SyntaxKind.TypeOfExpression) != true)
+            if (expression?.IsKind(SyntaxKind.ThisExpression, SyntaxKind.TypeOfExpression) == true)
             {
-                return;
+                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+                if (typeSymbol != null)
+                {
+                    Accessibility accessibility = typeSymbol.DeclaredAccessibility;
+
+                    if (accessibility == Accessibility.Public
+                        || accessibility == Accessibility.Protected
+                        || accessibility == Accessibility.ProtectedOrInternal)
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.AvoidLockingOnPubliclyAccessibleInstance,
+                            expression,
+                            expression.ToString());
+                    }
+                }
             }
-
-            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
-
-            if (typeSymbol == null)
-            {
-                return;
-            }
-
-            Accessibility accessibility = typeSymbol.DeclaredAccessibility;
-
-            if (accessibility != Accessibility.Public
-                && accessibility != Accessibility.Protected
-                && accessibility != Accessibility.ProtectedOrInternal)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AvoidLockingOnPubliclyAccessibleInstance,
-                expression,
-                expression.ToString());
         }
 
         public static Task<Document> RefactorAsync(

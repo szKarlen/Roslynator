@@ -13,40 +13,34 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol symbol)
         {
-            if (!symbol.IsClass()
-                || symbol.IsStatic
-                || symbol.IsAbstract
-                || symbol.IsImplicitClass
-                || symbol.IsImplicitlyDeclared
-                || symbol.BaseType?.IsObject() != true)
+            if (symbol.IsClass()
+                && !symbol.IsStatic
+                && !symbol.IsAbstract
+                && !symbol.IsImplicitClass
+                && !symbol.IsImplicitlyDeclared
+                && symbol.BaseType?.IsObject() == true)
             {
-                return;
-            }
+                var syntaxReferences = default(ImmutableArray<SyntaxReference>);
 
-            var syntaxReferences = default(ImmutableArray<SyntaxReference>);
-
-            if (symbol.IsSealed
-                && (syntaxReferences = symbol.DeclaringSyntaxReferences).Length != 1)
-            {
-                return;
-            }
-
-            if (!AnalyzeMembers(symbol))
-            {
-                return;
-            }
-
-            if (syntaxReferences.IsDefault)
-                syntaxReferences = symbol.DeclaringSyntaxReferences;
-
-            foreach (SyntaxReference syntaxReference in syntaxReferences)
-            {
-                var classDeclaration = (ClassDeclarationSyntax)syntaxReference.GetSyntax(context.CancellationToken);
-
-                if (!classDeclaration.IsStatic())
+                if (!symbol.IsSealed
+                    || (syntaxReferences = symbol.DeclaringSyntaxReferences).Length == 1)
                 {
-                    context.ReportDiagnostic(DiagnosticDescriptors.MakeClassStatic, classDeclaration.Identifier);
-                    break;
+                    if (AnalyzeMembers(symbol))
+                    {
+                        if (syntaxReferences.IsDefault)
+                            syntaxReferences = symbol.DeclaringSyntaxReferences;
+
+                        foreach (SyntaxReference syntaxReference in syntaxReferences)
+                        {
+                            var classDeclaration = (ClassDeclarationSyntax)syntaxReference.GetSyntax(context.CancellationToken);
+
+                            if (!classDeclaration.IsStatic())
+                            {
+                                context.ReportDiagnostic(DiagnosticDescriptors.MakeClassStatic, classDeclaration.Identifier);
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -55,67 +49,67 @@ namespace Roslynator.CSharp.Refactorings
         {
             ImmutableArray<ISymbol> members = symbol.GetMembers();
 
-            if (!members.Any(f => !f.IsImplicitlyDeclared))
+            if (members.Any(f => !f.IsImplicitlyDeclared))
             {
-                return false;
-            }
-
-            foreach (ISymbol memberSymbol in members)
-            {
-                switch (memberSymbol.Kind)
+                foreach (ISymbol memberSymbol in members)
                 {
-                    case SymbolKind.ErrorType:
-                        {
-                            return false;
-                        }
-                    case SymbolKind.NamedType:
-                        {
-                            var namedTypeSymbol = (INamedTypeSymbol)memberSymbol;
-
-                            switch (namedTypeSymbol.TypeKind)
+                    switch (memberSymbol.Kind)
+                    {
+                        case SymbolKind.ErrorType:
                             {
-                                case TypeKind.Unknown:
-                                case TypeKind.Error:
-                                    {
-                                        return false;
-                                    }
-                                case TypeKind.Class:
-                                case TypeKind.Delegate:
-                                case TypeKind.Enum:
-                                case TypeKind.Interface:
-                                case TypeKind.Struct:
-                                    {
-                                        if (memberSymbol.IsDeclaredAccessibility(Accessibility.Protected, Accessibility.ProtectedOrInternal))
+                                return false;
+                            }
+                        case SymbolKind.NamedType:
+                            {
+                                var namedTypeSymbol = (INamedTypeSymbol)memberSymbol;
+
+                                switch (namedTypeSymbol.TypeKind)
+                                {
+                                    case TypeKind.Unknown:
+                                    case TypeKind.Error:
+                                        {
                                             return false;
+                                        }
+                                    case TypeKind.Class:
+                                    case TypeKind.Delegate:
+                                    case TypeKind.Enum:
+                                    case TypeKind.Interface:
+                                    case TypeKind.Struct:
+                                        {
+                                            if (memberSymbol.IsDeclaredAccessibility(Accessibility.Protected, Accessibility.ProtectedOrInternal))
+                                                return false;
 
-                                        break;
-                                    }
-                                default:
-                                    {
-                                        Debug.Fail(namedTypeSymbol.TypeKind.ToString());
-                                        break;
-                                    }
+                                            break;
+                                        }
+                                    default:
+                                        {
+                                            Debug.Fail(namedTypeSymbol.TypeKind.ToString());
+                                            break;
+                                        }
+                                }
+
+                                break;
                             }
-
-                            break;
-                        }
-                    default:
-                        {
-                            if (memberSymbol.IsDeclaredAccessibility(Accessibility.Protected, Accessibility.ProtectedOrInternal))
-                                return false;
-
-                            if (!memberSymbol.IsImplicitlyDeclared
-                                && !memberSymbol.IsStatic)
+                        default:
                             {
-                                return false;
-                            }
+                                if (memberSymbol.IsDeclaredAccessibility(Accessibility.Protected, Accessibility.ProtectedOrInternal))
+                                    return false;
 
-                            break;
-                        }
+                                if (!memberSymbol.IsImplicitlyDeclared
+                                    && !memberSymbol.IsStatic)
+                                {
+                                    return false;
+                                }
+
+                                break;
+                            }
+                    }
                 }
+
+                return true;
             }
 
-            return true;
+            return false;
         }
     }
 }

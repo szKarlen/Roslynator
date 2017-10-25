@@ -8,13 +8,11 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, TypeParameterConstraintClauseSyntax constraintClause)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.FormatConstraintClauses)
-                || (!context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(constraintClause)))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatConstraintClauses)
+                && (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(constraintClause)))
             {
-                return;
+                FormatConstraintClausesRefactoring.ComputeRefactoring(context, constraintClause);
             }
-
-            FormatConstraintClausesRefactoring.ComputeRefactoring(context, constraintClause);
         }
     }
 }

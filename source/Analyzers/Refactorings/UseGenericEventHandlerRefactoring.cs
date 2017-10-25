@@ -21,47 +21,39 @@ namespace Roslynator.CSharp.Refactorings
         {
             var eventSymbol = (IEventSymbol)context.Symbol;
 
-            if (eventSymbol.IsOverride
-                || !eventSymbol.ExplicitInterfaceImplementations.IsDefaultOrEmpty
-                || eventSymbol.FindImplementedInterfaceMember<IEventSymbol>(allInterfaces: true) != null)
+            if (!eventSymbol.IsOverride
+                && eventSymbol.ExplicitInterfaceImplementations.IsDefaultOrEmpty
+                && eventSymbol.FindImplementedInterfaceMember<IEventSymbol>(allInterfaces: true) == null)
             {
-                return;
+                var namedType = eventSymbol.Type as INamedTypeSymbol;
+
+                if (namedType?.Arity == 0
+                    && !namedType.Equals(context.GetTypeByMetadataName(MetadataNames.System_EventHandler)))
+                {
+                    IMethodSymbol method = namedType.DelegateInvokeMethod;
+
+                    if (method != null)
+                    {
+                        ImmutableArray<IParameterSymbol> parameters = method.Parameters;
+
+                        if (parameters.Length == 2
+                            && parameters[0].Type.IsObject())
+                        {
+                            SyntaxNode node = eventSymbol
+                                .DeclaringSyntaxReferences
+                                .FirstOrDefault()?
+                                .GetSyntax(context.CancellationToken);
+
+                            TypeSyntax type = GetTypeSyntax(node);
+
+                            Debug.Assert(type != null, "");
+
+                            if (type != null)
+                                context.ReportDiagnostic(DiagnosticDescriptors.UseGenericEventHandler, type);
+                        }
+                    }
+                }
             }
-
-            var namedType = eventSymbol.Type as INamedTypeSymbol;
-
-            if (namedType?.Arity != 0
-                || namedType.Equals(context.GetTypeByMetadataName(MetadataNames.System_EventHandler)))
-            {
-                return;
-            }
-
-            IMethodSymbol method = namedType.DelegateInvokeMethod;
-
-            if (method == null)
-            {
-                return;
-            }
-
-            ImmutableArray<IParameterSymbol> parameters = method.Parameters;
-
-            if (parameters.Length != 2
-                || !parameters[0].Type.IsObject())
-            {
-                return;
-            }
-
-            SyntaxNode node = eventSymbol
-                .DeclaringSyntaxReferences
-                .FirstOrDefault()?
-                .GetSyntax(context.CancellationToken);
-
-            TypeSyntax type = GetTypeSyntax(node);
-
-            Debug.Assert(type != null, "");
-
-            if (type != null)
-                context.ReportDiagnostic(DiagnosticDescriptors.UseGenericEventHandler, type);
         }
 
         private static TypeSyntax GetTypeSyntax(SyntaxNode node)

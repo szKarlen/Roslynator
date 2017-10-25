@@ -16,16 +16,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
 
-            if (methodSymbol?.IsAsync != true
-                || methodSymbol.Name.EndsWith(AsyncSuffix, StringComparison.Ordinal)
-                || !methodDeclaration.ContainsAwait())
+            if (methodSymbol?.IsAsync == true
+                && !methodSymbol.Name.EndsWith(AsyncSuffix, StringComparison.Ordinal)
+                && methodDeclaration.ContainsAwait())
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AsynchronousMethodNameShouldEndWithAsync,
+                    methodDeclaration.Identifier);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AsynchronousMethodNameShouldEndWithAsync,
-                methodDeclaration.Identifier);
         }
     }
 }

@@ -18,59 +18,47 @@ namespace Roslynator.CSharp.Refactorings
         {
             var genericName = (GenericNameSyntax)context.Node;
 
-            if (genericName.IsParentKind(
+            if (!genericName.IsParentKind(
                     SyntaxKind.QualifiedName,
                     SyntaxKind.UsingDirective,
                     SyntaxKind.NameMemberCref)
-                || IsWithinNameOfExpression(genericName, context.SemanticModel, context.CancellationToken))
+                && !IsWithinNameOfExpression(genericName, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                TypeArgumentListSyntax typeArgumentList = genericName.TypeArgumentList;
+
+                if (typeArgumentList != null)
+                {
+                    SeparatedSyntaxList<TypeSyntax> arguments = typeArgumentList.Arguments;
+
+                    if (arguments.Count == 1
+                        && !arguments[0].IsKind(SyntaxKind.OmittedTypeArgument))
+                    {
+                        var namedTypeSymbol = context.SemanticModel.GetSymbol(genericName, context.CancellationToken) as INamedTypeSymbol;
+
+                        if (namedTypeSymbol?.IsConstructedFrom(SpecialType.System_Nullable_T) == true)
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.SimplifyNullableOfT,
+                                genericName);
+                        }
+                    }
+                }
             }
-
-            TypeArgumentListSyntax typeArgumentList = genericName.TypeArgumentList;
-
-            if (typeArgumentList == null)
-            {
-                return;
-            }
-
-            SeparatedSyntaxList<TypeSyntax> arguments = typeArgumentList.Arguments;
-
-            if (arguments.Count != 1
-                || arguments[0].IsKind(SyntaxKind.OmittedTypeArgument))
-            {
-                return;
-            }
-
-            var namedTypeSymbol = context.SemanticModel.GetSymbol(genericName, context.CancellationToken) as INamedTypeSymbol;
-
-            if (namedTypeSymbol?.IsConstructedFrom(SpecialType.System_Nullable_T) != true)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.SimplifyNullableOfT,
-                genericName);
         }
 
         public static void Analyze(SyntaxNodeAnalysisContext context, QualifiedNameSyntax qualifiedName)
         {
-            if (qualifiedName.IsParentKind(SyntaxKind.UsingDirective)
-                || IsWithinNameOfExpression(qualifiedName, context.SemanticModel, context.CancellationToken))
+            if (!qualifiedName.IsParentKind(SyntaxKind.UsingDirective)
+                && !IsWithinNameOfExpression(qualifiedName, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                var typeSymbol = context.SemanticModel.GetSymbol(qualifiedName, context.CancellationToken) as INamedTypeSymbol;
+
+                if (typeSymbol?.SupportsPredefinedType() == false
+                    && typeSymbol.IsConstructedFrom(SpecialType.System_Nullable_T))
+                {
+                    context.ReportDiagnostic(DiagnosticDescriptors.SimplifyNullableOfT, qualifiedName);
+                }
             }
-
-            var typeSymbol = context.SemanticModel.GetSymbol(qualifiedName, context.CancellationToken) as INamedTypeSymbol;
-
-            if (typeSymbol?.SupportsPredefinedType() != false
-                || !typeSymbol.IsConstructedFrom(SpecialType.System_Nullable_T))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.SimplifyNullableOfT, qualifiedName);
         }
 
         public static Task<Document> RefactorAsync(

@@ -49,14 +49,12 @@ namespace Roslynator.VisualStudio
         {
             base.OnActivate(e);
 
-            if (_isActive)
+            if (!_isActive)
             {
-                return;
+                _control.PrefixFieldIdentifierWithUnderscore = PrefixFieldIdentifierWithUnderscore;
+                _control.UseConfigFile = UseConfigFile;
+                _isActive = true;
             }
-
-            _control.PrefixFieldIdentifierWithUnderscore = PrefixFieldIdentifierWithUnderscore;
-            _control.UseConfigFile = UseConfigFile;
-            _isActive = true;
         }
 
         protected override void OnClosed(EventArgs e)

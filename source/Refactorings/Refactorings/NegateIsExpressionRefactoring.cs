@@ -23,27 +23,25 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void ComputeRefactoringCore(RefactoringContext context, ExpressionSyntax expression)
         {
-            if (!context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(expression))
+            if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(expression))
             {
-                return;
-            }
+                SyntaxNode parent = expression.Parent;
 
-            SyntaxNode parent = expression.Parent;
-
-            if (parent?.IsKind(SyntaxKind.ParenthesizedExpression) == true)
-            {
-                if (parent.IsParentKind(SyntaxKind.LogicalNotExpression))
+                if (parent?.IsKind(SyntaxKind.ParenthesizedExpression) == true)
                 {
-                    RegisterRefactoring(context, (ExpressionSyntax)parent.Parent);
+                    if (parent.IsParentKind(SyntaxKind.LogicalNotExpression))
+                    {
+                        RegisterRefactoring(context, (ExpressionSyntax)parent.Parent);
+                    }
+                    else
+                    {
+                        RegisterRefactoring(context, (ExpressionSyntax)parent);
+                    }
                 }
                 else
                 {
-                    RegisterRefactoring(context, (ExpressionSyntax)parent);
+                    RegisterRefactoring(context, expression);
                 }
-            }
-            else
-            {
-                RegisterRefactoring(context, expression);
             }
         }
 

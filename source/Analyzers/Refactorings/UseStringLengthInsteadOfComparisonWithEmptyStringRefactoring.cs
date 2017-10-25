@@ -20,43 +20,37 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax left = equalsExpression.Left;
 
-            if (left?.IsMissing != false)
+            if (left?.IsMissing == false)
             {
-                return;
-            }
+                ExpressionSyntax right = equalsExpression.Right;
 
-            ExpressionSyntax right = equalsExpression.Right;
+                if (right?.IsMissing == false)
+                {
+                    SemanticModel semanticModel = context.SemanticModel;
+                    CancellationToken cancellationToken = context.CancellationToken;
 
-            if (right?.IsMissing != false)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = context.SemanticModel;
-            CancellationToken cancellationToken = context.CancellationToken;
-
-            if (CSharpUtility.IsEmptyString(left, semanticModel, cancellationToken))
-            {
-                if (IsString(right, semanticModel, cancellationToken))
-                    ReportDiagnostic(context, equalsExpression);
-            }
-            else if (CSharpUtility.IsEmptyString(right, semanticModel, cancellationToken)
-                && IsString(left, semanticModel, cancellationToken))
-            {
-                ReportDiagnostic(context, equalsExpression);
+                    if (CSharpUtility.IsEmptyString(left, semanticModel, cancellationToken))
+                    {
+                        if (IsString(right, semanticModel, cancellationToken))
+                            ReportDiagnostic(context, equalsExpression);
+                    }
+                    else if (CSharpUtility.IsEmptyString(right, semanticModel, cancellationToken)
+                        && IsString(left, semanticModel, cancellationToken))
+                    {
+                        ReportDiagnostic(context, equalsExpression);
+                    }
+                }
             }
         }
 
         private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, SyntaxNode node)
         {
-            if (node.SpanContainsDirectives())
+            if (!node.SpanContainsDirectives())
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.UseStringLengthInsteadOfComparisonWithEmptyString,
+                    node);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.UseStringLengthInsteadOfComparisonWithEmptyString,
-                node);
         }
 
         private static bool IsString(ExpressionSyntax expression, SemanticModel semanticModel, CancellationToken cancellationToken)

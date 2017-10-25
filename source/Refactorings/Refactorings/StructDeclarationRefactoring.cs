@@ -19,13 +19,11 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ImplementIEquatableOfT))
                 await ImplementIEquatableOfTRefactoring.ComputeRefactoringAsync(context, structDeclaration).ConfigureAwait(false);
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
-                || !structDeclaration.BracesSpan().Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SortMemberDeclarations)
+                && structDeclaration.BracesSpan().Contains(context.Span))
             {
-                return;
+                SortMemberDeclarationsRefactoring.ComputeRefactoring(context, structDeclaration);
             }
-
-            SortMemberDeclarationsRefactoring.ComputeRefactoring(context, structDeclaration);
         }
     }
 }

@@ -14,75 +14,71 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, StatementsSelection selectedStatements)
         {
-            if (selectedStatements.Count <= 1)
+            if (selectedStatements.Count > 1)
             {
-                return;
-            }
+                StatementSyntax firstStatement = selectedStatements.First();
 
-            StatementSyntax firstStatement = selectedStatements.First();
+                SemanticModel semanticModel = null;
+                ISymbol symbol = null;
+                ObjectCreationExpressionSyntax objectCreation = null;
 
-            SemanticModel semanticModel = null;
-            ISymbol symbol = null;
-            ObjectCreationExpressionSyntax objectCreation = null;
+                SyntaxKind kind = firstStatement.Kind();
 
-            SyntaxKind kind = firstStatement.Kind();
-
-            if (kind == SyntaxKind.LocalDeclarationStatement)
-            {
-                var localDeclaration = (LocalDeclarationStatementSyntax)firstStatement;
-
-                VariableDeclaratorSyntax variable = localDeclaration
-                    .Declaration?
-                    .Variables
-                    .SingleOrDefault(throwException: false);
-
-                objectCreation = variable?.Initializer?.Value as ObjectCreationExpressionSyntax;
-
-                if (objectCreation != null)
+                if (kind == SyntaxKind.LocalDeclarationStatement)
                 {
-                    semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                    var localDeclaration = (LocalDeclarationStatementSyntax)firstStatement;
 
-                    symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
-                }
-            }
-            else if (kind == SyntaxKind.ExpressionStatement)
-            {
-                var expressionStatement = (ExpressionStatementSyntax)firstStatement;
+                    VariableDeclaratorSyntax variable = localDeclaration
+                        .Declaration?
+                        .Variables
+                        .SingleOrDefault(throwException: false);
 
-                var assignment = expressionStatement.Expression as AssignmentExpressionSyntax;
-
-                if (assignment != null)
-                {
-                    objectCreation = assignment.Right as ObjectCreationExpressionSyntax;
+                    objectCreation = variable?.Initializer?.Value as ObjectCreationExpressionSyntax;
 
                     if (objectCreation != null)
                     {
                         semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                        symbol = semanticModel.GetSymbol(assignment.Left, context.CancellationToken);
+                        symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
                     }
                 }
-            }
-
-            if (objectCreation == null
-                || symbol?.IsErrorType() != false
-                || !selectedStatements
-                    .Skip(1)
-                    .All(f => IsValidAssignmentStatement(f, symbol, semanticModel, context.CancellationToken)))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Collapse to initializer",
-                cancellationToken =>
+                else if (kind == SyntaxKind.ExpressionStatement)
                 {
-                    return RefactorAsync(
-                        context.Document,
-                        objectCreation,
-                        selectedStatements,
-                        cancellationToken);
-                });
+                    var expressionStatement = (ExpressionStatementSyntax)firstStatement;
+
+                    var assignment = expressionStatement.Expression as AssignmentExpressionSyntax;
+
+                    if (assignment != null)
+                    {
+                        objectCreation = assignment.Right as ObjectCreationExpressionSyntax;
+
+                        if (objectCreation != null)
+                        {
+                            semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            symbol = semanticModel.GetSymbol(assignment.Left, context.CancellationToken);
+                        }
+                    }
+                }
+
+                if (objectCreation != null
+                    && symbol?.IsErrorType() == false
+                    && selectedStatements
+                        .Skip(1)
+                        .All(f => IsValidAssignmentStatement(f, symbol, semanticModel, context.CancellationToken)))
+                {
+                    context.RegisterRefactoring(
+                        "Collapse to initializer",
+                        cancellationToken =>
+                        {
+                            return RefactorAsync(
+                                context.Document,
+                                objectCreation,
+                                selectedStatements,
+                                cancellationToken);
+                        });
+                }
+            }
         }
 
         public static bool IsValidAssignmentStatement(
@@ -91,38 +87,33 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (!statement.IsKind(SyntaxKind.ExpressionStatement))
+            if (statement.IsKind(SyntaxKind.ExpressionStatement))
             {
-                return false;
+                var expressionStatement = (ExpressionStatementSyntax)statement;
+
+                if (expressionStatement.Expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
+                {
+                    var assignment = (AssignmentExpressionSyntax)expressionStatement.Expression;
+
+                    if (assignment.Left?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
+                    {
+                        var memberAccess = (MemberAccessExpressionSyntax)assignment.Left;
+
+                        ISymbol expressionSymbol = semanticModel
+                            .GetSymbol(memberAccess.Expression, cancellationToken);
+
+                        if (symbol.Equals(expressionSymbol))
+                        {
+                            ISymbol leftSymbol = semanticModel.GetSymbol(assignment.Left, cancellationToken);
+
+                            if (leftSymbol?.IsProperty() == true)
+                                return true;
+                        }
+                    }
+                }
             }
 
-            var expressionStatement = (ExpressionStatementSyntax)statement;
-
-            if (expressionStatement.Expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) != true)
-            {
-                return false;
-            }
-
-            var assignment = (AssignmentExpressionSyntax)expressionStatement.Expression;
-
-            if (assignment.Left?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
-            {
-                return false;
-            }
-
-            var memberAccess = (MemberAccessExpressionSyntax)assignment.Left;
-
-            ISymbol expressionSymbol = semanticModel
-                .GetSymbol(memberAccess.Expression, cancellationToken);
-
-            if (!symbol.Equals(expressionSymbol))
-            {
-                return false;
-            }
-
-            ISymbol leftSymbol = semanticModel.GetSymbol(assignment.Left, cancellationToken);
-
-            return leftSymbol?.IsProperty() == true;
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

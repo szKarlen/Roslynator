@@ -13,39 +13,33 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, BlockSyntax block)
         {
-            if (!context.IsAnyRefactoringEnabled(
+            if (context.IsAnyRefactoringEnabled(
                 RefactoringIdentifiers.RemoveStatement,
                 RefactoringIdentifiers.DuplicateStatement,
                 RefactoringIdentifiers.CommentOutStatement))
             {
-                return;
+                StatementSyntax statement = GetStatement(context, block, block.Parent);
+
+                if (statement != null)
+                    RegisterRefactoring(context, statement);
             }
-
-            StatementSyntax statement = GetStatement(context, block, block.Parent);
-
-            if (statement != null)
-                RegisterRefactoring(context, statement);
         }
 
         public static void ComputeRefactoring(RefactoringContext context, SwitchStatementSyntax switchStatement)
         {
-            if (!switchStatement.OpenBraceToken.Span.Contains(context.Span)
-                && !switchStatement.CloseBraceToken.Span.Contains(context.Span))
+            if (switchStatement.OpenBraceToken.Span.Contains(context.Span)
+                || switchStatement.CloseBraceToken.Span.Contains(context.Span))
             {
-                return;
+                RegisterRefactoring(context, switchStatement);
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllSwitchSections)
+                    && switchStatement.Sections.Any())
+                {
+                    context.RegisterRefactoring(
+                        "Remove all sections",
+                        cancellationToken => RemoveAllSwitchSectionsAsync(context.Document, switchStatement, cancellationToken));
+                }
             }
-
-            RegisterRefactoring(context, switchStatement);
-
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllSwitchSections)
-                || !switchStatement.Sections.Any())
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Remove all sections",
-                cancellationToken => RemoveAllSwitchSectionsAsync(context.Document, switchStatement, cancellationToken));
         }
 
         private static void RegisterRefactoring(RefactoringContext context, StatementSyntax statement)
@@ -67,13 +61,11 @@ namespace Roslynator.CSharp.Refactorings
                     cancellationToken => DuplicateStatementAsync(context.Document, statement, cancellationToken));
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CommentOutStatement)
-                || isEmbedded)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CommentOutStatement)
+                && !isEmbedded)
             {
-                return;
+                CommentOutRefactoring.RegisterRefactoring(context, statement);
             }
-
-            CommentOutRefactoring.RegisterRefactoring(context, statement);
         }
 
         private static StatementSyntax GetStatement(

@@ -78,29 +78,27 @@ namespace Roslynator.CSharp.Refactorings
 
             CSharpSyntaxNode body = lambda.Body;
 
-            if (body == null)
+            if (body != null)
             {
-                return;
-            }
+                SyntaxKind kind = body.Kind();
 
-            SyntaxKind kind = body.Kind();
-
-            if (kind == SyntaxKind.Block)
-            {
-                Analyze(context, lambda, lambda.AsyncKeyword, (BlockSyntax)body);
-            }
-            else if (kind == SyntaxKind.AwaitExpression)
-            {
-                var awaitExpression = (AwaitExpressionSyntax)body;
-
-                SyntaxToken asyncKeyword = lambda.AsyncKeyword;
-
-                if (asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
-                    && !ContainsAwaitExpression(awaitExpression)
-                    && ReturnTypeAndAwaitTypeEquals(lambda, awaitExpression, context.SemanticModel, context.CancellationToken)
-                    && !lambda.SpanContainsDirectives())
+                if (kind == SyntaxKind.Block)
                 {
-                    ReportDiagnostic(context, asyncKeyword, awaitExpression);
+                    Analyze(context, lambda, lambda.AsyncKeyword, (BlockSyntax)body);
+                }
+                else if (kind == SyntaxKind.AwaitExpression)
+                {
+                    var awaitExpression = (AwaitExpressionSyntax)body;
+
+                    SyntaxToken asyncKeyword = lambda.AsyncKeyword;
+
+                    if (asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
+                        && !ContainsAwaitExpression(awaitExpression)
+                        && ReturnTypeAndAwaitTypeEquals(lambda, awaitExpression, context.SemanticModel, context.CancellationToken)
+                        && !lambda.SpanContainsDirectives())
+                    {
+                        ReportDiagnostic(context, asyncKeyword, awaitExpression);
+                    }
                 }
             }
         }
@@ -114,76 +112,70 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void Analyze(SyntaxNodeAnalysisContext context, SyntaxNode node, SyntaxToken asyncKeyword, BlockSyntax body)
         {
-            if (!asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
-                || body?.IsMissing != false
-                || node.SpanContainsDirectives())
+            if (asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
+                && body?.IsMissing == false
+                && !node.SpanContainsDirectives())
             {
-                return;
-            }
+                SyntaxList<StatementSyntax> statements = body.Statements;
 
-            SyntaxList<StatementSyntax> statements = body.Statements;
-
-            if (!statements.Any())
-            {
-                return;
-            }
-
-            StatementSyntax statement = statements.LastOrDefault(f => !f.IsKind(SyntaxKind.LocalFunctionStatement));
-
-            if (statement == null)
-            {
-                return;
-            }
-
-            SyntaxKind kind = statement.Kind();
-
-            if (kind == SyntaxKind.ReturnStatement)
-            {
-                var returnStatement = (ReturnStatementSyntax)statement;
-
-                AwaitExpressionSyntax awaitExpression = GetAwaitExpressionOrDefault(returnStatement);
-
-                if (awaitExpression != null)
+                if (statements.Any())
                 {
-                    HashSet<AwaitExpressionSyntax> awaitExpressions = CollectAwaitExpressions(body, TextSpan.FromBounds(body.SpanStart, returnStatement.Span.End));
+                    StatementSyntax statement = statements.LastOrDefault(f => !f.IsKind(SyntaxKind.LocalFunctionStatement));
 
-                    if (awaitExpressions != null)
+                    if (statement != null)
                     {
-                        if (awaitExpressions.Count == 1)
-                        {
-                            if (ReturnTypeAndAwaitTypeEquals(node, awaitExpression, context.SemanticModel, context.CancellationToken))
-                                ReportDiagnostic(context, asyncKeyword, awaitExpression);
-                        }
-                        else
-                        {
-                            int index = statements.IndexOf(returnStatement);
+                        SyntaxKind kind = statement.Kind();
 
-                            if (index > 0)
+                        if (kind == SyntaxKind.ReturnStatement)
+                        {
+                            var returnStatement = (ReturnStatementSyntax)statement;
+
+                            AwaitExpressionSyntax awaitExpression = GetAwaitExpressionOrDefault(returnStatement);
+
+                            if (awaitExpression != null)
                             {
-                                StatementSyntax previousStatement = statements[index - 1];
+                                HashSet<AwaitExpressionSyntax> awaitExpressions = CollectAwaitExpressions(body, TextSpan.FromBounds(body.SpanStart, returnStatement.Span.End));
 
-                                SyntaxKind previousStatementKind = previousStatement.Kind();
+                                if (awaitExpressions != null)
+                                {
+                                    if (awaitExpressions.Count == 1)
+                                    {
+                                        if (ReturnTypeAndAwaitTypeEquals(node, awaitExpression, context.SemanticModel, context.CancellationToken))
+                                            ReportDiagnostic(context, asyncKeyword, awaitExpression);
+                                    }
+                                    else
+                                    {
+                                        int index = statements.IndexOf(returnStatement);
 
-                                if (previousStatementKind == SyntaxKind.IfStatement)
-                                {
-                                    Analyze(context, node, asyncKeyword, awaitExpression, awaitExpressions, GetAwaitExpressionsFromIfStatement((IfStatementSyntax)previousStatement, endsWithElse: false));
-                                }
-                                else if (previousStatementKind == SyntaxKind.SwitchStatement)
-                                {
-                                    Analyze(context, node, asyncKeyword, awaitExpression, awaitExpressions, GetAwaitExpressionsFromSwitchStatement((SwitchStatementSyntax)previousStatement, containsDefaultSection: false));
+                                        if (index > 0)
+                                        {
+                                            StatementSyntax previousStatement = statements[index - 1];
+
+                                            SyntaxKind previousStatementKind = previousStatement.Kind();
+
+                                            if (previousStatementKind == SyntaxKind.IfStatement)
+                                            {
+                                                Analyze(context, node, asyncKeyword, awaitExpression, awaitExpressions, GetAwaitExpressionsFromIfStatement((IfStatementSyntax)previousStatement, endsWithElse: false));
+                                            }
+                                            else if (previousStatementKind == SyntaxKind.SwitchStatement)
+                                            {
+                                                Analyze(context, node, asyncKeyword, awaitExpression, awaitExpressions, GetAwaitExpressionsFromSwitchStatement((SwitchStatementSyntax)previousStatement, containsDefaultSection: false));
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+                        else if (kind == SyntaxKind.IfStatement)
+                        {
+                            Analyze(context, node, body, asyncKeyword, GetAwaitExpressionsFromIfStatement((IfStatementSyntax)statement, endsWithElse: true));
+                        }
+                        else if (kind == SyntaxKind.SwitchStatement)
+                        {
+                            Analyze(context, node, body, asyncKeyword, GetAwaitExpressionsFromSwitchStatement((SwitchStatementSyntax)statement, containsDefaultSection: true));
+                        }
                     }
                 }
-            }
-            else if (kind == SyntaxKind.IfStatement)
-            {
-                Analyze(context, node, body, asyncKeyword, GetAwaitExpressionsFromIfStatement((IfStatementSyntax)statement, endsWithElse: true));
-            }
-            else if (kind == SyntaxKind.SwitchStatement)
-            {
-                Analyze(context, node, body, asyncKeyword, GetAwaitExpressionsFromSwitchStatement((SwitchStatementSyntax)statement, containsDefaultSection: true));
             }
         }
 
@@ -195,22 +187,18 @@ namespace Roslynator.CSharp.Refactorings
             HashSet<AwaitExpressionSyntax> awaitExpressions,
             HashSet<AwaitExpressionSyntax> awaitExpressions2)
         {
-            if (awaitExpressions2 == null)
+            if (awaitExpressions2 != null)
             {
-                return;
+                awaitExpressions.ExceptWith(awaitExpressions2);
+
+                if (awaitExpressions.Count == 1)
+                {
+                    awaitExpressions2.Add(awaitExpression);
+
+                    if (ReturnTypeAndAwaitTypeEquals(node, awaitExpressions2, context.SemanticModel, context.CancellationToken))
+                        ReportDiagnostic(context, asyncKeyword, awaitExpressions2);
+                }
             }
-
-            awaitExpressions.ExceptWith(awaitExpressions2);
-
-            if (awaitExpressions.Count != 1)
-            {
-                return;
-            }
-
-            awaitExpressions2.Add(awaitExpression);
-
-            if (ReturnTypeAndAwaitTypeEquals(node, awaitExpressions2, context.SemanticModel, context.CancellationToken))
-                ReportDiagnostic(context, asyncKeyword, awaitExpressions2);
         }
 
         private static void Analyze(
@@ -220,14 +208,12 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxToken asyncKeyword,
             HashSet<AwaitExpressionSyntax> awaitExpressions)
         {
-            if (awaitExpressions == null
-                || ContainsOtherAwaitOrReturnWithoutAwait(body, awaitExpressions)
-                || !ReturnTypeAndAwaitTypeEquals(node, awaitExpressions, context.SemanticModel, context.CancellationToken))
+            if (awaitExpressions != null
+                && !ContainsOtherAwaitOrReturnWithoutAwait(body, awaitExpressions)
+                && ReturnTypeAndAwaitTypeEquals(node, awaitExpressions, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                ReportDiagnostic(context, asyncKeyword, awaitExpressions);
             }
-
-            ReportDiagnostic(context, asyncKeyword, awaitExpressions);
         }
 
         private static bool ContainsOtherAwaitOrReturnWithoutAwait(BlockSyntax body, HashSet<AwaitExpressionSyntax> awaitExpressions)
@@ -339,36 +325,34 @@ namespace Roslynator.CSharp.Refactorings
 
         private static AwaitExpressionSyntax GetLastReturnAwaitExpressionOfDefault(StatementSyntax statement)
         {
-            if (statement == null)
+            if (statement != null)
             {
-                return null;
-            }
+                SyntaxKind kind = statement.Kind();
 
-            SyntaxKind kind = statement.Kind();
-
-            if (kind == SyntaxKind.Block)
-            {
-                var block = (BlockSyntax)statement;
-
-                SyntaxList<StatementSyntax> statements = block.Statements;
-
-                if (statements.Any())
+                if (kind == SyntaxKind.Block)
                 {
-                    for (int i = 0; i < statements.Count - 1; i++)
-                    {
-                        if (!statements[i].IsKind(SyntaxKind.LocalFunctionStatement)
-                            && ContainsAwaitExpression(statements[i]))
-                        {
-                            return null;
-                        }
-                    }
+                    var block = (BlockSyntax)statement;
 
-                    return GetAwaitExpressionOrDefault(statements.Last());
+                    SyntaxList<StatementSyntax> statements = block.Statements;
+
+                    if (statements.Any())
+                    {
+                        for (int i = 0; i < statements.Count - 1; i++)
+                        {
+                            if (!statements[i].IsKind(SyntaxKind.LocalFunctionStatement)
+                                && ContainsAwaitExpression(statements[i]))
+                            {
+                                return null;
+                            }
+                        }
+
+                        return GetAwaitExpressionOrDefault(statements.Last());
+                    }
                 }
-            }
-            else if (kind == SyntaxKind.ReturnStatement)
-            {
-                return GetAwaitExpressionOrDefault((ReturnStatementSyntax)statement);
+                else if (kind == SyntaxKind.ReturnStatement)
+                {
+                    return GetAwaitExpressionOrDefault((ReturnStatementSyntax)statement);
+                }
             }
 
             return null;
@@ -390,15 +374,13 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax expression = returnStatement.Expression;
 
-            if (expression?.IsKind(SyntaxKind.AwaitExpression) != true)
+            if (expression?.IsKind(SyntaxKind.AwaitExpression) == true)
             {
-                return null;
+                var awaitExpression = (AwaitExpressionSyntax)expression;
+
+                if (!ContainsAwaitExpression(awaitExpression))
+                    return awaitExpression;
             }
-
-            var awaitExpression = (AwaitExpressionSyntax)expression;
-
-            if (!ContainsAwaitExpression(awaitExpression))
-                return awaitExpression;
 
             return null;
         }
@@ -409,29 +391,23 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxToken asyncKeyword,
             ArrowExpressionClauseSyntax expressionBody)
         {
-            if (!asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
-                || expressionBody?.IsMissing != false)
+            if (asyncKeyword.IsKind(SyntaxKind.AsyncKeyword)
+                && expressionBody?.IsMissing == false)
             {
-                return;
+                ExpressionSyntax expression = expressionBody.Expression;
+
+                if (expression?.IsKind(SyntaxKind.AwaitExpression) == true)
+                {
+                    var awaitExpression = (AwaitExpressionSyntax)expression;
+
+                    if (ReturnTypeAndAwaitTypeEquals(node, awaitExpression, context.SemanticModel, context.CancellationToken)
+                        && !ContainsAwaitExpression(awaitExpression)
+                        && !node.SpanContainsDirectives())
+                    {
+                        ReportDiagnostic(context, asyncKeyword, awaitExpression);
+                    }
+                }
             }
-
-            ExpressionSyntax expression = expressionBody.Expression;
-
-            if (expression?.IsKind(SyntaxKind.AwaitExpression) != true)
-            {
-                return;
-            }
-
-            var awaitExpression = (AwaitExpressionSyntax)expression;
-
-            if (!ReturnTypeAndAwaitTypeEquals(node, awaitExpression, context.SemanticModel, context.CancellationToken)
-                || ContainsAwaitExpression(awaitExpression)
-                || node.SpanContainsDirectives())
-            {
-                return;
-            }
-
-            ReportDiagnostic(context, asyncKeyword, awaitExpression);
         }
 
         private static bool ReturnTypeAndAwaitTypeEquals(
@@ -468,15 +444,13 @@ namespace Roslynator.CSharp.Refactorings
         {
             IMethodSymbol methodSymbol = GetMethodSymbol(node, semanticModel, cancellationToken);
 
-            if (methodSymbol == null)
+            if (methodSymbol != null)
             {
-                return null;
+                var returnType = methodSymbol.ReturnType as INamedTypeSymbol;
+
+                if (returnType?.IsConstructedFromTaskOfT(semanticModel) == true)
+                    return returnType.TypeArguments.Single();
             }
-
-            var returnType = methodSymbol.ReturnType as INamedTypeSymbol;
-
-            if (returnType?.IsConstructedFromTaskOfT(semanticModel) == true)
-                return returnType.TypeArguments.Single();
 
             return null;
         }
@@ -530,28 +504,22 @@ namespace Roslynator.CSharp.Refactorings
 
             var typeSymbol = semanticModel.GetTypeSymbol(expression, cancellationToken) as INamedTypeSymbol;
 
-            if (typeSymbol?.ConstructedFrom.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_Runtime_CompilerServices_ConfiguredTaskAwaitable_T)) != true)
+            if (typeSymbol?.ConstructedFrom.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_Runtime_CompilerServices_ConfiguredTaskAwaitable_T)) == true)
             {
-                return;
+                var invocation = expression as InvocationExpressionSyntax;
+
+                if (invocation != null)
+                {
+                    var memberAccess = invocation.Expression as MemberAccessExpressionSyntax;
+
+                    if (string.Equals(memberAccess?.Name?.Identifier.ValueText, "ConfigureAwait", StringComparison.Ordinal))
+                    {
+                        context.ReportNode(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, memberAccess.Name);
+                        context.ReportToken(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, memberAccess.OperatorToken);
+                        context.ReportNode(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, invocation.ArgumentList);
+                    }
+                }
             }
-
-            var invocation = expression as InvocationExpressionSyntax;
-
-            if (invocation == null)
-            {
-                return;
-            }
-
-            var memberAccess = invocation.Expression as MemberAccessExpressionSyntax;
-
-            if (!string.Equals(memberAccess?.Name?.Identifier.ValueText, "ConfigureAwait", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            context.ReportNode(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, memberAccess.Name);
-            context.ReportToken(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, memberAccess.OperatorToken);
-            context.ReportNode(DiagnosticDescriptors.RemoveRedundantAsyncAwaitFadeOut, invocation.ArgumentList);
         }
 
         private static bool ContainsAwaitExpression(SyntaxNode node)

@@ -15,21 +15,20 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<InterpolatedStringContentSyntax> contents = interpolatedString.Contents;
 
-            if (contents.Count != 1)
+            if (contents.Count == 1)
             {
-                return false;
+                InterpolatedStringContentSyntax content = contents[0];
+
+                if (content.IsKind(SyntaxKind.Interpolation))
+                {
+                    var interpolation = (InterpolationSyntax)content;
+
+                    if (interpolation?.IsMissing == false)
+                        return true;
+                }
             }
 
-            InterpolatedStringContentSyntax content = contents[0];
-
-            if (!content.IsKind(SyntaxKind.Interpolation))
-            {
-                return false;
-            }
-
-            var interpolation = (InterpolationSyntax)content;
-
-            return interpolation?.IsMissing == false;
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

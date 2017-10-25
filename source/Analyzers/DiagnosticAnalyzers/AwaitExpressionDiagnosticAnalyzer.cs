@@ -32,14 +32,12 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var awaitExpression = (AwaitExpressionSyntax)context.Node;
 
-            if (!CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, context.SemanticModel, context.CancellationToken))
+            if (CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.CallConfigureAwait,
+                    awaitExpression.Expression);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.CallConfigureAwait,
-                awaitExpression.Expression);
         }
     }
 }

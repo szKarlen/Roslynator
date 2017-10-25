@@ -15,28 +15,24 @@ namespace Roslynator.CSharp.Refactorings
         {
             var symbol = (INamedTypeSymbol)context.Symbol;
 
-            if (!symbol.IsClass()
-                || symbol.IsStatic
-                || symbol.IsImplicitClass
-                || symbol.IsImplicitlyDeclared)
+            if (symbol.IsClass()
+                && !symbol.IsStatic
+                && !symbol.IsImplicitClass
+                && !symbol.IsImplicitlyDeclared)
             {
-                return;
+                INamedTypeSymbol baseType = symbol.BaseType;
+
+                if (baseType?.IsObject() == false
+                    && baseType.EqualsOrInheritsFrom(context.Compilation.GetTypeByMetadataName(MetadataNames.System_Exception))
+                    && GenerateBaseConstructorsRefactoring.IsAnyBaseConstructorMissing(symbol, baseType))
+                {
+                    var classDeclaration = symbol.GetSyntax(context.CancellationToken) as ClassDeclarationSyntax;
+
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.ImplementExceptionConstructors,
+                        classDeclaration.Identifier);
+                }
             }
-
-            INamedTypeSymbol baseType = symbol.BaseType;
-
-            if (baseType?.IsObject() != false
-                || !baseType.EqualsOrInheritsFrom(context.Compilation.GetTypeByMetadataName(MetadataNames.System_Exception))
-                || !GenerateBaseConstructorsRefactoring.IsAnyBaseConstructorMissing(symbol, baseType))
-            {
-                return;
-            }
-
-            var classDeclaration = symbol.GetSyntax(context.CancellationToken) as ClassDeclarationSyntax;
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.ImplementExceptionConstructors,
-                classDeclaration.Identifier);
         }
 
         public static async Task<Document> RefactorAsync(

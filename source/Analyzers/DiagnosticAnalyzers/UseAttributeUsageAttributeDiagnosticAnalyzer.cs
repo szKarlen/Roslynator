@@ -28,15 +28,13 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
                 INamedTypeSymbol attributeSymbol = startContext.Compilation.GetTypeByMetadataName(MetadataNames.System_Attribute);
                 INamedTypeSymbol attributeUsageAttributeSymbol = startContext.Compilation.GetTypeByMetadataName(MetadataNames.System_AttributeUsageAttribute);
 
-                if (attributeSymbol == null
-                    || attributeUsageAttributeSymbol == null)
+                if (attributeSymbol != null
+                    && attributeUsageAttributeSymbol != null)
                 {
-                    return;
+                    startContext.RegisterSymbolAction(
+                       nodeContext => UseAttributeUsageAttributeRefactoring.AnalyzerNamedTypeSymbol(nodeContext, attributeSymbol, attributeUsageAttributeSymbol),
+                       SymbolKind.NamedType);
                 }
-
-                startContext.RegisterSymbolAction(
-                   nodeContext => UseAttributeUsageAttributeRefactoring.AnalyzerNamedTypeSymbol(nodeContext, attributeSymbol, attributeUsageAttributeSymbol),
-                   SymbolKind.NamedType);
             });
         }
     }

@@ -395,17 +395,15 @@ namespace Roslynator
             if (symbol == null)
                 throw new ArgumentNullException(nameof(symbol));
 
-            if (attributeSymbol == null)
+            if (attributeSymbol != null)
             {
-                return false;
-            }
+                ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
 
-            ImmutableArray<AttributeData> attributes = symbol.GetAttributes();
-
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i].AttributeClass.Equals(attributeSymbol))
-                    return true;
+                for (int i = 0; i < attributes.Length; i++)
+                {
+                    if (attributes[i].AttributeClass.Equals(attributeSymbol))
+                        return true;
+                }
             }
 
             return false;
@@ -415,22 +413,18 @@ namespace Roslynator
         {
             ImmutableArray<AttributeData> attributes = typeSymbol.GetAttributes();
 
-            if (!attributes.Any())
+            if (attributes.Any())
             {
-                return null;
-            }
+                INamedTypeSymbol attributeType = compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
 
-            INamedTypeSymbol attributeType = compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
-
-            if (attributeType == null)
-            {
-                return null;
-            }
-
-            foreach (AttributeData attributeData in attributes)
-            {
-                if (attributeData.AttributeClass.Equals(attributeType))
-                    return attributeData;
+                if (attributeType != null)
+                {
+                    foreach (AttributeData attributeData in attributes)
+                    {
+                        if (attributeData.AttributeClass.Equals(attributeType))
+                            return attributeData;
+                    }
+                }
             }
 
             return null;
@@ -504,15 +498,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is bool
+                    && (bool)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is bool
-                && (bool)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, char value)
@@ -520,15 +514,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is char
+                    && (char)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is char
-                && (char)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, sbyte value)
@@ -536,15 +530,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is sbyte
+                    && (sbyte)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is sbyte
-                && (sbyte)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, byte value)
@@ -552,15 +546,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is byte
+                    && (byte)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is byte
-                && (byte)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, short value)
@@ -568,15 +562,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is short
+                    && (short)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is short
-                && (short)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, ushort value)
@@ -584,15 +578,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is ushort
+                    && (ushort)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is ushort
-                && (ushort)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, int value)
@@ -600,15 +594,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is int
+                    && (int)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is int
-                && (int)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, uint value)
@@ -616,15 +610,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is uint
+                    && (uint)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is uint
-                && (uint)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, long value)
@@ -632,15 +626,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is long
+                    && (long)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is long
-                && (long)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, ulong value)
@@ -648,15 +642,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is ulong
+                    && (ulong)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is ulong
-                && (ulong)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, decimal value)
@@ -664,15 +658,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is decimal
+                    && (decimal)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is decimal
-                && (decimal)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, float value)
@@ -680,15 +674,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is float
+                    && (float)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is float
-                && (float)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, double value)
@@ -696,15 +690,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is double
+                    && (double)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is double
-                && (double)constantValue == value;
+            return false;
         }
 
         public static bool HasConstantValue(this IFieldSymbol fieldSymbol, string value)
@@ -712,15 +706,15 @@ namespace Roslynator
             if (fieldSymbol == null)
                 throw new ArgumentNullException(nameof(fieldSymbol));
 
-            if (!fieldSymbol.HasConstantValue)
+            if (fieldSymbol.HasConstantValue)
             {
-                return false;
+                object constantValue = fieldSymbol.ConstantValue;
+
+                return constantValue is string
+                    && (string)constantValue == value;
             }
 
-            object constantValue = fieldSymbol.ConstantValue;
-
-            return constantValue is string
-                && (string)constantValue == value;
+            return false;
         }
         #endregion IFieldSymbol
 
@@ -756,16 +750,16 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!methodSymbol.ReturnsVoid)
+            if (methodSymbol.ReturnsVoid)
             {
-                return false;
+                ImmutableArray<IParameterSymbol> parameters = methodSymbol.Parameters;
+
+                return parameters.Length == 2
+                    && parameters[0].Type.IsObject()
+                    && parameters[1].Type.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_EventArgs));
             }
 
-            ImmutableArray<IParameterSymbol> parameters = methodSymbol.Parameters;
-
-            return parameters.Length == 2
-                && parameters[0].Type.IsObject()
-                && parameters[1].Type.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_EventArgs));
+            return false;
         }
 
         public static bool IsReducedExtensionMethod(this IMethodSymbol methodSymbol)
@@ -786,13 +780,13 @@ namespace Roslynator
             if (parameterSymbol == null)
                 throw new ArgumentNullException(nameof(parameterSymbol));
 
-            if (!parameterSymbol.IsParams)
+            if (parameterSymbol.IsParams)
             {
-                return false;
+                var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
+                return arrayType?.ElementType.SpecialType == elementType;
             }
 
-            var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
-            return arrayType?.ElementType.SpecialType == elementType;
+            return false;
         }
 
         public static bool IsParamsOf(
@@ -803,14 +797,14 @@ namespace Roslynator
             if (parameterSymbol == null)
                 throw new ArgumentNullException(nameof(parameterSymbol));
 
-            if (!parameterSymbol.IsParams)
+            if (parameterSymbol.IsParams)
             {
-                return false;
+                var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
+
+                return arrayType?.ElementType.IsSpecialType(elementType1, elementType2) == true;
             }
 
-            var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
-
-            return arrayType?.ElementType.IsSpecialType(elementType1, elementType2) == true;
+            return false;
         }
 
         public static bool IsParamsOf(
@@ -822,14 +816,14 @@ namespace Roslynator
             if (parameterSymbol == null)
                 throw new ArgumentNullException(nameof(parameterSymbol));
 
-            if (!parameterSymbol.IsParams)
+            if (parameterSymbol.IsParams)
             {
-                return false;
+                var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
+
+                return arrayType?.ElementType.IsSpecialType(elementType1, elementType2, elementType3) == true;
             }
 
-            var arrayType = parameterSymbol.Type as IArrayTypeSymbol;
-
-            return arrayType?.ElementType.IsSpecialType(elementType1, elementType2, elementType3) == true;
+            return false;
         }
 
         public static bool IsRef(this IParameterSymbol parameterSymbol)
@@ -888,26 +882,24 @@ namespace Roslynator
         {
             ImmutableArray<ITypeSymbol> typeArguments = namedTypeSymbol.TypeArguments;
 
-            if (typeArguments.Length <= 0)
+            if (typeArguments.Length > 0)
             {
-                return false;
-            }
+                var stack = new Stack<ITypeSymbol>(typeArguments);
 
-            var stack = new Stack<ITypeSymbol>(typeArguments);
-
-            while (stack.Count > 0)
-            {
-                ITypeSymbol type = stack.Pop();
-
-                if (type.IsAnonymousType)
-                    return true;
-
-                if (type.IsNamedType())
+                while (stack.Count > 0)
                 {
-                    typeArguments = ((INamedTypeSymbol)type).TypeArguments;
+                    ITypeSymbol type = stack.Pop();
 
-                    for (int i = 0; i < typeArguments.Length; i++)
-                        stack.Push(typeArguments[i]);
+                    if (type.IsAnonymousType)
+                        return true;
+
+                    if (type.IsNamedType())
+                    {
+                        typeArguments = ((INamedTypeSymbol)type).TypeArguments;
+
+                        for (int i = 0; i < typeArguments.Length; i++)
+                            stack.Push(typeArguments[i]);
+                    }
                 }
             }
 
@@ -1005,54 +997,52 @@ namespace Roslynator
 
             ImmutableArray<ITypeSymbol> constraintTypes = typeParameterSymbol.ConstraintTypes;
 
-            if (!constraintTypes.Any())
+            if (constraintTypes.Any())
             {
-                return true;
-            }
+                var stack = new Stack<ITypeSymbol>(constraintTypes);
 
-            var stack = new Stack<ITypeSymbol>(constraintTypes);
-
-            while (stack.Count > 0)
-            {
-                ITypeSymbol type = stack.Pop();
-
-                switch (type.TypeKind)
+                while (stack.Count > 0)
                 {
-                    case TypeKind.Class:
-                        {
-                            if (!allowReference)
-                                return false;
+                    ITypeSymbol type = stack.Pop();
 
-                            break;
-                        }
-                    case TypeKind.Struct:
-                        {
-                            if (allowValueType)
-                                return false;
+                    switch (type.TypeKind)
+                    {
+                        case TypeKind.Class:
+                            {
+                                if (!allowReference)
+                                    return false;
 
-                            break;
-                        }
-                    case TypeKind.Interface:
-                        {
-                            break;
-                        }
-                    case TypeKind.TypeParameter:
-                        {
-                            var typeParameterSymbol2 = (ITypeParameterSymbol)type;
+                                break;
+                            }
+                        case TypeKind.Struct:
+                            {
+                                if (allowValueType)
+                                    return false;
 
-                            if (!CheckConstraint(typeParameterSymbol2, allowReference, allowValueType, allowConstructor))
-                                return false;
+                                break;
+                            }
+                        case TypeKind.Interface:
+                            {
+                                break;
+                            }
+                        case TypeKind.TypeParameter:
+                            {
+                                var typeParameterSymbol2 = (ITypeParameterSymbol)type;
 
-                            foreach (ITypeSymbol constraintType in typeParameterSymbol2.ConstraintTypes)
-                                stack.Push(constraintType);
+                                if (!CheckConstraint(typeParameterSymbol2, allowReference, allowValueType, allowConstructor))
+                                    return false;
 
-                            break;
-                        }
-                    default:
-                        {
-                            Debug.Fail(type.TypeKind.ToString());
-                            break;
-                        }
+                                foreach (ITypeSymbol constraintType in typeParameterSymbol2.ConstraintTypes)
+                                    stack.Push(constraintType);
+
+                                break;
+                            }
+                        default:
+                            {
+                                Debug.Fail(type.TypeKind.ToString());
+                                break;
+                            }
+                    }
                 }
             }
 
@@ -1201,17 +1191,15 @@ namespace Roslynator
             if (typeSymbol == null)
                 throw new ArgumentNullException(nameof(typeSymbol));
 
-            if (interfaceSymbol == null)
+            if (interfaceSymbol != null)
             {
-                return false;
-            }
+                ImmutableArray<INamedTypeSymbol> allInterfaces = typeSymbol.AllInterfaces;
 
-            ImmutableArray<INamedTypeSymbol> allInterfaces = typeSymbol.AllInterfaces;
-
-            for (int i = 0; i < allInterfaces.Length; i++)
-            {
-                if (allInterfaces[i].Equals(interfaceSymbol))
-                    return true;
+                for (int i = 0; i < allInterfaces.Length; i++)
+                {
+                    if (allInterfaces[i].Equals(interfaceSymbol))
+                        return true;
+                }
             }
 
             return false;
@@ -1702,28 +1690,28 @@ namespace Roslynator
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (!typeSymbol.IsNamedType())
+            if (typeSymbol.IsNamedType())
             {
-                return false;
+                INamedTypeSymbol taskOfT = semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T);
+
+                return ((INamedTypeSymbol)typeSymbol).ConstructedFrom.EqualsOrInheritsFrom(taskOfT);
             }
 
-            INamedTypeSymbol taskOfT = semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T);
-
-            return ((INamedTypeSymbol)typeSymbol).ConstructedFrom.EqualsOrInheritsFrom(taskOfT);
+            return false;
         }
 
         internal static bool IsConstructedFromImmutableArrayOfT(this ITypeSymbol typeSymbol, SemanticModel semanticModel)
         {
-            if (typeSymbol.Kind != SymbolKind.NamedType)
+            if (typeSymbol.Kind == SymbolKind.NamedType)
             {
-                return false;
+                INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Immutable_ImmutableArray_T);
+
+                return symbol != null
+                    && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(symbol);
             }
 
-            INamedTypeSymbol symbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Immutable_ImmutableArray_T);
-
-            return symbol != null
-                && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(symbol);
-        }
+            return false;
+       }
 
         public static bool IsIEnumerable(this ITypeSymbol typeSymbol)
         {
@@ -1738,15 +1726,15 @@ namespace Roslynator
             if (typeArgument == null)
                 throw new ArgumentNullException(nameof(typeArgument));
 
-            if (!typeSymbol.IsNamedType())
+            if (typeSymbol.IsNamedType())
             {
-                return false;
+                var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
+
+                return IsConstructedFrom(namedTypeSymbol, SpecialType.System_Collections_Generic_IEnumerable_T)
+                    && namedTypeSymbol.TypeArguments[0].Equals(typeArgument);
             }
 
-            var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-            return IsConstructedFrom(namedTypeSymbol, SpecialType.System_Collections_Generic_IEnumerable_T)
-                && namedTypeSymbol.TypeArguments[0].Equals(typeArgument);
+            return false;
         }
 
         public static bool IsIEnumerableOf(this ITypeSymbol typeSymbol, Func<ITypeSymbol, bool> typeArgumentPredicate)
@@ -1757,15 +1745,15 @@ namespace Roslynator
             if (typeArgumentPredicate == null)
                 throw new ArgumentNullException(nameof(typeArgumentPredicate));
 
-            if (!typeSymbol.IsNamedType())
+            if (typeSymbol.IsNamedType())
             {
-                return false;
+                var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
+
+                return namedTypeSymbol.ConstructedFrom.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
+                    && typeArgumentPredicate(namedTypeSymbol.TypeArguments[0]);
             }
 
-            var namedTypeSymbol = (INamedTypeSymbol)typeSymbol;
-
-            return namedTypeSymbol.ConstructedFrom.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T
-                && typeArgumentPredicate(namedTypeSymbol.TypeArguments[0]);
+            return false;
         }
 
         public static bool IsConstructedFromIEnumerableOfT(this ITypeSymbol typeSymbol)

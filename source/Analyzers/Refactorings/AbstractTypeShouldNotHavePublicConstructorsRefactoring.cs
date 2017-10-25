@@ -18,40 +18,34 @@ namespace Roslynator.CSharp.Refactorings
 
             Accessibility accessibility = constructorDeclaration.Modifiers.GetAccessibility();
 
-            if (accessibility != Accessibility.Public
-                && accessibility != Accessibility.ProtectedOrInternal)
+            if (accessibility == Accessibility.Public
+                || accessibility == Accessibility.ProtectedOrInternal)
             {
-                return;
+                if (constructorDeclaration.IsParentKind(SyntaxKind.ClassDeclaration))
+                {
+                    var classDeclaration = (ClassDeclarationSyntax)constructorDeclaration.Parent;
+
+                    SyntaxTokenList modifiers = classDeclaration.Modifiers;
+
+                    bool isAbstract = modifiers.Contains(SyntaxKind.AbstractKeyword);
+
+                    if (!isAbstract
+                        && modifiers.Contains(SyntaxKind.PartialKeyword))
+                    {
+                        INamedTypeSymbol classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, context.CancellationToken);
+
+                        if (classSymbol != null)
+                            isAbstract = classSymbol.IsAbstract;
+                    }
+
+                    if (isAbstract)
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.AbstractTypeShouldNotHavePublicConstructors,
+                            constructorDeclaration.Identifier);
+                    }
+                }
             }
-
-            if (!constructorDeclaration.IsParentKind(SyntaxKind.ClassDeclaration))
-            {
-                return;
-            }
-
-            var classDeclaration = (ClassDeclarationSyntax)constructorDeclaration.Parent;
-
-            SyntaxTokenList modifiers = classDeclaration.Modifiers;
-
-            bool isAbstract = modifiers.Contains(SyntaxKind.AbstractKeyword);
-
-            if (!isAbstract
-                && modifiers.Contains(SyntaxKind.PartialKeyword))
-            {
-                INamedTypeSymbol classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, context.CancellationToken);
-
-                if (classSymbol != null)
-                    isAbstract = classSymbol.IsAbstract;
-            }
-
-            if (!isAbstract)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AbstractTypeShouldNotHavePublicConstructors,
-                constructorDeclaration.Identifier);
         }
 
         public static Task<Document> RefactorAsync(

@@ -91,18 +91,16 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (variableDeclarator.SyntaxTree != root.SyntaxTree)
+            if (variableDeclarator.SyntaxTree == root.SyntaxTree)
             {
-                yield break;
-            }
-
-            if (fieldDeclaration.Declaration.Variables.Count == 1)
-            {
-                yield return fieldDeclaration;
-            }
-            else
-            {
-                yield return variableDeclarator;
+                if (fieldDeclaration.Declaration.Variables.Count == 1)
+                {
+                    yield return fieldDeclaration;
+                }
+                else
+                {
+                    yield return variableDeclarator;
+                }
             }
         }
     }

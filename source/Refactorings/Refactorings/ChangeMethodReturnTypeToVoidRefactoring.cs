@@ -12,63 +12,51 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, MethodDeclarationSyntax methodDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeMethodReturnTypeToVoid))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeMethodReturnTypeToVoid))
             {
-                return;
-            }
+                TypeSyntax returnType = methodDeclaration.ReturnType;
 
-            TypeSyntax returnType = methodDeclaration.ReturnType;
-
-            if (returnType?.IsVoid() != false)
-            {
-                return;
-            }
-
-            BlockSyntax body = methodDeclaration.Body;
-
-            if (body == null)
-            {
-                return;
-            }
-
-            SyntaxList<StatementSyntax> statements = body.Statements;
-
-            if (!statements.Any()
-                || ContainsOnlyThrowStatement(statements)
-                || methodDeclaration.ContainsYield())
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
-
-            if (methodSymbol?.IsOverride != false
-                || methodSymbol.ImplementsInterfaceMember()
-                || IsAsyncMethodThatReturnsTask(methodSymbol, semanticModel))
-            {
-                return;
-            }
-
-            ControlFlowAnalysis analysis = semanticModel.AnalyzeControlFlow(body);
-
-            if (!analysis.Succeeded
-                || !analysis.ReturnStatements.All(IsReturnStatementWithoutExpression))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Change return type to 'void'",
-                cancellationToken =>
+                if (returnType?.IsVoid() == false)
                 {
-                    return ChangeTypeRefactoring.ChangeTypeAsync(
-                        context.Document,
-                        returnType,
-                        CSharpFactory.VoidType(),
-                        cancellationToken);
-                });
+                    BlockSyntax body = methodDeclaration.Body;
+
+                    if (body != null)
+                    {
+                        SyntaxList<StatementSyntax> statements = body.Statements;
+
+                        if (statements.Any()
+                            && !ContainsOnlyThrowStatement(statements)
+                            && !methodDeclaration.ContainsYield())
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
+
+                            if (methodSymbol?.IsOverride == false
+                                && !methodSymbol.ImplementsInterfaceMember()
+                                && !IsAsyncMethodThatReturnsTask(methodSymbol, semanticModel))
+                            {
+                                ControlFlowAnalysis analysis = semanticModel.AnalyzeControlFlow(body);
+
+                                if (analysis.Succeeded
+                                    && analysis.ReturnStatements.All(IsReturnStatementWithoutExpression))
+                                {
+                                    context.RegisterRefactoring(
+                                        "Change return type to 'void'",
+                                        cancellationToken =>
+                                        {
+                                            return ChangeTypeRefactoring.ChangeTypeAsync(
+                                                context.Document,
+                                                returnType,
+                                                CSharpFactory.VoidType(),
+                                                cancellationToken);
+                                        });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private static bool ContainsOnlyThrowStatement(SyntaxList<StatementSyntax> statements)
@@ -79,15 +67,15 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsAsyncMethodThatReturnsTask(IMethodSymbol methodSymbol, SemanticModel semanticModel)
         {
-            if (!methodSymbol.IsAsync)
+            if (methodSymbol.IsAsync)
             {
-                return false;
+                ITypeSymbol returnType = methodSymbol.ReturnType;
+
+                return returnType?.IsErrorType() == false
+                    && returnType.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task));
             }
 
-            ITypeSymbol returnType = methodSymbol.ReturnType;
-
-            return returnType?.IsErrorType() == false
-                && returnType.Equals(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task));
+            return false;
         }
 
         private static bool IsReturnStatementWithoutExpression(SyntaxNode node)

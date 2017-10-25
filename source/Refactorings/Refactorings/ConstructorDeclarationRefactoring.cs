@@ -19,13 +19,11 @@ namespace Roslynator.CSharp.Refactorings
                     cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, constructorDeclaration, cancellationToken));
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
-                || !constructorDeclaration.HeaderSpanIncludingInitializer().Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && constructorDeclaration.HeaderSpanIncludingInitializer().Contains(context.Span))
             {
-                return;
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, constructorDeclaration).ConfigureAwait(false);
             }
-
-            await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, constructorDeclaration).ConfigureAwait(false);
         }
     }
 }

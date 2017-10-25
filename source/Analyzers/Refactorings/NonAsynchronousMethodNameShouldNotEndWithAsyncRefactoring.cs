@@ -17,23 +17,21 @@ namespace Roslynator.CSharp.Refactorings
         {
             IMethodSymbol methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
 
-            if (methodSymbol?.IsAsync != false
-                || methodSymbol.IsAbstract
-                || !methodSymbol.Name.EndsWith(AsyncSuffix, StringComparison.Ordinal)
-                || methodSymbol.ReturnType.IsTaskOrInheritsFromTask(context.SemanticModel))
+            if (methodSymbol?.IsAsync == false
+                && !methodSymbol.IsAbstract
+                && methodSymbol.Name.EndsWith(AsyncSuffix, StringComparison.Ordinal)
+                && !methodSymbol.ReturnType.IsTaskOrInheritsFromTask(context.SemanticModel))
             {
-                return;
+                SyntaxToken identifier = methodDeclaration.Identifier;
+
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.NonAsynchronousMethodNameShouldNotEndWithAsync,
+                    identifier);
+
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.NonAsynchronousMethodNameShouldNotEndWithAsyncFadeOut,
+                    Location.Create(identifier.SyntaxTree, TextSpan.FromBounds(identifier.Span.End - AsyncSuffix.Length, identifier.Span.End)));
             }
-
-            SyntaxToken identifier = methodDeclaration.Identifier;
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.NonAsynchronousMethodNameShouldNotEndWithAsync,
-                identifier);
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.NonAsynchronousMethodNameShouldNotEndWithAsyncFadeOut,
-                Location.Create(identifier.SyntaxTree, TextSpan.FromBounds(identifier.Span.End - AsyncSuffix.Length, identifier.Span.End)));
         }
     }
 }

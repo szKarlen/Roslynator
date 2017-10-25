@@ -63,26 +63,22 @@ namespace Roslynator.VisualStudio
                 shouldSave = true;
             }
 
-            if (!shouldSave)
+            if (shouldSave)
             {
-                return;
+                LastMaxId = MaxId;
+                SaveSettingsToStorage();
             }
-
-            LastMaxId = MaxId;
-            SaveSettingsToStorage();
         }
 
         protected override void OnActivate(CancelEventArgs e)
         {
             base.OnActivate(e);
 
-            if (_isActive)
+            if (!_isActive)
             {
-                return;
+                Fill(_control.Items);
+                _isActive = true;
             }
-
-            Fill(_control.Items);
-            _isActive = true;
         }
 
         protected override void OnClosed(EventArgs e)

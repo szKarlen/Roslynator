@@ -13,14 +13,12 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, BinaryExpressionSyntax binaryExpression)
         {
-            if (!CanRefactor(binaryExpression))
+            if (CanRefactor(binaryExpression))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Swap expressions",
+                    cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Swap expressions",
-                cancellationToken => RefactorAsync(context.Document, binaryExpression, cancellationToken));
         }
 
         public static bool CanRefactor(BinaryExpressionSyntax binaryExpression)

@@ -39,24 +39,22 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var lambda = (LambdaExpressionSyntax)context.Node;
 
-            if (lambda.ContainsDiagnostics
-                || !SimplifyLambdaExpressionRefactoring.CanRefactor(lambda))
+            if (!lambda.ContainsDiagnostics
+                && SimplifyLambdaExpressionRefactoring.CanRefactor(lambda))
             {
-                return;
+                CSharpSyntaxNode body = lambda.Body;
+
+                context.ReportDiagnostic(DiagnosticDescriptors.SimplifyLambdaExpression, body);
+
+                var block = (BlockSyntax)body;
+
+                context.ReportBraces(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, block);
+
+                StatementSyntax statement = block.Statements[0];
+
+                if (statement.IsKind(SyntaxKind.ReturnStatement))
+                    context.ReportToken(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, ((ReturnStatementSyntax)statement).ReturnKeyword);
             }
-
-            CSharpSyntaxNode body = lambda.Body;
-
-            context.ReportDiagnostic(DiagnosticDescriptors.SimplifyLambdaExpression, body);
-
-            var block = (BlockSyntax)body;
-
-            context.ReportBraces(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, block);
-
-            StatementSyntax statement = block.Statements[0];
-
-            if (statement.IsKind(SyntaxKind.ReturnStatement))
-                context.ReportToken(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, ((ReturnStatementSyntax)statement).ReturnKeyword);
         }
     }
 }

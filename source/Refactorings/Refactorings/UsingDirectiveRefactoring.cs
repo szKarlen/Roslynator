@@ -34,16 +34,14 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.InlineUsingStatic)
-                || !usingDirective.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
-                || !usingDirective.IsParentKind(SyntaxKind.CompilationUnit, SyntaxKind.NamespaceDeclaration))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.InlineUsingStatic)
+                && usingDirective.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
+                && usingDirective.IsParentKind(SyntaxKind.CompilationUnit, SyntaxKind.NamespaceDeclaration))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Inline using static",
+                    cancellationToken => InlineUsingStaticRefactoring.RefactorAsync(context.Document, usingDirective, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Inline using static",
-                cancellationToken => InlineUsingStaticRefactoring.RefactorAsync(context.Document, usingDirective, cancellationToken));
         }
     }
 }

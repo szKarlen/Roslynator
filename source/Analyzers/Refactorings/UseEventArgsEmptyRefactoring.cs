@@ -18,16 +18,14 @@ namespace Roslynator.CSharp.Refactorings
 
             var objectCreation = (ObjectCreationExpressionSyntax)context.Node;
 
-            if (objectCreation.ArgumentList?.Arguments.Count != 0
-                || objectCreation.Initializer != null)
+            if (objectCreation.ArgumentList?.Arguments.Count == 0
+                && objectCreation.Initializer == null)
             {
-                return;
+                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(objectCreation, context.CancellationToken);
+
+                if (typeSymbol?.Equals(eventArgsSymbol) == true)
+                    context.ReportDiagnostic(DiagnosticDescriptors.UseEventArgsEmpty, objectCreation);
             }
-
-            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(objectCreation, context.CancellationToken);
-
-            if (typeSymbol?.Equals(eventArgsSymbol) == true)
-                context.ReportDiagnostic(DiagnosticDescriptors.UseEventArgsEmpty, objectCreation);
         }
 
         public static async Task<Document> RefactorAsync(

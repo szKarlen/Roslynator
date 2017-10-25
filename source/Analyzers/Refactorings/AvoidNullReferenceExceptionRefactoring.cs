@@ -45,24 +45,20 @@ namespace Roslynator.CSharp.Refactorings
         {
             var asExpression = (BinaryExpressionSyntax)context.Node;
 
-            if (!asExpression.IsParentKind(SyntaxKind.ParenthesizedExpression))
+            if (asExpression.IsParentKind(SyntaxKind.ParenthesizedExpression))
             {
-                return;
+                var expression = (ExpressionSyntax)asExpression.Parent;
+
+                expression = expression.WalkUpParentheses();
+
+                if (IsExpressionOfAccessExpression(expression)
+                    && context.SemanticModel
+                        .GetTypeSymbol(asExpression, context.CancellationToken)?
+                        .IsReferenceType == true)
+                {
+                    ReportDiagnostic(context, expression);
+                }
             }
-
-            var expression = (ExpressionSyntax)asExpression.Parent;
-
-            expression = expression.WalkUpParentheses();
-
-            if (!IsExpressionOfAccessExpression(expression)
-                || context.SemanticModel
-                    .GetTypeSymbol(asExpression, context.CancellationToken)?
-                    .IsReferenceType != true)
-            {
-                return;
-            }
-
-            ReportDiagnostic(context, expression);
         }
 
         private static bool IsExpressionOfAccessExpression(ExpressionSyntax expression)

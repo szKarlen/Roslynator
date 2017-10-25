@@ -14,17 +14,15 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallToMethod))
                 await ReturnExpressionRefactoring.ComputeRefactoringsAsync(context, expression).ConfigureAwait(false);
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandExpressionBody)
-                || (!context.Span.IsEmptyAndContainedInSpan(arrowExpressionClause)
-                    && !context.Span.IsBetweenSpans(expression))
-                || !ExpandExpressionBodyRefactoring.CanRefactor(arrowExpressionClause))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandExpressionBody)
+                && (context.Span.IsEmptyAndContainedInSpan(arrowExpressionClause)
+                    || context.Span.IsBetweenSpans(expression))
+                && ExpandExpressionBodyRefactoring.CanRefactor(arrowExpressionClause))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Expand expression body",
+                    cancellationToken => ExpandExpressionBodyRefactoring.RefactorAsync(context.Document, arrowExpressionClause, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Expand expression body",
-                cancellationToken => ExpandExpressionBodyRefactoring.RefactorAsync(context.Document, arrowExpressionClause, cancellationToken));
         }
     }
 }

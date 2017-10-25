@@ -14,28 +14,22 @@ namespace Roslynator.CSharp.Refactorings
     {
         internal static void ComputeRefactoring(RefactoringContext context, IfStatementSyntax ifStatement)
         {
-            if (!ifStatement.IsSimpleIf())
+            if (ifStatement.IsSimpleIf())
             {
-                return;
+                StatementSyntax statement = ifStatement.Statement;
+
+                if (statement?.IsMissing == false)
+                {
+                    ExpressionSyntax condition = ifStatement.Condition;
+
+                    if (condition?.Kind() == SyntaxKind.LogicalOrExpression)
+                    {
+                        context.RegisterRefactoring(
+                            "Split if",
+                            cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
+                    }
+                }
             }
-
-            StatementSyntax statement = ifStatement.Statement;
-
-            if (statement?.IsMissing != false)
-            {
-                return;
-            }
-
-            ExpressionSyntax condition = ifStatement.Condition;
-
-            if (condition?.Kind() != SyntaxKind.LogicalOrExpression)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Split if",
-                cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
         }
 
         private static Task<Document> RefactorAsync(

@@ -27,35 +27,27 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax right = binaryExpression.Right;
 
-            if (right?.IsKind(SyntaxKind.NullLiteralExpression) != true)
+            if (right?.IsKind(SyntaxKind.NullLiteralExpression) == true)
             {
-                return;
+                ExpressionSyntax left = binaryExpression.Left;
+
+                if (left != null)
+                {
+                    left = left.WalkDownParentheses();
+
+                    if (left?.IsKind(SyntaxKind.AsExpression) == true)
+                    {
+                        var asExpression = (BinaryExpressionSyntax)left;
+
+                        if (asExpression.Left?.IsMissing == false
+                            && asExpression.Right is TypeSyntax
+                            && !binaryExpression.SpanContainsDirectives())
+                        {
+                            context.ReportDiagnostic(DiagnosticDescriptors.UseIsOperatorInsteadOfAsOperator, binaryExpression);
+                        }
+                    }
+                }
             }
-
-            ExpressionSyntax left = binaryExpression.Left;
-
-            if (left == null)
-            {
-                return;
-            }
-
-            left = left.WalkDownParentheses();
-
-            if (left?.IsKind(SyntaxKind.AsExpression) != true)
-            {
-                return;
-            }
-
-            var asExpression = (BinaryExpressionSyntax)left;
-
-            if (asExpression.Left?.IsMissing != false
-                || !(asExpression.Right is TypeSyntax)
-                || binaryExpression.SpanContainsDirectives())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.UseIsOperatorInsteadOfAsOperator, binaryExpression);
         }
 
         public static Task<Document> RefactorAsync(

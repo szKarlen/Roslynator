@@ -23,21 +23,17 @@ namespace Roslynator.CSharp.Refactorings
         {
             InvocationExpressionSyntax invocationExpression = invocationInfo.InvocationExpression;
 
-            if (!IsFixable(invocationExpression, context.SemanticModel, context.CancellationToken))
+            if (IsFixable(invocationExpression, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                TextSpan span = TextSpan.FromBounds(invocationInfo.Name.Span.Start, invocationExpression.Span.End);
+
+                if (!invocationExpression.ContainsDirectives(span))
+                {
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.CallCastInsteadOfSelect,
+                        Location.Create(invocationExpression.SyntaxTree, span));
+                }
             }
-
-            TextSpan span = TextSpan.FromBounds(invocationInfo.Name.Span.Start, invocationExpression.Span.End);
-
-            if (invocationExpression.ContainsDirectives(span))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.CallCastInsteadOfSelect,
-                Location.Create(invocationExpression.SyntaxTree, span));
         }
 
         public static bool IsFixable(
@@ -47,70 +43,60 @@ namespace Roslynator.CSharp.Refactorings
         {
             ISymbol symbol = semanticModel.GetSymbol(invocation, cancellationToken);
 
-            if (symbol?.IsMethod() != true)
+            if (symbol?.IsMethod() == true)
             {
-                return false;
-            }
+                ExtensionMethodInfo extensionMethodInfo;
+                if (ExtensionMethodInfo.TryCreate((IMethodSymbol)symbol, semanticModel, out extensionMethodInfo)
+                    && extensionMethodInfo.MethodInfo.IsLinqSelect(allowImmutableArrayExtension: true))
+                {
+                    ITypeSymbol firstTypeArgument = extensionMethodInfo.ReducedSymbolOrSymbol.TypeArguments[0];
 
-            ExtensionMethodInfo extensionMethodInfo;
-            if (!ExtensionMethodInfo.TryCreate((IMethodSymbol)symbol, semanticModel, out extensionMethodInfo)
-                || !extensionMethodInfo.MethodInfo.IsLinqSelect(allowImmutableArrayExtension: true))
-            {
-                return false;
-            }
-
-            ITypeSymbol firstTypeArgument = extensionMethodInfo.ReducedSymbolOrSymbol.TypeArguments[0];
-
-            if (!firstTypeArgument.IsReferenceType
-                || firstTypeArgument.IsObject())
-            {
-                return false;
-            }
-
-            ArgumentListSyntax argumentList = invocation.ArgumentList;
-
-            if (argumentList?.IsMissing != false)
-            {
-                return false;
-            }
-
-            ExpressionSyntax expression = argumentList.Arguments.Last().Expression;
-
-            if (expression?.IsMissing != false)
-            {
-                return false;
-            }
-
-            switch (expression.Kind())
-            {
-                case SyntaxKind.SimpleLambdaExpression:
+                    if (firstTypeArgument.IsReferenceType
+                        && !firstTypeArgument.IsObject())
                     {
-                        var lambda = (SimpleLambdaExpressionSyntax)expression;
+                        ArgumentListSyntax argumentList = invocation.ArgumentList;
 
-                        if (IsFixable(lambda.Parameter, lambda.Body))
-                            return true;
-
-                        break;
-                    }
-                case SyntaxKind.ParenthesizedLambdaExpression:
-                    {
-                        var lambda = (ParenthesizedLambdaExpressionSyntax)expression;
-
-                        ParameterListSyntax parameterList = lambda.ParameterList;
-
-                        if (parameterList != null)
+                        if (argumentList?.IsMissing == false)
                         {
-                            SeparatedSyntaxList<ParameterSyntax> parameters = parameterList.Parameters;
+                            ExpressionSyntax expression = argumentList.Arguments.Last().Expression;
 
-                            if (parameters.Count == 1
-                                && IsFixable(parameters.First(), lambda.Body))
+                            if (expression?.IsMissing == false)
                             {
-                                return true;
+                                switch (expression.Kind())
+                                {
+                                    case SyntaxKind.SimpleLambdaExpression:
+                                        {
+                                            var lambda = (SimpleLambdaExpressionSyntax)expression;
+
+                                            if (IsFixable(lambda.Parameter, lambda.Body))
+                                                return true;
+
+                                            break;
+                                        }
+                                    case SyntaxKind.ParenthesizedLambdaExpression:
+                                        {
+                                            var lambda = (ParenthesizedLambdaExpressionSyntax)expression;
+
+                                            ParameterListSyntax parameterList = lambda.ParameterList;
+
+                                            if (parameterList != null)
+                                            {
+                                                SeparatedSyntaxList<ParameterSyntax> parameters = parameterList.Parameters;
+
+                                                if (parameters.Count == 1
+                                                    && IsFixable(parameters.First(), lambda.Body))
+                                                {
+                                                    return true;
+                                                }
+                                            }
+
+                                            break;
+                                        }
+                                }
                             }
                         }
-
-                        break;
                     }
+                }
             }
 
             return false;
@@ -118,25 +104,26 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsFixable(ParameterSyntax parameter, CSharpSyntaxNode body)
         {
-            if (parameter == null || body == null)
+            if (parameter != null && body != null)
             {
-                return false;
+                CastExpressionSyntax castExpression = GetCastExpression(body);
+
+                if (castExpression != null)
+                {
+                    ExpressionSyntax expression = castExpression.Expression;
+
+                    if (expression?.IsKind(SyntaxKind.IdentifierName) == true
+                        && string.Equals(
+                            parameter.Identifier.ValueText,
+                            ((IdentifierNameSyntax)expression).Identifier.ValueText,
+                            StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
             }
 
-            CastExpressionSyntax castExpression = GetCastExpression(body);
-
-            if (castExpression == null)
-            {
-                return false;
-            }
-
-            ExpressionSyntax expression = castExpression.Expression;
-
-            return expression?.IsKind(SyntaxKind.IdentifierName) == true
-                && string.Equals(
-                    parameter.Identifier.ValueText,
-                    ((IdentifierNameSyntax)expression).Identifier.ValueText,
-                    StringComparison.Ordinal);
+            return false;
         }
 
         private static CastExpressionSyntax GetCastExpression(CSharpSyntaxNode body)

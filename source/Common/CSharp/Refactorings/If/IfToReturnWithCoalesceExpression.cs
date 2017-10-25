@@ -77,29 +77,25 @@ namespace Roslynator.CSharp.Refactorings.If
 
             Debug.Assert(methodSymbol != null, "");
 
-            if (methodSymbol?.IsErrorType() != false)
+            if (methodSymbol?.IsErrorType() == false)
             {
-                return null;
-            }
+                ITypeSymbol returnType = methodSymbol.ReturnType;
 
-            ITypeSymbol returnType = methodSymbol.ReturnType;
-
-            if (returnType.IsErrorType())
-            {
-                return null;
-            }
-
-            if (!IsYield)
-            {
-                return returnType;
-            }
-            else if (returnType.IsIEnumerable())
-            {
-                return semanticModel.Compilation.ObjectType;
-            }
-            else if (returnType.IsConstructedFromIEnumerableOfT())
-            {
-                return ((INamedTypeSymbol)returnType).TypeArguments[0];
+                if (!returnType.IsErrorType())
+                {
+                    if (!IsYield)
+                    {
+                        return returnType;
+                    }
+                    else if (returnType.IsIEnumerable())
+                    {
+                        return semanticModel.Compilation.ObjectType;
+                    }
+                    else if (returnType.IsConstructedFromIEnumerableOfT())
+                    {
+                        return ((INamedTypeSymbol)returnType).TypeArguments[0];
+                    }
+                }
             }
 
             return null;

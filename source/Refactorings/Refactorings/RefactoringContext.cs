@@ -68,22 +68,22 @@ namespace Roslynator.CSharp.Refactorings
         {
             get
             {
-                if (Project.Language != LanguageNames.CSharp)
+                if (Project.Language == LanguageNames.CSharp)
                 {
-                    return false;
+                    switch (((CSharpParseOptions)Project.ParseOptions).LanguageVersion)
+                    {
+                        case LanguageVersion.CSharp1:
+                        case LanguageVersion.CSharp2:
+                        case LanguageVersion.CSharp3:
+                        case LanguageVersion.CSharp4:
+                        case LanguageVersion.CSharp5:
+                            return false;
+                        default:
+                            return true;
+                    }
                 }
 
-                switch (((CSharpParseOptions)Project.ParseOptions).LanguageVersion)
-                {
-                    case LanguageVersion.CSharp1:
-                    case LanguageVersion.CSharp2:
-                    case LanguageVersion.CSharp3:
-                    case LanguageVersion.CSharp4:
-                    case LanguageVersion.CSharp5:
-                        return false;
-                    default:
-                        return true;
-                }
+                return false;
             }
         }
 
@@ -91,23 +91,23 @@ namespace Roslynator.CSharp.Refactorings
         {
             get
             {
-                if (Project.Language != LanguageNames.CSharp)
+                if (Project.Language == LanguageNames.CSharp)
                 {
-                    return false;
+                    switch (((CSharpParseOptions)Project.ParseOptions).LanguageVersion)
+                    {
+                        case LanguageVersion.CSharp1:
+                        case LanguageVersion.CSharp2:
+                        case LanguageVersion.CSharp3:
+                        case LanguageVersion.CSharp4:
+                        case LanguageVersion.CSharp5:
+                        case LanguageVersion.CSharp6:
+                            return false;
+                        default:
+                            return true;
+                    }
                 }
 
-                switch (((CSharpParseOptions)Project.ParseOptions).LanguageVersion)
-                {
-                    case LanguageVersion.CSharp1:
-                    case LanguageVersion.CSharp2:
-                    case LanguageVersion.CSharp3:
-                    case LanguageVersion.CSharp4:
-                    case LanguageVersion.CSharp5:
-                    case LanguageVersion.CSharp6:
-                        return false;
-                    default:
-                        return true;
-                }
+                return false;
             }
         }
 
@@ -220,48 +220,46 @@ namespace Roslynator.CSharp.Refactorings
 
             SyntaxKind kind = token.Kind();
 
-            if (kind == SyntaxKind.None
-                || !token.Span.Contains(Span))
+            if (kind != SyntaxKind.None
+                && token.Span.Contains(Span))
             {
-                return;
-            }
+                Debug.WriteLine(kind.ToString());
 
-            Debug.WriteLine(kind.ToString());
-
-            switch (kind)
-            {
-                case SyntaxKind.CloseParenToken:
-                    {
-                        await CloseParenTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
-                        break;
-                    }
-                case SyntaxKind.CommaToken:
-                    {
-                        await CommaTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
-                        break;
-                    }
-                case SyntaxKind.SemicolonToken:
-                    {
-                        SemicolonTokenRefactoring.ComputeRefactorings(this, token);
-                        break;
-                    }
-                case SyntaxKind.PlusToken:
-                    {
-                        await PlusTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
-                        break;
-                    }
-                case SyntaxKind.PublicKeyword:
-                case SyntaxKind.InternalKeyword:
-                case SyntaxKind.ProtectedKeyword:
-                case SyntaxKind.PrivateKeyword:
-                    {
+                switch (kind)
+                {
+                    case SyntaxKind.CloseParenToken:
                         {
-                            if (IsRefactoringEnabled(RefactoringIdentifiers.ChangeAccessibility))
-                                await AccessModifierRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
-
+                            await CloseParenTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
                             break;
                         }
-                    }
+                    case SyntaxKind.CommaToken:
+                        {
+                            await CommaTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
+                            break;
+                        }
+                    case SyntaxKind.SemicolonToken:
+                        {
+                            SemicolonTokenRefactoring.ComputeRefactorings(this, token);
+                            break;
+                        }
+                    case SyntaxKind.PlusToken:
+                        {
+                            await PlusTokenRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
+                            break;
+                        }
+                    case SyntaxKind.PublicKeyword:
+                    case SyntaxKind.InternalKeyword:
+                    case SyntaxKind.ProtectedKeyword:
+                    case SyntaxKind.PrivateKeyword:
+                        {
+                            {
+                                if (IsRefactoringEnabled(RefactoringIdentifiers.ChangeAccessibility))
+                                    await AccessModifierRefactoring.ComputeRefactoringsAsync(this, token).ConfigureAwait(false);
+
+                                break;
+                            }
+                        }
+                }
             }
         }
 

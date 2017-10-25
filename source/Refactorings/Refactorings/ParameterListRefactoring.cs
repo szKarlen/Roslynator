@@ -14,47 +14,43 @@ namespace Roslynator.CSharp.Refactorings
         {
             SeparatedSyntaxList<ParameterSyntax> parameters = parameterList.Parameters;
 
-            if (!parameters.Any())
+            if (parameters.Any())
             {
-                return;
-            }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.DuplicateParameter))
-            {
-                var refactoring = new DuplicateParameterRefactoring(parameterList);
-                refactoring.ComputeRefactoring(context);
-            }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CheckParameterForNull))
-                await CheckParameterForNullRefactoring.ComputeRefactoringAsync(context, parameterList).ConfigureAwait(false);
-
-            if (context.IsAnyRefactoringEnabled(
-                RefactoringIdentifiers.IntroduceAndInitializeField,
-                RefactoringIdentifiers.IntroduceAndInitializeProperty))
-            {
-                IntroduceAndInitializeRefactoring.ComputeRefactoring(context, parameterList);
-            }
-
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.FormatParameterList)
-                || (!context.Span.IsEmpty && !context.Span.IsBetweenSpans(parameterList)))
-            {
-                return;
-            }
-
-            if (parameterList.IsSingleLine())
-            {
-                if (parameters.Count > 1)
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.DuplicateParameter))
                 {
-                    context.RegisterRefactoring(
-                        "Format parameters on separate lines",
-                        cancellationToken => CSharpFormatter.ToMultiLineAsync(context.Document, parameterList, cancellationToken));
+                    var refactoring = new DuplicateParameterRefactoring(parameterList);
+                    refactoring.ComputeRefactoring(context);
                 }
-            }
-            else
-            {
-                context.RegisterRefactoring(
-                    "Format parameters on a single line",
-                    cancellationToken => CSharpFormatter.ToSingleLineAsync(context.Document, parameterList, cancellationToken));
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.CheckParameterForNull))
+                    await CheckParameterForNullRefactoring.ComputeRefactoringAsync(context, parameterList).ConfigureAwait(false);
+
+                if (context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.IntroduceAndInitializeField,
+                    RefactoringIdentifiers.IntroduceAndInitializeProperty))
+                {
+                    IntroduceAndInitializeRefactoring.ComputeRefactoring(context, parameterList);
+                }
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatParameterList)
+                    && (context.Span.IsEmpty || context.Span.IsBetweenSpans(parameterList)))
+                {
+                    if (parameterList.IsSingleLine())
+                    {
+                        if (parameters.Count > 1)
+                        {
+                            context.RegisterRefactoring(
+                                "Format parameters on separate lines",
+                                cancellationToken => CSharpFormatter.ToMultiLineAsync(context.Document, parameterList, cancellationToken));
+                        }
+                    }
+                    else
+                    {
+                        context.RegisterRefactoring(
+                            "Format parameters on a single line",
+                            cancellationToken => CSharpFormatter.ToSingleLineAsync(context.Document, parameterList, cancellationToken));
+                    }
+                }
             }
         }
     }

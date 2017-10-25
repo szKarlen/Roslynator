@@ -17,22 +17,18 @@ namespace Roslynator.CSharp.Refactorings
         {
             StatementSyntax statement = elseClause.Statement;
 
-            if (statement?.IsKind(SyntaxKind.Block) != true)
+            if (statement?.IsKind(SyntaxKind.Block) == true)
             {
-                return;
+                var block = (BlockSyntax)statement;
+
+                if (!block.Statements.Any()
+                    && elseClause
+                        .DescendantTrivia(elseClause.Span)
+                        .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                {
+                    context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyElseClause, elseClause);
+                }
             }
-
-            var block = (BlockSyntax)statement;
-
-            if (block.Statements.Any()
-                || !elseClause
-                    .DescendantTrivia(elseClause.Span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyElseClause, elseClause);
         }
 
         public static async Task<Document> RefactorAsync(

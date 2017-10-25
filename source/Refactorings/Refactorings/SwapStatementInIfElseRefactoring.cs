@@ -12,27 +12,26 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactoring(RefactoringContext context, IfStatementSyntax ifStatement)
         {
-            if (!CanRefactor(ifStatement))
+            if (CanRefactor(ifStatement))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Swap statements in if-else",
+                    cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Swap statements in if-else",
-                cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
         }
 
         public static bool CanRefactor(IfStatementSyntax ifStatement)
         {
-            if (ifStatement.Condition == null
-                || ifStatement.Statement == null)
+            if (ifStatement.Condition != null
+                && ifStatement.Statement != null)
             {
-                return false;
+                StatementSyntax falseStatement = ifStatement.Else?.Statement;
+
+                if (falseStatement?.IsKind(SyntaxKind.IfStatement) == false)
+                    return true;
             }
 
-            StatementSyntax falseStatement = ifStatement.Else?.Statement;
-
-            return falseStatement?.IsKind(SyntaxKind.IfStatement) == false;
+            return false;
         }
 
         public static async Task<Document> RefactorAsync(

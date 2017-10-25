@@ -26,15 +26,13 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void Analyze(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, SyntaxKind parentKind)
         {
-            if (!IsFixable(expression, parentKind)
-                || IsNestedDiagnostic(expression))
+            if (IsFixable(expression, parentKind)
+                && !IsNestedDiagnostic(expression))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AddParenthesesAccordingToOperatorPrecedence,
+                    expression);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AddParenthesesAccordingToOperatorPrecedence,
-                expression);
         }
 
         private static bool IsNestedDiagnostic(SyntaxNode node)
@@ -58,16 +56,16 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsFixable(SyntaxNode node, SyntaxKind parentKind)
         {
-            if (node == null)
+            if (node != null)
             {
-                return false;
+                int groupNumber = GetGroupNumber(parentKind);
+
+                return groupNumber != 0
+                    && groupNumber == GetGroupNumber(node)
+                    && OperatorPrecedence.GetPrecedence(node) < OperatorPrecedence.GetPrecedence(parentKind);
             }
 
-            int groupNumber = GetGroupNumber(parentKind);
-
-            return groupNumber != 0
-                && groupNumber == GetGroupNumber(node)
-                && OperatorPrecedence.GetPrecedence(node) < OperatorPrecedence.GetPrecedence(parentKind);
+            return false;
         }
 
         private static int GetGroupNumber(SyntaxNode node)

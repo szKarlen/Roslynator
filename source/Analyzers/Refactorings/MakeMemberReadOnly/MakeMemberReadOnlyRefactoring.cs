@@ -72,22 +72,18 @@ namespace Roslynator.CSharp.Refactorings.MakeMemberReadOnly
         {
             var typeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            if (!typeSymbol.IsTypeKind(TypeKind.Class, TypeKind.Struct))
+            if (typeSymbol.IsTypeKind(TypeKind.Class, TypeKind.Struct))
             {
-                return;
+                HashSet<ISymbol> symbols = GetAnalyzableSymbols(context, typeSymbol);
+
+                if (symbols != null)
+                {
+                    symbols = GetFixableSymbols(context, typeSymbol, symbols);
+
+                    if (symbols.Count > 0)
+                        ReportFixableSymbols(context, typeSymbol, symbols);
+                }
             }
-
-            HashSet<ISymbol> symbols = GetAnalyzableSymbols(context, typeSymbol);
-
-            if (symbols == null)
-            {
-                return;
-            }
-
-            symbols = GetFixableSymbols(context, typeSymbol, symbols);
-
-            if (symbols.Count > 0)
-                ReportFixableSymbols(context, typeSymbol, symbols);
         }
 
         protected virtual bool IsAssignmentThasIsAllowedForReadOnlyMember(

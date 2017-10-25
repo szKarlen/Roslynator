@@ -204,18 +204,18 @@ namespace Roslynator.Utilities
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (value[0] != '_')
+            if (value[0] == '_')
             {
-                return false;
-            }
+                if (value.Length > 1)
+                {
+                    return value[1] != '_'
+                        && !char.IsUpper(value[1]);
+                }
 
-            if (value.Length <= 1)
-            {
                 return true;
             }
 
-            return value[1] != '_'
-                && !char.IsUpper(value[1]);
+            return false;
         }
 
         public static bool IsCamelCaseNotPrefixedWithUnderscore(string value)

@@ -12,33 +12,29 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, SyntaxToken token)
         {
-            if (!context.IsAnyRefactoringEnabled(
+            if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.JoinStringExpressions,
                     RefactoringIdentifiers.UseStringBuilderInsteadOfConcatenation)
-                || !context.Span.IsEmptyAndContainedInSpan(token)
-                || !token.IsParentKind(SyntaxKind.AddExpression))
+                && context.Span.IsEmptyAndContainedInSpan(token)
+                && token.IsParentKind(SyntaxKind.AddExpression))
             {
-                return;
+                var addExpresion = (BinaryExpressionSyntax)token.Parent;
+
+                while (addExpresion.IsParentKind(SyntaxKind.AddExpression))
+                    addExpresion = (BinaryExpressionSyntax)addExpresion.Parent;
+
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(addExpresion, semanticModel, context.CancellationToken);
+                if (concatenationInfo.Success)
+                {
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions))
+                        JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenationInfo);
+
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseStringBuilderInsteadOfConcatenation))
+                        UseStringBuilderInsteadOfConcatenationRefactoring.ComputeRefactoring(context, concatenationInfo);
+                }
             }
-
-            var addExpresion = (BinaryExpressionSyntax)token.Parent;
-
-            while (addExpresion.IsParentKind(SyntaxKind.AddExpression))
-                addExpresion = (BinaryExpressionSyntax)addExpresion.Parent;
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo(addExpresion, semanticModel, context.CancellationToken);
-            if (!concatenationInfo.Success)
-            {
-                return;
-            }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.JoinStringExpressions))
-                JoinStringExpressionsRefactoring.ComputeRefactoring(context, concatenationInfo);
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseStringBuilderInsteadOfConcatenation))
-                UseStringBuilderInsteadOfConcatenationRefactoring.ComputeRefactoring(context, concatenationInfo);
         }
     }
 }

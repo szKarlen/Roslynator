@@ -80,27 +80,23 @@ namespace Roslynator.CSharp.Refactorings
 
             SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
 
-            if (!sections.Any())
+            if (sections.Any())
             {
-                return;
-            }
+                AnalyzeStart(context, sections.First(), switchStatement.OpenBraceToken);
+                AnalyzeEnd(context, sections.Last(), switchStatement.CloseBraceToken);
 
-            AnalyzeStart(context, sections.First(), switchStatement.OpenBraceToken);
-            AnalyzeEnd(context, sections.Last(), switchStatement.CloseBraceToken);
+                if (sections.Count > 1)
+                {
+                    SwitchSectionSyntax prevSection = sections.First();
 
-            if (sections.Count <= 1)
-            {
-                return;
-            }
+                    for (int i = 1; i < sections.Count; i++)
+                    {
+                        if (prevSection.Statements.LastOrDefault()?.IsKind(SyntaxKind.Block) == true)
+                            Analyze(context, prevSection, sections[i]);
 
-            SwitchSectionSyntax prevSection = sections.First();
-
-            for (int i = 1; i < sections.Count; i++)
-            {
-                if (prevSection.Statements.LastOrDefault()?.IsKind(SyntaxKind.Block) == true)
-                    Analyze(context, prevSection, sections[i]);
-
-                prevSection = sections[i];
+                        prevSection = sections[i];
+                    }
+                }
             }
         }
 
@@ -110,31 +106,27 @@ namespace Roslynator.CSharp.Refactorings
 
             BlockSyntax block = tryStatement.Block;
 
-            if (block == null)
+            if (block != null)
             {
-                return;
+                SyntaxList<CatchClauseSyntax> catches = tryStatement.Catches;
+
+                if (catches.Any())
+                {
+                    SyntaxNode previousNode = block;
+
+                    foreach (CatchClauseSyntax catchClause in catches)
+                    {
+                        Analyze(context, previousNode, catchClause);
+
+                        previousNode = catchClause;
+                    }
+
+                    FinallyClauseSyntax finallyClause = tryStatement.Finally;
+
+                    if (finallyClause != null)
+                        Analyze(context, previousNode, finallyClause);
+                }
             }
-
-            SyntaxList<CatchClauseSyntax> catches = tryStatement.Catches;
-
-            if (!catches.Any())
-            {
-                return;
-            }
-
-            SyntaxNode previousNode = block;
-
-            foreach (CatchClauseSyntax catchClause in catches)
-            {
-                Analyze(context, previousNode, catchClause);
-
-                previousNode = catchClause;
-            }
-
-            FinallyClauseSyntax finallyClause = tryStatement.Finally;
-
-            if (finallyClause != null)
-                Analyze(context, previousNode, finallyClause);
         }
 
         public static void AnalyzeElseClause(SyntaxNodeAnalysisContext context)
@@ -143,22 +135,20 @@ namespace Roslynator.CSharp.Refactorings
 
             SyntaxNode parent = elseClause.Parent;
 
-            if (parent?.IsKind(SyntaxKind.IfStatement) != true)
+            if (parent?.IsKind(SyntaxKind.IfStatement) == true)
             {
-                return;
+                var ifStatement = (IfStatementSyntax)parent;
+
+                StatementSyntax statement = ifStatement.Statement;
+
+                if (statement != null)
+                    Analyze(context, statement, elseClause);
+
+                statement = elseClause.Statement;
+
+                if (statement != null)
+                    Analyze(context, elseClause.ElseKeyword, statement);
             }
-
-            var ifStatement = (IfStatementSyntax)parent;
-
-            StatementSyntax statement = ifStatement.Statement;
-
-            if (statement != null)
-                Analyze(context, statement, elseClause);
-
-            statement = elseClause.Statement;
-
-            if (statement != null)
-                Analyze(context, elseClause.ElseKeyword, statement);
         }
 
         internal static void AnalyzeIfStatement(SyntaxNodeAnalysisContext context)
@@ -231,29 +221,25 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxTriviaList trailingTrivia = node1.GetTrailingTrivia();
             SyntaxTriviaList leadingTrivia = node2.GetLeadingTrivia();
 
-            if (IsStandardTriviaBetweenLines(trailingTrivia, leadingTrivia)
-                || node1
+            if (!IsStandardTriviaBetweenLines(trailingTrivia, leadingTrivia)
+                && node1
                     .SyntaxTree
                     .GetLineSpan(TextSpan.FromBounds(node1.Span.End, node2.Span.Start), context.CancellationToken)
-                    .GetLineCount() != 3)
+                    .GetLineCount() == 3)
             {
-                return;
+                SyntaxTrivia trivia = leadingTrivia
+                    .SkipWhile(f => f.IsWhitespaceTrivia())
+                    .FirstOrDefault();
+
+                if (trivia.IsEndOfLineTrivia()
+                    && trailingTrivia.IsEmptyOrWhitespace()
+                    && leadingTrivia.IsEmptyOrWhitespace())
+                {
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.RemoveRedundantEmptyLine,
+                        Location.Create(node1.SyntaxTree, TextSpan.FromBounds(node2.FullSpan.Start, trivia.Span.End)));
+                }
             }
-
-            SyntaxTrivia trivia = leadingTrivia
-                .SkipWhile(f => f.IsWhitespaceTrivia())
-                .FirstOrDefault();
-
-            if (!trivia.IsEndOfLineTrivia()
-                || !trailingTrivia.IsEmptyOrWhitespace()
-                || !leadingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveRedundantEmptyLine,
-                Location.Create(node1.SyntaxTree, TextSpan.FromBounds(node2.FullSpan.Start, trivia.Span.End)));
         }
 
         private static void Analyze(
@@ -264,29 +250,25 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxTriviaList trailingTrivia = token.TrailingTrivia;
             SyntaxTriviaList leadingTrivia = node.GetLeadingTrivia();
 
-            if (IsStandardTriviaBetweenLines(trailingTrivia, leadingTrivia)
-                || token
+            if (!IsStandardTriviaBetweenLines(trailingTrivia, leadingTrivia)
+                && token
                     .SyntaxTree
                     .GetLineSpan(TextSpan.FromBounds(token.Span.End, node.Span.Start), context.CancellationToken)
-                    .GetLineCount() != 3)
+                    .GetLineCount() == 3)
             {
-                return;
+                SyntaxTrivia trivia = leadingTrivia
+                    .SkipWhile(f => f.IsWhitespaceTrivia())
+                    .FirstOrDefault();
+
+                if (trivia.IsEndOfLineTrivia()
+                    && trailingTrivia.IsEmptyOrWhitespace()
+                    && leadingTrivia.IsEmptyOrWhitespace())
+                {
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.RemoveRedundantEmptyLine,
+                        Location.Create(token.SyntaxTree, TextSpan.FromBounds(node.FullSpan.Start, trivia.Span.End)));
+                }
             }
-
-            SyntaxTrivia trivia = leadingTrivia
-                .SkipWhile(f => f.IsWhitespaceTrivia())
-                .FirstOrDefault();
-
-            if (!trivia.IsEndOfLineTrivia()
-                || !trailingTrivia.IsEmptyOrWhitespace()
-                || !leadingTrivia.IsEmptyOrWhitespace())
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveRedundantEmptyLine,
-                Location.Create(token.SyntaxTree, TextSpan.FromBounds(node.FullSpan.Start, trivia.Span.End)));
         }
 
         private static void AnalyzeDeclaration(
@@ -295,13 +277,11 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxToken openBrace,
             SyntaxToken closeBrace)
         {
-            if (!members.Any())
+            if (members.Any())
             {
-                return;
+                AnalyzeStart(context, members.First(), openBrace);
+                AnalyzeEnd(context, members.Last(), closeBrace);
             }
-
-            AnalyzeStart(context, members.First(), openBrace);
-            AnalyzeEnd(context, members.Last(), closeBrace);
         }
 
         public static void AnalyzeBlock(SyntaxNodeAnalysisContext context)
@@ -310,13 +290,11 @@ namespace Roslynator.CSharp.Refactorings
 
             SyntaxList<StatementSyntax> statements = block.Statements;
 
-            if (!statements.Any())
+            if (statements.Any())
             {
-                return;
+                AnalyzeStart(context, statements.First(), block.OpenBraceToken);
+                AnalyzeEnd(context, statements.Last(), block.CloseBraceToken);
             }
-
-            AnalyzeStart(context, statements.First(), block.OpenBraceToken);
-            AnalyzeEnd(context, statements.Last(), block.CloseBraceToken);
         }
 
         public static void AnalyzeAccessorList(SyntaxNodeAnalysisContext context)
@@ -325,13 +303,11 @@ namespace Roslynator.CSharp.Refactorings
 
             SyntaxList<AccessorDeclarationSyntax> accessors = accessorList.Accessors;
 
-            if (!accessors.Any())
+            if (accessors.Any())
             {
-                return;
+                AnalyzeStart(context, accessors.First(), accessorList.OpenBraceToken);
+                AnalyzeEnd(context, accessors.Last(), accessorList.CloseBraceToken);
             }
-
-            AnalyzeStart(context, accessors.First(), accessorList.OpenBraceToken);
-            AnalyzeEnd(context, accessors.Last(), accessorList.CloseBraceToken);
         }
 
         private static void AnalyzeStart(
@@ -339,22 +315,18 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxNode node,
             SyntaxToken brace)
         {
-            if (brace.IsMissing
-                || (node.GetSpanStartLine() - brace.GetSpanEndLine()) <= 1)
+            if (!brace.IsMissing
+                && (node.GetSpanStartLine() - brace.GetSpanEndLine()) > 1)
             {
-                return;
+                TextSpan? span = GetEmptyLineSpan(node.GetLeadingTrivia(), isEnd: false);
+
+                if (span != null)
+                {
+                    context.ReportDiagnostic(
+                        DiagnosticDescriptors.RemoveRedundantEmptyLine,
+                        Location.Create(context.Node.SyntaxTree, span.Value));
+                }
             }
-
-            TextSpan? span = GetEmptyLineSpan(node.GetLeadingTrivia(), isEnd: false);
-
-            if (span == null)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveRedundantEmptyLine,
-                Location.Create(context.Node.SyntaxTree, span.Value));
         }
 
         private static void AnalyzeEnd(
@@ -362,29 +334,23 @@ namespace Roslynator.CSharp.Refactorings
             SyntaxNode node,
             SyntaxToken brace)
         {
-            if (brace.IsMissing)
+            if (!brace.IsMissing)
             {
-                return;
+                int braceLine = brace.GetSpanStartLine();
+
+                if (braceLine - node.GetSpanEndLine() > 1)
+                {
+                    TextSpan? span = GetEmptyLineSpan(brace.LeadingTrivia, isEnd: true);
+
+                    if (span != null
+                        && !IsEmptyLastLineInDoStatement(node, braceLine, span.Value))
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.RemoveRedundantEmptyLine,
+                            Location.Create(context.Node.SyntaxTree, span.Value));
+                    }
+                }
             }
-
-            int braceLine = brace.GetSpanStartLine();
-
-            if (braceLine - node.GetSpanEndLine() <= 1)
-            {
-                return;
-            }
-
-            TextSpan? span = GetEmptyLineSpan(brace.LeadingTrivia, isEnd: true);
-
-            if (span == null
-                || IsEmptyLastLineInDoStatement(node, braceLine, span.Value))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveRedundantEmptyLine,
-                Location.Create(context.Node.SyntaxTree, span.Value));
         }
 
         private static bool IsEmptyLastLineInDoStatement(
@@ -394,30 +360,27 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode parent = node.Parent;
 
-            if (parent?.IsKind(SyntaxKind.Block) != true)
+            if (parent?.IsKind(SyntaxKind.Block) == true)
             {
-                return false;
+                parent = parent.Parent;
+
+                if (parent?.IsKind(SyntaxKind.DoStatement) == true)
+                {
+                    var doStatement = (DoStatementSyntax)parent;
+
+                    int emptyLine = doStatement.SyntaxTree.GetLineSpan(span).EndLine();
+
+                    if (emptyLine == closeBraceLine)
+                    {
+                        int whileKeywordLine = doStatement.WhileKeyword.GetSpanStartLine();
+
+                        if (closeBraceLine == whileKeywordLine)
+                            return true;
+                    }
+                }
             }
 
-            parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.DoStatement) != true)
-            {
-                return false;
-            }
-
-            var doStatement = (DoStatementSyntax)parent;
-
-            int emptyLine = doStatement.SyntaxTree.GetLineSpan(span).EndLine();
-
-            if (emptyLine != closeBraceLine)
-            {
-                return false;
-            }
-
-            int whileKeywordLine = doStatement.WhileKeyword.GetSpanStartLine();
-
-            return closeBraceLine == whileKeywordLine;
+            return false;
         }
 
         private static TextSpan? GetEmptyLineSpan(
@@ -454,23 +417,21 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsStandardTriviaBetweenLines(SyntaxTriviaList trailingTrivia, SyntaxTriviaList leadingTrivia)
         {
-            if (!leadingTrivia.Any()
-                || !leadingTrivia.All(f => f.IsWhitespaceTrivia()))
+            if (leadingTrivia.Any()
+                && leadingTrivia.All(f => f.IsWhitespaceTrivia()))
             {
-                return false;
-            }
+                SyntaxTriviaList.Enumerator en = trailingTrivia.GetEnumerator();
 
-            SyntaxTriviaList.Enumerator en = trailingTrivia.GetEnumerator();
+                while (en.MoveNext())
+                {
+                    SyntaxKind kind = en.Current.Kind();
 
-            while (en.MoveNext())
-            {
-                SyntaxKind kind = en.Current.Kind();
+                    if (kind == SyntaxKind.WhitespaceTrivia)
+                        continue;
 
-                if (kind == SyntaxKind.WhitespaceTrivia)
-                    continue;
-
-                return kind == SyntaxKind.EndOfLineTrivia
-                    && !en.MoveNext();
+                    return kind == SyntaxKind.EndOfLineTrivia
+                        && !en.MoveNext();
+                }
             }
 
             return false;

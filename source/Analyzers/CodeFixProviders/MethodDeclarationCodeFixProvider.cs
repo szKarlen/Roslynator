@@ -43,52 +43,50 @@ namespace Roslynator.CSharp.CodeFixes
 
             Debug.Assert(methodSymbol != null, $"{nameof(methodSymbol)} is null");
 
-            if (methodSymbol == null)
+            if (methodSymbol != null)
             {
-                return;
-            }
-
-            foreach (Diagnostic diagnostic in context.Diagnostics)
-            {
-                switch (diagnostic.Id)
+                foreach (Diagnostic diagnostic in context.Diagnostics)
                 {
-                    case DiagnosticIdentifiers.AsynchronousMethodNameShouldEndWithAsync:
-                        {
-                            string oldName = methodDeclaration.Identifier.ValueText;
+                    switch (diagnostic.Id)
+                    {
+                        case DiagnosticIdentifiers.AsynchronousMethodNameShouldEndWithAsync:
+                            {
+                                string oldName = methodDeclaration.Identifier.ValueText;
 
-                            string newName = await NameGenerators.AsyncMethod.EnsureUniqueMemberNameAsync(
-                                oldName,
-                                methodSymbol,
-                                context.Solution(),
-                                cancellationToken: context.CancellationToken).ConfigureAwait(false);
+                                string newName = await NameGenerators.AsyncMethod.EnsureUniqueMemberNameAsync(
+                                    oldName,
+                                    methodSymbol,
+                                    context.Solution(),
+                                    cancellationToken: context.CancellationToken).ConfigureAwait(false);
 
-                            CodeAction codeAction = CodeAction.Create(
-                                $"Rename '{oldName}' to '{newName}'",
-                                c => Renamer.RenameSymbolAsync(context.Solution(), methodSymbol, newName, default(OptionSet), c),
-                                GetEquivalenceKey(diagnostic));
+                                CodeAction codeAction = CodeAction.Create(
+                                    $"Rename '{oldName}' to '{newName}'",
+                                    c => Renamer.RenameSymbolAsync(context.Solution(), methodSymbol, newName, default(OptionSet), c),
+                                    GetEquivalenceKey(diagnostic));
 
-                            context.RegisterCodeFix(codeAction, diagnostic);
-                            break;
-                        }
-                    case DiagnosticIdentifiers.NonAsynchronousMethodNameShouldNotEndWithAsync:
-                        {
-                            string name = methodDeclaration.Identifier.ValueText;
-                            string newName = name.Remove(name.Length - AsyncSuffix.Length);
+                                context.RegisterCodeFix(codeAction, diagnostic);
+                                break;
+                            }
+                        case DiagnosticIdentifiers.NonAsynchronousMethodNameShouldNotEndWithAsync:
+                            {
+                                string name = methodDeclaration.Identifier.ValueText;
+                                string newName = name.Remove(name.Length - AsyncSuffix.Length);
 
-                            newName = await NameGenerator.Default.EnsureUniqueMemberNameAsync(
-                                newName,
-                                methodSymbol,
-                                context.Solution(),
-                                cancellationToken: context.CancellationToken).ConfigureAwait(false);
+                                newName = await NameGenerator.Default.EnsureUniqueMemberNameAsync(
+                                    newName,
+                                    methodSymbol,
+                                    context.Solution(),
+                                    cancellationToken: context.CancellationToken).ConfigureAwait(false);
 
-                            CodeAction codeAction = CodeAction.Create(
-                                $"Rename '{name}' to '{newName}'",
-                                c => Renamer.RenameSymbolAsync(context.Solution(), methodSymbol, newName, default(OptionSet), c),
-                                GetEquivalenceKey(diagnostic));
+                                CodeAction codeAction = CodeAction.Create(
+                                    $"Rename '{name}' to '{newName}'",
+                                    c => Renamer.RenameSymbolAsync(context.Solution(), methodSymbol, newName, default(OptionSet), c),
+                                    GetEquivalenceKey(diagnostic));
 
-                            context.RegisterCodeFix(codeAction, diagnostic);
-                            break;
-                        }
+                                context.RegisterCodeFix(codeAction, diagnostic);
+                                break;
+                            }
+                    }
                 }
             }
         }

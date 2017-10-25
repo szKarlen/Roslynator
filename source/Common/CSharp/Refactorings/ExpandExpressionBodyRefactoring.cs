@@ -197,15 +197,18 @@ namespace Roslynator.CSharp.Refactorings
             if (kind == SyntaxKind.ThrowExpression)
                 return true;
 
-            if (kind != SyntaxKind.AwaitExpression)
+            if (kind == SyntaxKind.AwaitExpression)
             {
-                return false;
+                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(returnType, cancellationToken);
+
+                if (typeSymbol?.IsNamedType() == true
+                    && !((INamedTypeSymbol)typeSymbol).ConstructedFrom.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T)))
+                {
+                    return true;
+                }
             }
 
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(returnType, cancellationToken);
-
-            return typeSymbol?.IsNamedType() == true
-                && !((INamedTypeSymbol)typeSymbol).ConstructedFrom.EqualsOrInheritsFrom(semanticModel.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T));
+            return false;
         }
 
         private static AccessorListSyntax CreateAccessorList(ExpressionSyntax expression, SyntaxToken semicolon)

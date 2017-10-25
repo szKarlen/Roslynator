@@ -8,41 +8,35 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllRegionDirectives)
-                || !context.IsRootCompilationUnit)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllRegionDirectives)
+                && context.IsRootCompilationUnit)
             {
-                return;
+                context.RegisterRefactoring(
+                    "Remove all region directives",
+                    cancellationToken => context.Document.RemoveDirectivesAsync(DirectiveRemoveOptions.Region, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Remove all region directives",
-                cancellationToken => context.Document.RemoveDirectivesAsync(DirectiveRemoveOptions.Region, cancellationToken));
         }
 
         public static void ComputeRefactorings(RefactoringContext context, RegionDirectiveTriviaSyntax regionDirective)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveRegion)
-                || !context.IsRootCompilationUnit)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveRegion)
+                && context.IsRootCompilationUnit)
             {
-                return;
+                context.RegisterRefactoring(
+                    "Remove region",
+                    cancellationToken => context.Document.RemoveRegionAsync(regionDirective, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Remove region",
-                cancellationToken => context.Document.RemoveRegionAsync(regionDirective, cancellationToken));
         }
 
         public static void ComputeRefactorings(RefactoringContext context, EndRegionDirectiveTriviaSyntax endRegionDirective)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveRegion)
-                || !context.IsRootCompilationUnit)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveRegion)
+                && context.IsRootCompilationUnit)
             {
-                return;
+                context.RegisterRefactoring(
+                    "Remove region",
+                    cancellationToken => context.Document.RemoveRegionAsync(endRegionDirective, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Remove region",
-                cancellationToken => context.Document.RemoveRegionAsync(endRegionDirective, cancellationToken));
         }
     }
 }

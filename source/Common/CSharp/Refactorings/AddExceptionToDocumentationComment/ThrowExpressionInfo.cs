@@ -20,36 +20,30 @@ namespace Roslynator.CSharp.Refactorings.AddExceptionToDocumentationComment
         {
             SyntaxNode parent = Node.Parent;
 
-            if (parent?.IsKind(SyntaxKind.CoalesceExpression) != true)
+            if (parent?.IsKind(SyntaxKind.CoalesceExpression) == true)
             {
-                return null;
+                parent = parent.Parent;
+
+                if (parent?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
+                {
+                    var assignment = (AssignmentExpressionSyntax)parent;
+
+                    ExpressionSyntax left = assignment.Left;
+
+                    if (left != null)
+                    {
+                        ISymbol leftSymbol = semanticModel.GetSymbol(left, cancellationToken);
+
+                        if (leftSymbol?.IsParameter() == true
+                            && leftSymbol.ContainingSymbol?.Equals(DeclarationSymbol) == true)
+                        {
+                            return (IParameterSymbol)leftSymbol;
+                        }
+                    }
+                }
             }
 
-            parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.SimpleAssignmentExpression) != true)
-            {
-                return null;
-            }
-
-            var assignment = (AssignmentExpressionSyntax)parent;
-
-            ExpressionSyntax left = assignment.Left;
-
-            if (left == null)
-            {
-                return null;
-            }
-
-            ISymbol leftSymbol = semanticModel.GetSymbol(left, cancellationToken);
-
-            if (leftSymbol?.IsParameter() != true
-                || leftSymbol.ContainingSymbol?.Equals(DeclarationSymbol) != true)
-            {
-                return null;
-            }
-
-            return (IParameterSymbol)leftSymbol;
+            return null;
         }
     }
 }

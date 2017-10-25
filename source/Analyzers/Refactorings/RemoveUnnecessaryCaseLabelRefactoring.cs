@@ -15,29 +15,25 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, SwitchSectionSyntax switchSection)
         {
-            if (!switchSection.IsParentKind(SyntaxKind.SwitchStatement))
+            if (switchSection.IsParentKind(SyntaxKind.SwitchStatement))
             {
-                return;
-            }
+                SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
 
-            SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
-
-            if (labels.Count <= 1
-                || !labels.Any(SyntaxKind.DefaultSwitchLabel))
-            {
-                return;
-            }
-
-            foreach (SwitchLabelSyntax label in labels)
-            {
-                if (!label.IsKind(SyntaxKind.DefaultSwitchLabel)
-                    && label
-                        .DescendantTrivia(label.Span)
-                        .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                if (labels.Count > 1
+                    && labels.Any(SyntaxKind.DefaultSwitchLabel))
                 {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.RemoveUnnecessaryCaseLabel,
-                        label);
+                    foreach (SwitchLabelSyntax label in labels)
+                    {
+                        if (!label.IsKind(SyntaxKind.DefaultSwitchLabel)
+                            && label
+                                .DescendantTrivia(label.Span)
+                                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.RemoveUnnecessaryCaseLabel,
+                                label);
+                        }
+                    }
                 }
             }
         }

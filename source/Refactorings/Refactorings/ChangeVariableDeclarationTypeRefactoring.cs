@@ -13,22 +13,18 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, VariableDeclarationSyntax variableDeclaration)
         {
-            if (variableDeclaration.Type?.Span.Contains(context.Span) != true)
+            if (variableDeclaration.Type?.Span.Contains(context.Span) == true)
             {
-                return;
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeTypeAccordingToExpression))
+                    await ChangeTypeAccordingToExpressionAsync(context, variableDeclaration).ConfigureAwait(false);
+
+                if (context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.ChangeExplicitTypeToVar,
+                    RefactoringIdentifiers.ChangeVarToExplicitType))
+                {
+                    await ChangeTypeAsync(context, variableDeclaration).ConfigureAwait(false);
+                }
             }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeTypeAccordingToExpression))
-                await ChangeTypeAccordingToExpressionAsync(context, variableDeclaration).ConfigureAwait(false);
-
-            if (!context.IsAnyRefactoringEnabled(
-                RefactoringIdentifiers.ChangeExplicitTypeToVar,
-                RefactoringIdentifiers.ChangeVarToExplicitType))
-            {
-                return;
-            }
-
-            await ChangeTypeAsync(context, variableDeclaration).ConfigureAwait(false);
         }
 
         private static async Task ChangeTypeAccordingToExpressionAsync(
@@ -37,43 +33,35 @@ namespace Roslynator.CSharp.Refactorings
         {
             TypeSyntax type = variableDeclaration.Type;
 
-            if (type?.IsVar != false)
+            if (type?.IsVar == false)
             {
-                return;
-            }
+                ExpressionSyntax initializerValue = variableDeclaration.Variables.SingleOrDefault(throwException: false)?.Initializer?.Value;
 
-            ExpressionSyntax initializerValue = variableDeclaration.Variables.SingleOrDefault(throwException: false)?.Initializer?.Value;
+                if (initializerValue != null)
+                {
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-            if (initializerValue == null)
-            {
-                return;
-            }
+                    ITypeSymbol initializerTypeSymbol = semanticModel.GetTypeSymbol(initializerValue);
 
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                    if (initializerTypeSymbol?.IsErrorType() == false)
+                    {
+                        ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type).ConvertedType;
 
-            ITypeSymbol initializerTypeSymbol = semanticModel.GetTypeSymbol(initializerValue);
-
-            if (initializerTypeSymbol?.IsErrorType() != false)
-            {
-                return;
-            }
-
-            ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type).ConvertedType;
-
-            if (initializerTypeSymbol.Equals(typeSymbol))
-            {
-                return;
-            }
-
-            if (initializerTypeSymbol.SupportsExplicitDeclaration())
-            {
-                ChangeType(context, variableDeclaration, initializerTypeSymbol, semanticModel, context.CancellationToken);
-            }
-            else
-            {
-                context.RegisterRefactoring(
-                    "Change type to 'var'",
-                    cancellationToken => ChangeTypeRefactoring.ChangeTypeToVarAsync(context.Document, type, cancellationToken));
+                        if (!initializerTypeSymbol.Equals(typeSymbol))
+                        {
+                            if (initializerTypeSymbol.SupportsExplicitDeclaration())
+                            {
+                                ChangeType(context, variableDeclaration, initializerTypeSymbol, semanticModel, context.CancellationToken);
+                            }
+                            else
+                            {
+                                context.RegisterRefactoring(
+                                    "Change type to 'var'",
+                                    cancellationToken => ChangeTypeRefactoring.ChangeTypeToVarAsync(context.Document, type, cancellationToken));
+                            }
+                        }
+                    }
+                }
             }
         }
 

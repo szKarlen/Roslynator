@@ -42,35 +42,33 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
-                || !context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(accessor)
-                || !context.SupportsCSharp6
-                || !UseExpressionBodiedMemberRefactoring.CanRefactor(accessor))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(accessor)
+                && context.SupportsCSharp6
+                && UseExpressionBodiedMemberRefactoring.CanRefactor(accessor))
             {
-                return;
-            }
+                SyntaxNode node = accessor;
 
-            SyntaxNode node = accessor;
+                var accessorList = accessor.Parent as AccessorListSyntax;
 
-            var accessorList = accessor.Parent as AccessorListSyntax;
-
-            if (accessorList != null)
-            {
-                SyntaxList<AccessorDeclarationSyntax> accessors = accessorList.Accessors;
-
-                if (accessors.Count == 1
-                    && accessors.First().IsKind(SyntaxKind.GetAccessorDeclaration))
+                if (accessorList != null)
                 {
-                    var parent = accessorList.Parent as MemberDeclarationSyntax;
+                    SyntaxList<AccessorDeclarationSyntax> accessors = accessorList.Accessors;
 
-                    if (parent != null)
-                        node = parent;
+                    if (accessors.Count == 1
+                        && accessors.First().IsKind(SyntaxKind.GetAccessorDeclaration))
+                    {
+                        var parent = accessorList.Parent as MemberDeclarationSyntax;
+
+                        if (parent != null)
+                            node = parent;
+                    }
                 }
-            }
 
-            context.RegisterRefactoring(
-                "Use expression-bodied member",
-                cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, node, cancellationToken));
+                context.RegisterRefactoring(
+                    "Use expression-bodied member",
+                    cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, node, cancellationToken));
+            }
         }
     }
 }

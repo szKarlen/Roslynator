@@ -23,13 +23,11 @@ namespace Roslynator.VisualStudio
             {
                 DisabledItems.Clear();
 
-                if (string.IsNullOrEmpty(value))
+                if (!string.IsNullOrEmpty(value))
                 {
-                    return;
+                    foreach (string id in value.Split(','))
+                        DisabledItems.Add(id);
                 }
-
-                foreach (string id in value.Split(','))
-                    DisabledItems.Add(id);
             }
         }
 
@@ -37,13 +35,11 @@ namespace Roslynator.VisualStudio
         {
             base.OnApply(e);
 
-            if (e.ApplyBehavior != ApplyKind.Apply)
+            if (e.ApplyBehavior == ApplyKind.Apply)
             {
-                return;
+                SettingsManager.Instance.UpdateVisualStudioSettings(this);
+                SettingsManager.Instance.ApplyTo(RefactoringSettings.Current);
             }
-
-            SettingsManager.Instance.UpdateVisualStudioSettings(this);
-            SettingsManager.Instance.ApplyTo(RefactoringSettings.Current);
         }
     }
 }

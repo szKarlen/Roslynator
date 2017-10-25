@@ -178,21 +178,19 @@ namespace Roslynator.CSharp.Refactorings
 
             string text = literalExpression.Token.Text;
 
-            if (text.Length < 2)
+            if (text.Length >= 2)
             {
-                return;
+                SyntaxTree syntaxTree = literalExpression.SyntaxTree;
+                TextSpan span = literalExpression.Span;
+
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.UseNameOfOperatorFadeOut,
+                    Location.Create(syntaxTree, new TextSpan(span.Start, (text[0] == '@') ? 2 : 1)));
+
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.UseNameOfOperatorFadeOut,
+                    Location.Create(syntaxTree, new TextSpan(span.End - 1, 1)));
             }
-
-            SyntaxTree syntaxTree = literalExpression.SyntaxTree;
-            TextSpan span = literalExpression.Span;
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.UseNameOfOperatorFadeOut,
-                Location.Create(syntaxTree, new TextSpan(span.Start, (text[0] == '@') ? 2 : 1)));
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.UseNameOfOperatorFadeOut,
-                Location.Create(syntaxTree, new TextSpan(span.End - 1, 1)));
         }
 
         public static Task<Document> RefactorAsync(

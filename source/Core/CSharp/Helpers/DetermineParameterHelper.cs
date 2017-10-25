@@ -60,23 +60,19 @@ namespace Roslynator.CSharp.Helpers
 
             int index = arguments.IndexOf(argument);
 
-            if (index < 0)
+            if (index >= 0)
             {
-                return null;
+                if (index < parameters.Length)
+                    return parameters[index];
+
+                if (allowParams)
+                {
+                    IParameterSymbol lastParameter = parameters.LastOrDefault();
+
+                    if (lastParameter?.IsParams == true)
+                        return lastParameter;
+                }
             }
-
-            if (index < parameters.Length)
-                return parameters[index];
-
-            if (!allowParams)
-            {
-                return null;
-            }
-
-            IParameterSymbol lastParameter = parameters.LastOrDefault();
-
-            if (lastParameter?.IsParams == true)
-                return lastParameter;
 
             return null;
         }
@@ -134,23 +130,19 @@ namespace Roslynator.CSharp.Helpers
 
             int index = arguments.IndexOf(attributeArgument);
 
-            if (index < 0)
+            if (index >= 0)
             {
-                return null;
+                if (index < parameters.Length)
+                    return parameters[index];
+
+                if (allowParams)
+                {
+                    IParameterSymbol lastParameter = parameters.LastOrDefault();
+
+                    if (lastParameter?.IsParams == true)
+                        return lastParameter;
+                }
             }
-
-            if (index < parameters.Length)
-                return parameters[index];
-
-            if (!allowParams)
-            {
-                return null;
-            }
-
-            IParameterSymbol lastParameter = parameters.LastOrDefault();
-
-            if (lastParameter?.IsParams == true)
-                return lastParameter;
 
             return null;
         }

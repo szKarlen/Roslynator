@@ -19,21 +19,20 @@ namespace Roslynator.CSharp.Refactorings
 
             ExpressionSyntax expression = interpolation.Expression;
 
-            if (expression?.IsKind(SyntaxKind.StringLiteralExpression) != true)
+            if (expression?.IsKind(SyntaxKind.StringLiteralExpression) == true)
             {
-                return false;
+                var interpolatedString = interpolation.Parent as InterpolatedStringExpressionSyntax;
+
+                if (interpolatedString != null)
+                {
+                    var literalExpression = (LiteralExpressionSyntax)expression;
+
+                    if (interpolatedString.IsVerbatim() == literalExpression.Token.IsVerbatimStringLiteral())
+                        return true;
+                }
             }
 
-            var interpolatedString = interpolation.Parent as InterpolatedStringExpressionSyntax;
-
-            if (interpolatedString == null)
-            {
-                return false;
-            }
-
-            var literalExpression = (LiteralExpressionSyntax)expression;
-
-            return interpolatedString.IsVerbatim() == literalExpression.Token.IsVerbatimStringLiteral();
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

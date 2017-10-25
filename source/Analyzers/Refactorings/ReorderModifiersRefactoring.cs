@@ -17,16 +17,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxTokenList modifiers = declaration.GetModifiers();
 
-            if (modifiers.Count <= 1
-                || ModifierComparer.Instance.IsListSorted(modifiers)
-                || declaration.ContainsDirectives(modifiers.Span))
+            if (modifiers.Count > 1
+                && !ModifierComparer.Instance.IsListSorted(modifiers)
+                && !declaration.ContainsDirectives(modifiers.Span))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.ReorderModifiers,
+                    Location.Create(context.Node.SyntaxTree, modifiers.Span));
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.ReorderModifiers,
-                Location.Create(context.Node.SyntaxTree, modifiers.Span));
         }
 
         public static Task<Document> RefactorAsync(

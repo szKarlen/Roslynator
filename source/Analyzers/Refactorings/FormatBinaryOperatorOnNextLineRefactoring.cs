@@ -20,19 +20,17 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax left = binaryExpression.Left;
             ExpressionSyntax right = binaryExpression.Right;
 
-            if (left?.IsMissing != false
-                || right?.IsMissing != false
-                || IsStringConcatenation(context, binaryExpression)
-                || !left.GetTrailingTrivia().All(f => f.IsWhitespaceTrivia())
-                || !CheckOperatorTrailingTrivia(binaryExpression.OperatorToken.TrailingTrivia)
-                || !right.GetLeadingTrivia().IsEmptyOrWhitespace())
+            if (left?.IsMissing == false
+                && right?.IsMissing == false
+                && !IsStringConcatenation(context, binaryExpression)
+                && left.GetTrailingTrivia().All(f => f.IsWhitespaceTrivia())
+                && CheckOperatorTrailingTrivia(binaryExpression.OperatorToken.TrailingTrivia)
+                && right.GetLeadingTrivia().IsEmptyOrWhitespace())
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.FormatBinaryOperatorOnNextLine,
+                    binaryExpression.OperatorToken);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.FormatBinaryOperatorOnNextLine,
-                binaryExpression.OperatorToken);
         }
 
         private static bool IsStringConcatenation(SyntaxNodeAnalysisContext context, BinaryExpressionSyntax binaryExpression)

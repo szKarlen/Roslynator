@@ -24,13 +24,11 @@ namespace Roslynator.VisualStudio
             get { return _prefixFieldIdentifierWithUnderscore; }
             set
             {
-                if (_prefixFieldIdentifierWithUnderscore == value)
+                if (_prefixFieldIdentifierWithUnderscore != value)
                 {
-                    return;
+                    _prefixFieldIdentifierWithUnderscore = value;
+                    OnPropertyChanged(nameof(PrefixFieldIdentifierWithUnderscore));
                 }
-
-                _prefixFieldIdentifierWithUnderscore = value;
-                OnPropertyChanged(nameof(PrefixFieldIdentifierWithUnderscore));
             }
         }
 
@@ -39,13 +37,11 @@ namespace Roslynator.VisualStudio
             get { return _useConfigFile; }
             set
             {
-                if (_useConfigFile == value)
+                if (_useConfigFile != value)
                 {
-                    return;
+                    _useConfigFile = value;
+                    OnPropertyChanged(nameof(UseConfigFile));
                 }
-
-                _useConfigFile = value;
-                OnPropertyChanged(nameof(UseConfigFile));
             }
         }
 

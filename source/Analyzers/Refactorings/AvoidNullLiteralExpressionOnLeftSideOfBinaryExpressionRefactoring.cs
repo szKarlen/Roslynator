@@ -15,19 +15,17 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax left = binaryExpression.Left;
             ExpressionSyntax right = binaryExpression.Right;
 
-            if (left?.IsMissing != false
-                || right?.IsMissing != false
-                || !binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression)
-                || !left.IsKind(SyntaxKind.NullLiteralExpression)
-                || right.IsKind(SyntaxKind.NullLiteralExpression)
-                || binaryExpression.SpanContainsDirectives())
+            if (left?.IsMissing == false
+                && right?.IsMissing == false
+                && binaryExpression.IsKind(SyntaxKind.EqualsExpression, SyntaxKind.NotEqualsExpression)
+                && left.IsKind(SyntaxKind.NullLiteralExpression)
+                && !right.IsKind(SyntaxKind.NullLiteralExpression)
+                && !binaryExpression.SpanContainsDirectives())
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression,
+                    left);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression,
-                left);
         }
     }
 }

@@ -27,55 +27,51 @@ namespace Roslynator.VisualStudio
         {
             var clickedHeader = e.OriginalSource as GridViewColumnHeader;
 
-            if (clickedHeader == null)
+            if (clickedHeader != null)
             {
-                return;
-            }
+                ListSortDirection direction;
 
-            ListSortDirection direction;
-
-            if (clickedHeader.Role == GridViewColumnHeaderRole.Padding)
-            {
-                return;
-            }
-
-            if (clickedHeader != _lastClickedHeader)
-            {
-                direction = ListSortDirection.Ascending;
-            }
-            else
-            {
-                if (_lastDirection == ListSortDirection.Ascending)
+                if (clickedHeader.Role != GridViewColumnHeaderRole.Padding)
                 {
-                    direction = ListSortDirection.Descending;
+                    if (clickedHeader != _lastClickedHeader)
+                    {
+                        direction = ListSortDirection.Ascending;
+                    }
+                    else
+                    {
+                        if (_lastDirection == ListSortDirection.Ascending)
+                        {
+                            direction = ListSortDirection.Descending;
+                        }
+                        else
+                        {
+                            direction = ListSortDirection.Ascending;
+                        }
+                    }
+
+                    var propertyName = clickedHeader.Column.Header as string;
+
+                    Sort(propertyName, direction);
+
+                    if (direction == ListSortDirection.Ascending)
+                    {
+                        clickedHeader.Column.HeaderTemplate = Resources["gridViewHeaderArrowUpTemplate"] as DataTemplate;
+                    }
+                    else
+                    {
+                        clickedHeader.Column.HeaderTemplate = Resources["gridViewHeaderArrowDownTemplate"] as DataTemplate;
+                    }
+
+                    if (_lastClickedHeader != null
+                        && _lastClickedHeader != clickedHeader)
+                    {
+                        _lastClickedHeader.Column.HeaderTemplate = null;
+                    }
+
+                    _lastClickedHeader = clickedHeader;
+                    _lastDirection = direction;
                 }
-                else
-                {
-                    direction = ListSortDirection.Ascending;
-                }
             }
-
-            var propertyName = clickedHeader.Column.Header as string;
-
-            Sort(propertyName, direction);
-
-            if (direction == ListSortDirection.Ascending)
-            {
-                clickedHeader.Column.HeaderTemplate = Resources["gridViewHeaderArrowUpTemplate"] as DataTemplate;
-            }
-            else
-            {
-                clickedHeader.Column.HeaderTemplate = Resources["gridViewHeaderArrowDownTemplate"] as DataTemplate;
-            }
-
-            if (_lastClickedHeader != null
-                && _lastClickedHeader != clickedHeader)
-            {
-                _lastClickedHeader.Column.HeaderTemplate = null;
-            }
-
-            _lastClickedHeader = clickedHeader;
-            _lastDirection = direction;
         }
 
         private void Sort(string propertyName, ListSortDirection direction)
@@ -93,15 +89,15 @@ namespace Roslynator.VisualStudio
         {
             string s = tbxFilter.Text?.Trim();
 
-            if (string.IsNullOrEmpty(s))
+            if (!string.IsNullOrEmpty(s))
             {
-                return true;
+                var refactoring = (BaseModel)item;
+
+                return refactoring.Id.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) != -1
+                    || refactoring.Title.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) != -1;
             }
 
-            var refactoring = (BaseModel)item;
-
-            return refactoring.Id.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) != -1
-                || refactoring.Title.IndexOf(s, StringComparison.CurrentCultureIgnoreCase) != -1;
+            return true;
         }
 
         private void EnableAllButton_Click(object sender, RoutedEventArgs e)

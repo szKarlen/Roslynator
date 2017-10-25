@@ -25,38 +25,36 @@ namespace Roslynator.CSharp.Refactorings
                 refactoring.ComputeRefactoring(context);
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.FormatArgumentList)
-                || (!context.Span.IsEmpty && !context.Span.IsBetweenSpans(argumentList)))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatArgumentList)
+                && (context.Span.IsEmpty || context.Span.IsBetweenSpans(argumentList)))
             {
-                return;
-            }
-
-            if (argumentList.IsSingleLine())
-            {
-                if (arguments.Count > 1)
+                if (argumentList.IsSingleLine())
+                {
+                    if (arguments.Count > 1)
+                    {
+                        context.RegisterRefactoring(
+                            "Format arguments on separate lines",
+                            cancellationToken =>
+                            {
+                                return CSharpFormatter.ToMultiLineAsync(
+                                    context.Document,
+                                    argumentList,
+                                    cancellationToken);
+                            });
+                    }
+                }
+                else
                 {
                     context.RegisterRefactoring(
-                        "Format arguments on separate lines",
+                        "Format arguments on a single line",
                         cancellationToken =>
                         {
-                            return CSharpFormatter.ToMultiLineAsync(
+                            return CSharpFormatter.ToSingleLineAsync(
                                 context.Document,
                                 argumentList,
                                 cancellationToken);
                         });
                 }
-            }
-            else
-            {
-                context.RegisterRefactoring(
-                    "Format arguments on a single line",
-                    cancellationToken =>
-                    {
-                        return CSharpFormatter.ToSingleLineAsync(
-                            context.Document,
-                            argumentList,
-                            cancellationToken);
-                    });
             }
         }
     }

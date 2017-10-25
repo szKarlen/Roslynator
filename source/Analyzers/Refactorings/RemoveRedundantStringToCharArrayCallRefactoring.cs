@@ -16,17 +16,15 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void Analyze(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocation)
         {
-            if (!CanRefactor(invocation, context.SemanticModel, context.CancellationToken))
+            if (CanRefactor(invocation, context.SemanticModel, context.CancellationToken))
             {
-                return;
+                var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+
+                TextSpan span = TextSpan.FromBounds(memberAccess.OperatorToken.Span.Start, invocation.Span.End);
+
+                if (!invocation.ContainsDirectives(span))
+                    context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantStringToCharArrayCall, Location.Create(invocation.SyntaxTree, span));
             }
-
-            var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
-
-            TextSpan span = TextSpan.FromBounds(memberAccess.OperatorToken.Span.Start, invocation.Span.End);
-
-            if (!invocation.ContainsDirectives(span))
-                context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantStringToCharArrayCall, Location.Create(invocation.SyntaxTree, span));
         }
 
         public static bool CanRefactor(
@@ -34,48 +32,41 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!ParentIsElementAccessOrForEachExpression(invocation)
-                || invocation.ArgumentList?.Arguments.Any() != false)
+            if (ParentIsElementAccessOrForEachExpression(invocation)
+                && invocation.ArgumentList?.Arguments.Any() == false)
             {
-                return false;
+                ExpressionSyntax expression = invocation.Expression;
+
+                if (expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) == true)
+                {
+                    var memberAccess = (MemberAccessExpressionSyntax)expression;
+
+                    if (memberAccess.Name?.Identifier.ValueText.Equals("ToCharArray", StringComparison.Ordinal) == true)
+                    {
+                        MethodInfo info;
+                        if (semanticModel.TryGetMethodInfo(invocation, out info, cancellationToken)
+                            && info.IsName("ToCharArray")
+                            && info.IsPublic
+                            && !info.IsStatic
+                            && !info.IsGenericMethod
+                            && !info.Parameters.Any()
+                            && info.IsContainingType(SpecialType.System_String))
+                        {
+                            ITypeSymbol returnType = info.ReturnType;
+
+                            if (returnType?.IsArrayType() == true)
+                            {
+                                var arrayType = (IArrayTypeSymbol)returnType;
+
+                                if (arrayType.ElementType?.IsChar() == true)
+                                    return true;
+                            }
+                        }
+                    }
+                }
             }
 
-            ExpressionSyntax expression = invocation.Expression;
-
-            if (expression?.IsKind(SyntaxKind.SimpleMemberAccessExpression) != true)
-            {
-                return false;
-            }
-
-            var memberAccess = (MemberAccessExpressionSyntax)expression;
-
-            if (memberAccess.Name?.Identifier.ValueText.Equals("ToCharArray", StringComparison.Ordinal) != true)
-            {
-                return false;
-            }
-
-            MethodInfo info;
-            if (!semanticModel.TryGetMethodInfo(invocation, out info, cancellationToken)
-                || !info.IsName("ToCharArray")
-                || !info.IsPublic
-                || info.IsStatic
-                || info.IsGenericMethod
-                || info.Parameters.Any()
-                || !info.IsContainingType(SpecialType.System_String))
-            {
-                return false;
-            }
-
-            ITypeSymbol returnType = info.ReturnType;
-
-            if (returnType?.IsArrayType() != true)
-            {
-                return false;
-            }
-
-            var arrayType = (IArrayTypeSymbol)returnType;
-
-            return arrayType.ElementType?.IsChar() == true;
+            return false;
         }
 
         private static bool ParentIsElementAccessOrForEachExpression(InvocationExpressionSyntax invocation)
@@ -83,14 +74,15 @@ namespace Roslynator.CSharp.Refactorings
             if (invocation.IsParentKind(SyntaxKind.ElementAccessExpression))
                 return true;
 
-            if (!invocation.IsParentKind(SyntaxKind.ForEachStatement))
+            if (invocation.IsParentKind(SyntaxKind.ForEachStatement))
             {
-                return false;
+                var forEachStatement = (ForEachStatementSyntax)invocation.Parent;
+
+                if (invocation.Equals(forEachStatement.Expression))
+                    return true;
             }
 
-            var forEachStatement = (ForEachStatementSyntax)invocation.Parent;
-
-            return invocation.Equals(forEachStatement.Expression);
+            return false;
         }
     }
 }

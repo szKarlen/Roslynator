@@ -38,13 +38,11 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
         {
             var binaryExpression = (BinaryExpressionSyntax)context.Node;
 
-            if (!IsEnumWithoutFlags(context, binaryExpression.Left)
-                && !IsEnumWithoutFlags(context, binaryExpression.Right))
+            if (IsEnumWithoutFlags(context, binaryExpression.Left)
+                || IsEnumWithoutFlags(context, binaryExpression.Right))
             {
-                return;
+                ReportDiagnostic(context, binaryExpression);
             }
-
-            ReportDiagnostic(context, binaryExpression);
         }
 
         private void AnalyzePrefixUnaryExpression(SyntaxNodeAnalysisContext context)
@@ -57,15 +55,15 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
         private static bool IsEnumWithoutFlags(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
         {
-            if (expression?.IsMissing != false)
+            if (expression?.IsMissing == false)
             {
-                return false;
+                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+                return typeSymbol?.IsEnum() == true
+                    && !typeSymbol.HasAttribute(context.SemanticModel.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute));
             }
 
-            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(expression, context.CancellationToken);
-
-            return typeSymbol?.IsEnum() == true
-                && !typeSymbol.HasAttribute(context.SemanticModel.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute));
+            return false;
         }
 
         private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)

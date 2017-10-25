@@ -27,14 +27,12 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
             {
                 INamedTypeSymbol flagsAttribute = startContext.Compilation.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute);
 
-                if (flagsAttribute == null)
+                if (flagsAttribute != null)
                 {
-                    return;
+                    startContext.RegisterSymbolAction(
+                        nodeContext => DeclareEnumValueAsCombinationOfNamesRefactoring.AnalyzeNamedType(nodeContext, flagsAttribute),
+                        SymbolKind.NamedType);
                 }
-
-                startContext.RegisterSymbolAction(
-                    nodeContext => DeclareEnumValueAsCombinationOfNamesRefactoring.AnalyzeNamedType(nodeContext, flagsAttribute),
-                    SymbolKind.NamedType);
             });
         }
     }

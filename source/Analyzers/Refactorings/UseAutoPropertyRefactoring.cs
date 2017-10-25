@@ -185,22 +185,20 @@ namespace Roslynator.CSharp.Refactorings
         {
             AttributeData attribute = typeSymbol.GetAttributeByMetadataName(MetadataNames.System_Runtime_InteropServices_StructLayoutAttribute, compilation);
 
-            if (attribute == null)
+            if (attribute != null)
             {
-                return false;
+                ImmutableArray<TypedConstant> constructorArguments = attribute.ConstructorArguments;
+
+                if (constructorArguments.Length == 1)
+                {
+                    TypedConstant typedConstant = constructorArguments[0];
+
+                    return typedConstant.Type?.Equals(compilation.GetTypeByMetadataName(MetadataNames.System_Runtime_InteropServices_LayoutKind)) == true
+                        && (((LayoutKind)typedConstant.Value) == LayoutKind.Explicit);
+                }
             }
 
-            ImmutableArray<TypedConstant> constructorArguments = attribute.ConstructorArguments;
-
-            if (constructorArguments.Length != 1)
-            {
-                return false;
-            }
-
-            TypedConstant typedConstant = constructorArguments[0];
-
-            return typedConstant.Type?.Equals(compilation.GetTypeByMetadataName(MetadataNames.System_Runtime_InteropServices_LayoutKind)) == true
-                && (((LayoutKind)typedConstant.Value) == LayoutKind.Explicit);
+            return false;
         }
 
         private static void FadeOutBodyOrExpressionBody(SyntaxNodeAnalysisContext context, AccessorDeclarationSyntax accessor)
@@ -265,21 +263,19 @@ namespace Roslynator.CSharp.Refactorings
         {
             ISymbol symbol = semanticModel.GetSymbol(identifier, cancellationToken);
 
-            if (!symbol.IsPrivate()
-                || !symbol.IsField())
+            if (symbol.IsPrivate()
+                && symbol.IsField())
             {
-                return null;
+                var fieldSymbol = (IFieldSymbol)symbol;
+
+                if (fieldSymbol.IsReadOnly
+                    && !fieldSymbol.IsVolatile)
+                {
+                    return fieldSymbol;
+                }
             }
 
-            var fieldSymbol = (IFieldSymbol)symbol;
-
-            if (!fieldSymbol.IsReadOnly
-                || fieldSymbol.IsVolatile)
-            {
-                return null;
-            }
-
-            return fieldSymbol;
+            return null;
         }
 
         private static IFieldSymbol GetBackingFieldSymbol(
@@ -290,65 +286,55 @@ namespace Roslynator.CSharp.Refactorings
         {
             NameSyntax getterIdentifier = GetIdentifierFromGetter(getter);
 
-            if (getterIdentifier == null)
+            if (getterIdentifier != null)
             {
-                return null;
+                NameSyntax setterIdentifier = GetIdentifierFromSetter(setter);
+
+                if (setterIdentifier != null)
+                {
+                    ISymbol symbol = semanticModel.GetSymbol(getterIdentifier, cancellationToken);
+
+                    if (symbol?.IsPrivate() == true
+                        && symbol.IsField())
+                    {
+                        var fieldSymbol = (IFieldSymbol)symbol;
+
+                        if (!fieldSymbol.IsVolatile)
+                        {
+                            ISymbol symbol2 = semanticModel.GetSymbol(setterIdentifier, cancellationToken);
+
+                            if (fieldSymbol.Equals(symbol2))
+                                return fieldSymbol;
+                        }
+                    }
+                }
             }
-
-            NameSyntax setterIdentifier = GetIdentifierFromSetter(setter);
-
-            if (setterIdentifier == null)
-            {
-                return null;
-            }
-
-            ISymbol symbol = semanticModel.GetSymbol(getterIdentifier, cancellationToken);
-
-            if (symbol?.IsPrivate() != true
-                || !symbol.IsField())
-            {
-                return null;
-            }
-
-            var fieldSymbol = (IFieldSymbol)symbol;
-
-            if (fieldSymbol.IsVolatile)
-            {
-                return null;
-            }
-
-            ISymbol symbol2 = semanticModel.GetSymbol(setterIdentifier, cancellationToken);
-
-            if (fieldSymbol.Equals(symbol2))
-                return fieldSymbol;
 
             return null;
         }
 
         private static NameSyntax GetIdentifierFromGetter(AccessorDeclarationSyntax getter)
         {
-            if (getter == null)
+            if (getter != null)
             {
-                return null;
-            }
+                BlockSyntax body = getter.Body;
 
-            BlockSyntax body = getter.Body;
-
-            if (body != null)
-            {
-                SyntaxList<StatementSyntax> statements = body.Statements;
-
-                if (statements.Count == 1
-                    && statements[0].IsKind(SyntaxKind.ReturnStatement))
+                if (body != null)
                 {
-                    var returnStatement = (ReturnStatementSyntax)statements[0];
+                    SyntaxList<StatementSyntax> statements = body.Statements;
 
-                    return GetIdentifierFromExpression(returnStatement.Expression);
+                    if (statements.Count == 1
+                        && statements[0].IsKind(SyntaxKind.ReturnStatement))
+                    {
+                        var returnStatement = (ReturnStatementSyntax)statements[0];
+
+                        return GetIdentifierFromExpression(returnStatement.Expression);
+                    }
                 }
-            }
-            else
-            {
-                return GetIdentifierFromExpression(getter.ExpressionBody?.Expression);
+                else
+                {
+                    return GetIdentifierFromExpression(getter.ExpressionBody?.Expression);
+                }
             }
 
             return null;
@@ -356,29 +342,27 @@ namespace Roslynator.CSharp.Refactorings
 
         private static NameSyntax GetIdentifierFromSetter(AccessorDeclarationSyntax setter)
         {
-            if (setter == null)
+            if (setter != null)
             {
-                return null;
-            }
+                BlockSyntax body = setter.Body;
 
-            BlockSyntax body = setter.Body;
-
-            if (body != null)
-            {
-                SyntaxList<StatementSyntax> statements = body.Statements;
-
-                if (statements.Count == 1
-                    && statements[0].IsKind(SyntaxKind.ExpressionStatement))
+                if (body != null)
                 {
-                    var statement = (ExpressionStatementSyntax)statements[0];
-                    ExpressionSyntax expression = statement.Expression;
+                    SyntaxList<StatementSyntax> statements = body.Statements;
 
-                    return GetIdentifierFromSetterExpression(expression);
+                    if (statements.Count == 1
+                        && statements[0].IsKind(SyntaxKind.ExpressionStatement))
+                    {
+                        var statement = (ExpressionStatementSyntax)statements[0];
+                        ExpressionSyntax expression = statement.Expression;
+
+                        return GetIdentifierFromSetterExpression(expression);
+                    }
                 }
-            }
-            else
-            {
-                return GetIdentifierFromSetterExpression(setter.ExpressionBody.Expression);
+                else
+                {
+                    return GetIdentifierFromSetterExpression(setter.ExpressionBody.Expression);
+                }
             }
 
             return null;
@@ -386,21 +370,19 @@ namespace Roslynator.CSharp.Refactorings
 
         private static NameSyntax GetIdentifierFromSetterExpression(ExpressionSyntax expression)
         {
-            if (expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) != true)
+            if (expression?.IsKind(SyntaxKind.SimpleAssignmentExpression) == true)
             {
-                return null;
+                var assignment = (AssignmentExpressionSyntax)expression;
+                ExpressionSyntax right = assignment.Right;
+
+                if (right?.IsKind(SyntaxKind.IdentifierName) == true
+                    && ((IdentifierNameSyntax)right).Identifier.ValueText == "value")
+                {
+                    return GetIdentifierFromExpression(assignment.Left);
+                }
             }
 
-            var assignment = (AssignmentExpressionSyntax)expression;
-            ExpressionSyntax right = assignment.Right;
-
-            if (right?.IsKind(SyntaxKind.IdentifierName) != true
-                || ((IdentifierNameSyntax)right).Identifier.ValueText != "value")
-            {
-                return null;
-            }
-
-            return GetIdentifierFromExpression(assignment.Left);
+            return null;
         }
 
         private static SimpleNameSyntax GetIdentifierFromExpression(ExpressionSyntax expression)

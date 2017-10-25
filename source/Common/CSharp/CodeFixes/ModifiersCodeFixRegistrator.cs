@@ -245,31 +245,29 @@ namespace Roslynator.CSharp.CodeFixes
                     (indexes ?? (indexes = new List<int>())).Add(i);
             }
 
-            if (indexes == null)
+            if (indexes != null)
             {
-                return;
-            }
+                if (indexes.Count == 1)
+                {
+                    RemoveModifier(context, diagnostic, node, modifiers[indexes[0]], additionalKey: additionalKey);
+                }
+                else
+                {
+                    CodeAction codeAction = CodeAction.Create(
+                        "Remove modifiers",
+                        cancellationToken =>
+                        {
+                            SyntaxNode newNode = node;
 
-            if (indexes.Count == 1)
-            {
-                RemoveModifier(context, diagnostic, node, modifiers[indexes[0]], additionalKey: additionalKey);
-            }
-            else
-            {
-                CodeAction codeAction = CodeAction.Create(
-                    "Remove modifiers",
-                    cancellationToken =>
-                    {
-                        SyntaxNode newNode = node;
+                            for (int i = indexes.Count - 1; i >= 0; i--)
+                                newNode = Modifier.RemoveAt(newNode, indexes[i]);
 
-                        for (int i = indexes.Count - 1; i >= 0; i--)
-                            newNode = Modifier.RemoveAt(newNode, indexes[i]);
+                            return context.Document.ReplaceNodeAsync(node, newNode, cancellationToken);
+                        },
+                        GetEquivalenceKey(diagnostic, additionalKey));
 
-                        return context.Document.ReplaceNodeAsync(node, newNode, cancellationToken);
-                    },
-                    GetEquivalenceKey(diagnostic, additionalKey));
-
-                context.RegisterCodeFix(codeAction, diagnostic);
+                    context.RegisterCodeFix(codeAction, diagnostic);
+                }
             }
         }
 

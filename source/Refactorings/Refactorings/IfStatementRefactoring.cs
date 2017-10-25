@@ -75,13 +75,11 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithIfReturn)
-                || !context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(ifStatement.IfKeyword))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithIfReturn)
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(ifStatement.IfKeyword))
             {
-                return;
+                ReplaceIfElseWithIfReturnRefactoring.ComputeRefactoring(context, ifStatement);
             }
-
-            ReplaceIfElseWithIfReturnRefactoring.ComputeRefactoring(context, ifStatement);
         }
     }
 }

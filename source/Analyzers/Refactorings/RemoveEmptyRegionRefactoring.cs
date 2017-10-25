@@ -18,48 +18,38 @@ namespace Roslynator.CSharp.Refactorings
         {
             var region = (RegionDirectiveTriviaSyntax)context.Node;
 
-            if (!region.IsKind(SyntaxKind.RegionDirectiveTrivia))
+            if (region.IsKind(SyntaxKind.RegionDirectiveTrivia))
             {
-                return;
+                List<DirectiveTriviaSyntax> relatedDirectives = region.GetRelatedDirectives();
+
+                if (relatedDirectives.Count == 2
+                    && relatedDirectives[1].IsKind(SyntaxKind.EndRegionDirectiveTrivia))
+                {
+                    DirectiveTriviaSyntax endRegion = relatedDirectives[1];
+
+                    if (endRegion.IsKind(SyntaxKind.EndRegionDirectiveTrivia))
+                    {
+                        SyntaxTrivia trivia = region.ParentTrivia;
+
+                        SyntaxTriviaList list;
+                        if (trivia.TryGetContainingList(out list))
+                        {
+                            EndRegionDirectiveTriviaSyntax endRegion2 = FindEndRegion(list, list.IndexOf(trivia));
+
+                            if (endRegion == endRegion2)
+                            {
+                                context.ReportDiagnostic(
+                                    DiagnosticDescriptors.RemoveEmptyRegion,
+                                    region.GetLocation(),
+                                    additionalLocations: ImmutableArray.Create(endRegion.GetLocation()));
+
+                                context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyRegionFadeOut, region.GetLocation());
+                                context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyRegionFadeOut, endRegion.GetLocation());
+                            }
+                        }
+                    }
+                }
             }
-
-            List<DirectiveTriviaSyntax> relatedDirectives = region.GetRelatedDirectives();
-
-            if (relatedDirectives.Count != 2
-                || !relatedDirectives[1].IsKind(SyntaxKind.EndRegionDirectiveTrivia))
-            {
-                return;
-            }
-
-            DirectiveTriviaSyntax endRegion = relatedDirectives[1];
-
-            if (!endRegion.IsKind(SyntaxKind.EndRegionDirectiveTrivia))
-            {
-                return;
-            }
-
-            SyntaxTrivia trivia = region.ParentTrivia;
-
-            SyntaxTriviaList list;
-            if (!trivia.TryGetContainingList(out list))
-            {
-                return;
-            }
-
-            EndRegionDirectiveTriviaSyntax endRegion2 = FindEndRegion(list, list.IndexOf(trivia));
-
-            if (endRegion != endRegion2)
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.RemoveEmptyRegion,
-                region.GetLocation(),
-                additionalLocations: ImmutableArray.Create(endRegion.GetLocation()));
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyRegionFadeOut, region.GetLocation());
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyRegionFadeOut, endRegion.GetLocation());
         }
 
         private static EndRegionDirectiveTriviaSyntax FindEndRegion(SyntaxTriviaList list, int index)

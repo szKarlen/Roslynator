@@ -168,32 +168,28 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void ComputeRefactorings(RefactoringContext context, OperatorDeclarationSyntax operatorDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
-                || operatorDeclaration.Body?.Span.Contains(context.Span) != true
-                || !context.SupportsCSharp6
-                || !UseExpressionBodiedMemberRefactoring.CanRefactor(operatorDeclaration))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
+                && operatorDeclaration.Body?.Span.Contains(context.Span) == true
+                && context.SupportsCSharp6
+                && UseExpressionBodiedMemberRefactoring.CanRefactor(operatorDeclaration))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Use expression-bodied member",
+                    cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, operatorDeclaration, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Use expression-bodied member",
-                cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, operatorDeclaration, cancellationToken));
         }
 
         private static void ComputeRefactorings(RefactoringContext context, ConversionOperatorDeclarationSyntax operatorDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
-                || operatorDeclaration.Body?.Span.Contains(context.Span) != true
-                || !context.SupportsCSharp6
-                || !UseExpressionBodiedMemberRefactoring.CanRefactor(operatorDeclaration))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
+                && operatorDeclaration.Body?.Span.Contains(context.Span) == true
+                && context.SupportsCSharp6
+                && UseExpressionBodiedMemberRefactoring.CanRefactor(operatorDeclaration))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Use expression-bodied member",
+                    cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, operatorDeclaration, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Use expression-bodied member",
-                cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, operatorDeclaration, cancellationToken));
         }
 
         private static bool BraceContainsSpan(RefactoringContext context, MemberDeclarationSyntax member)

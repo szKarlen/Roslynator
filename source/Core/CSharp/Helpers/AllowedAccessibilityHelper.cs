@@ -154,17 +154,15 @@ namespace Roslynator.CSharp.Helpers
 
         private static bool CheckAccessorAccessibility(AccessorListSyntax accessorList, Accessibility accessibility)
         {
-            if (accessorList == null)
+            if (accessorList != null)
             {
-                return true;
-            }
+                foreach (AccessorDeclarationSyntax accessor in accessorList.Accessors)
+                {
+                    Accessibility accessorAccessibility = accessor.Modifiers.GetAccessibility();
 
-            foreach (AccessorDeclarationSyntax accessor in accessorList.Accessors)
-            {
-                Accessibility accessorAccessibility = accessor.Modifiers.GetAccessibility();
-
-                if (accessorAccessibility != Accessibility.NotApplicable)
-                    return accessorAccessibility.IsMoreRestrictiveThan(accessibility);
+                    if (accessorAccessibility != Accessibility.NotApplicable)
+                        return accessorAccessibility.IsMoreRestrictiveThan(accessibility);
+                }
             }
 
             return true;

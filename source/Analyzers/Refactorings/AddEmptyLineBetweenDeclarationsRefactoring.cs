@@ -18,79 +18,65 @@ namespace Roslynator.CSharp.Refactorings
         {
             var declaration = (MemberDeclarationSyntax)context.Node;
 
-            if (declaration.IsParentKind(SyntaxKind.CompilationUnit))
+            if (!declaration.IsParentKind(SyntaxKind.CompilationUnit))
             {
-                return;
-            }
+                TokenPair tokenPair = GetTokenPair(declaration);
+                SyntaxToken openToken = tokenPair.OpenToken;
+                SyntaxToken closeToken = tokenPair.CloseToken;
 
-            TokenPair tokenPair = GetTokenPair(declaration);
-            SyntaxToken openToken = tokenPair.OpenToken;
-            SyntaxToken closeToken = tokenPair.CloseToken;
+                if (!openToken.IsKind(SyntaxKind.None)
+                    && !openToken.IsMissing
+                    && !closeToken.IsKind(SyntaxKind.None)
+                    && !closeToken.IsMissing)
+                {
+                    int closeTokenLine = closeToken.GetSpanEndLine();
 
-            if (openToken.IsKind(SyntaxKind.None)
-                || openToken.IsMissing
-                || closeToken.IsKind(SyntaxKind.None)
-                || closeToken.IsMissing)
-            {
-                return;
-            }
+                    if (openToken.GetSpanEndLine() != closeTokenLine)
+                    {
+                        MemberDeclarationSyntax nextDeclaration = GetNextDeclaration(declaration);
 
-            int closeTokenLine = closeToken.GetSpanEndLine();
+                        if (nextDeclaration != null)
+                        {
+                            int diff = nextDeclaration.GetSpanStartLine() - closeTokenLine;
 
-            if (openToken.GetSpanEndLine() == closeTokenLine)
-            {
-                return;
-            }
+                            if (diff < 2)
+                            {
+                                SyntaxTrivia trivia = declaration.GetTrailingTrivia().LastOrDefault();
 
-            MemberDeclarationSyntax nextDeclaration = GetNextDeclaration(declaration);
-
-            if (nextDeclaration == null)
-            {
-                return;
-            }
-
-            int diff = nextDeclaration.GetSpanStartLine() - closeTokenLine;
-
-            if (diff >= 2)
-            {
-                return;
-            }
-
-            SyntaxTrivia trivia = declaration.GetTrailingTrivia().LastOrDefault();
-
-            if (trivia.IsEndOfLineTrivia())
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddEmptyLineBetweenDeclarations,
-                    trivia);
-            }
-            else
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddEmptyLineBetweenDeclarations,
-                    closeToken);
+                                if (trivia.IsEndOfLineTrivia())
+                                {
+                                    context.ReportDiagnostic(
+                                        DiagnosticDescriptors.AddEmptyLineBetweenDeclarations,
+                                        trivia);
+                                }
+                                else
+                                {
+                                    context.ReportDiagnostic(
+                                        DiagnosticDescriptors.AddEmptyLineBetweenDeclarations,
+                                        closeToken);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         private static MemberDeclarationSyntax GetNextDeclaration(MemberDeclarationSyntax declaration)
         {
             var containingDeclaration = declaration.Parent as MemberDeclarationSyntax;
-            if (containingDeclaration == null)
+            if (containingDeclaration != null)
             {
-                return null;
+                SyntaxList<MemberDeclarationSyntax> members = containingDeclaration.GetMembers();
+
+                if (members.Count > 1)
+                {
+                    int index = members.IndexOf(declaration);
+
+                    if (index != (members.Count - 1))
+                        return members[index + 1];
+                }
             }
-
-            SyntaxList<MemberDeclarationSyntax> members = containingDeclaration.GetMembers();
-
-            if (members.Count <= 1)
-            {
-                return null;
-            }
-
-            int index = members.IndexOf(declaration);
-
-            if (index != (members.Count - 1))
-                return members[index + 1];
 
             return null;
         }

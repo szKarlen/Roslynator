@@ -58,23 +58,21 @@ namespace Roslynator.CSharp
                     return (propertyName.Length > 0) ? propertyName : null;
             }
 
-            if (!typeSymbol.ImplementsAny(
+            if (typeSymbol.ImplementsAny(
                 SpecialType.System_Collections_Generic_ICollection_T,
                 SpecialType.System_Collections_Generic_IReadOnlyCollection_T))
             {
-                return null;
+                if (typeSymbol.TypeKind == TypeKind.Interface)
+                    return "Count";
+
+                int position = expression.SpanStart;
+
+                if (HasAccessibleProperty(typeSymbol, "Count", semanticModel, position))
+                    return "Count";
+
+                if (HasAccessibleProperty(typeSymbol, "Length", semanticModel, position))
+                    return "Length";
             }
-
-            if (typeSymbol.TypeKind == TypeKind.Interface)
-                return "Count";
-
-            int position = expression.SpanStart;
-
-            if (HasAccessibleProperty(typeSymbol, "Count", semanticModel, position))
-                return "Count";
-
-            if (HasAccessibleProperty(typeSymbol, "Length", semanticModel, position))
-                return "Length";
 
             return null;
         }
@@ -187,30 +185,26 @@ namespace Roslynator.CSharp
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            if (name == null)
+            if (name != null)
             {
-                return false;
-            }
+                ISymbol symbol = semanticModel.GetSymbol(name, cancellationToken);
 
-            ISymbol symbol = semanticModel.GetSymbol(name, cancellationToken);
-
-            if (symbol?.IsNamespace() != true)
-            {
-                return false;
-            }
-
-            string namespaceText = namespaceSymbol.ToString();
-
-            if (string.Equals(namespaceText, symbol.ToString(), StringComparison.Ordinal))
-            {
-                return true;
-            }
-            else if (name.IsParentKind(SyntaxKind.NamespaceDeclaration))
-            {
-                foreach (INamespaceSymbol containingNamespace in symbol.ContainingNamespaces())
+                if (symbol?.IsNamespace() == true)
                 {
-                    if (string.Equals(namespaceText, containingNamespace.ToString(), StringComparison.Ordinal))
+                    string namespaceText = namespaceSymbol.ToString();
+
+                    if (string.Equals(namespaceText, symbol.ToString(), StringComparison.Ordinal))
+                    {
                         return true;
+                    }
+                    else if (name.IsParentKind(SyntaxKind.NamespaceDeclaration))
+                    {
+                        foreach (INamespaceSymbol containingNamespace in symbol.ContainingNamespaces())
+                        {
+                            if (string.Equals(namespaceText, containingNamespace.ToString(), StringComparison.Ordinal))
+                                return true;
+                        }
+                    }
                 }
             }
 
@@ -313,14 +307,14 @@ namespace Roslynator.CSharp
 
             Optional<object> optional = semanticModel.GetConstantValue(expression, cancellationToken);
 
-            if (!optional.HasValue)
+            if (optional.HasValue)
             {
-                return false;
+                var value = optional.Value as string;
+
+                return value?.Length == 0;
             }
 
-            var value = optional.Value as string;
-
-            return value?.Length == 0;
+            return false;
         }
 
         public static NameSyntax EnsureFullyQualifiedName(
@@ -365,15 +359,18 @@ namespace Roslynator.CSharp
         {
             ExpressionSyntax expression = invocationExpression.Expression;
 
-            if (expression?.IsKind(SyntaxKind.IdentifierName) != true)
+            if (expression?.IsKind(SyntaxKind.IdentifierName) == true)
             {
-                return false;
+                var identifierName = (IdentifierNameSyntax)expression;
+
+                if (string.Equals(identifierName.Identifier.ValueText, "nameof", StringComparison.Ordinal)
+                    && semanticModel.GetSymbol(invocationExpression, cancellationToken) == null)
+                {
+                    return true;
+                }
             }
 
-            var identifierName = (IdentifierNameSyntax)expression;
-
-            return string.Equals(identifierName.Identifier.ValueText, "nameof", StringComparison.Ordinal)
-                && semanticModel.GetSymbol(invocationExpression, cancellationToken) == null;
+            return false;
         }
 
         public static bool IsImplicitNumericConversion(ITypeSymbol from, ITypeSymbol to)

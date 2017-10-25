@@ -18,65 +18,53 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameBackingFieldAccordingToPropertyName))
                 await RenameFieldAccordingToPropertyNameAsync(context, identifierName).ConfigureAwait(false);
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
-                || !context.Span.IsEmpty)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
+                && context.Span.IsEmpty)
             {
-                return;
+                await AddUsingDirectiveRefactoring.ComputeRefactoringsAsync(context, identifierName).ConfigureAwait(false);
             }
-
-            await AddUsingDirectiveRefactoring.ComputeRefactoringsAsync(context, identifierName).ConfigureAwait(false);
         }
 
         private static async Task RenameFieldAccordingToPropertyNameAsync(
             RefactoringContext context,
             IdentifierNameSyntax identifierName)
         {
-            if (IsQualified(identifierName)
-                && !IsQualifiedWithThis(identifierName))
+            if (!IsQualified(identifierName)
+                || IsQualifiedWithThis(identifierName))
             {
-                return;
+                PropertyDeclarationSyntax propertyDeclaration = identifierName.FirstAncestor<PropertyDeclarationSyntax>();
+
+                if (propertyDeclaration != null)
+                {
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                    var fieldSymbol = semanticModel.GetSymbol(identifierName, context.CancellationToken) as IFieldSymbol;
+
+                    if (fieldSymbol?.IsPrivate() == true)
+                    {
+                        IPropertySymbol propertySymbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken);
+
+                        if (propertySymbol != null
+                            && fieldSymbol.IsStatic == propertySymbol.IsStatic
+                            && fieldSymbol.ContainingType == propertySymbol.ContainingType)
+                        {
+                            string newName = StringUtility.ToCamelCase(propertySymbol.Name, context.Settings.PrefixFieldIdentifierWithUnderscore);
+
+                            if (!string.Equals(fieldSymbol.Name, newName, StringComparison.Ordinal)
+                                && await NameGenerator.IsUniqueMemberNameAsync(
+                                    newName,
+                                    fieldSymbol,
+                                    context.Solution,
+                                    cancellationToken: context.CancellationToken).ConfigureAwait(false))
+                            {
+                                context.RegisterRefactoring(
+                                    $"Rename '{fieldSymbol.Name}' to '{newName}'",
+                                    cancellationToken => Renamer.RenameSymbolAsync(context.Solution, fieldSymbol, newName, default(OptionSet), cancellationToken));
+                            }
+                        }
+                    }
+                }
             }
-
-            PropertyDeclarationSyntax propertyDeclaration = identifierName.FirstAncestor<PropertyDeclarationSyntax>();
-
-            if (propertyDeclaration == null)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            var fieldSymbol = semanticModel.GetSymbol(identifierName, context.CancellationToken) as IFieldSymbol;
-
-            if (fieldSymbol?.IsPrivate() != true)
-            {
-                return;
-            }
-
-            IPropertySymbol propertySymbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken);
-
-            if (propertySymbol == null
-                || fieldSymbol.IsStatic != propertySymbol.IsStatic
-                || fieldSymbol.ContainingType != propertySymbol.ContainingType)
-            {
-                return;
-            }
-
-            string newName = StringUtility.ToCamelCase(propertySymbol.Name, context.Settings.PrefixFieldIdentifierWithUnderscore);
-
-            if (string.Equals(fieldSymbol.Name, newName, StringComparison.Ordinal)
-                || !await NameGenerator.IsUniqueMemberNameAsync(
-                    newName,
-                    fieldSymbol,
-                    context.Solution,
-                    cancellationToken: context.CancellationToken).ConfigureAwait(false))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                $"Rename '{fieldSymbol.Name}' to '{newName}'",
-                cancellationToken => Renamer.RenameSymbolAsync(context.Solution, fieldSymbol, newName, default(OptionSet), cancellationToken));
         }
 
         private static bool IsQualified(SimpleNameSyntax identifierName)
@@ -86,14 +74,14 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsQualifiedWithThis(SimpleNameSyntax identifierName)
         {
-            if (!IsQualified(identifierName))
+            if (IsQualified(identifierName))
             {
-                return false;
+                var memberAccess = (MemberAccessExpressionSyntax)identifierName.Parent;
+
+                return memberAccess.Expression?.IsKind(SyntaxKind.ThisExpression) == true;
             }
 
-            var memberAccess = (MemberAccessExpressionSyntax)identifierName.Parent;
-
-            return memberAccess.Expression?.IsKind(SyntaxKind.ThisExpression) == true;
+            return false;
         }
     }
 }

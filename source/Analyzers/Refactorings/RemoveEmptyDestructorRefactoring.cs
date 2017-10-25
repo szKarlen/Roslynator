@@ -14,13 +14,11 @@ namespace Roslynator.CSharp.Refactorings
         {
             var destructor = (DestructorDeclarationSyntax)context.Node;
 
-            if (destructor.Body?.Statements.Count != 0
-                || destructor.SpanContainsDirectives())
+            if (destructor.Body?.Statements.Count == 0
+                && !destructor.SpanContainsDirectives())
             {
-                return;
+                context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyDestructor, destructor);
             }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.RemoveEmptyDestructor, destructor);
         }
 
         public static Task<Document> RefactorAsync(

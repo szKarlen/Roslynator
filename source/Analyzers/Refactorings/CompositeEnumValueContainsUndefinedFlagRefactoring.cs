@@ -222,29 +222,25 @@ namespace Roslynator.CSharp.Refactorings
 
             Debug.Assert(syntaxReference != null, "");
 
-            if (syntaxReference == null)
+            if (syntaxReference != null)
             {
-                return;
+                SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
+
+                Debug.Assert(node.IsKind(SyntaxKind.EnumMemberDeclaration), node.Kind().ToString());
+
+                if (node.IsKind(SyntaxKind.EnumMemberDeclaration))
+                {
+                    var enumMember = (EnumMemberDeclarationSyntax)node;
+
+                    Diagnostic diagnostic = Diagnostic.Create(
+                        DiagnosticDescriptors.CompositeEnumValueContainsUndefinedFlag,
+                        enumMember.GetLocation(),
+                        ImmutableDictionary.CreateRange(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("Value", value) }),
+                        value);
+
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
-
-            SyntaxNode node = syntaxReference.GetSyntax(context.CancellationToken);
-
-            Debug.Assert(node.IsKind(SyntaxKind.EnumMemberDeclaration), node.Kind().ToString());
-
-            if (!node.IsKind(SyntaxKind.EnumMemberDeclaration))
-            {
-                return;
-            }
-
-            var enumMember = (EnumMemberDeclarationSyntax)node;
-
-            Diagnostic diagnostic = Diagnostic.Create(
-                DiagnosticDescriptors.CompositeEnumValueContainsUndefinedFlag,
-                enumMember.GetLocation(),
-                ImmutableDictionary.CreateRange(new KeyValuePair<string, string>[] { new KeyValuePair<string, string>("Value", value) }),
-                value);
-
-            context.ReportDiagnostic(diagnostic);
         }
 
         public static async Task<Document> RefactorAsync(

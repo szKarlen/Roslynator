@@ -9,13 +9,11 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, EventDeclarationSyntax eventDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
-                || !eventDeclaration.HeaderSpan().Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && eventDeclaration.HeaderSpan().Contains(context.Span))
             {
-                return;
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, eventDeclaration).ConfigureAwait(false);
             }
-
-            await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, eventDeclaration).ConfigureAwait(false);
         }
     }
 }

@@ -13,28 +13,22 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<StatementSyntax> statements = switchSection.Statements;
 
-            if (!statements.Any())
+            if (statements.Any())
             {
-                return;
+                SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
+
+                if (labels.Any())
+                {
+                    StatementSyntax statement = statements.First();
+
+                    if (switchSection.SyntaxTree.IsSingleLineSpan(TextSpan.FromBounds(labels.Last().Span.End, statement.SpanStart)))
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.FormatSwitchSectionStatementOnSeparateLine,
+                            statement);
+                    }
+                }
             }
-
-            SyntaxList<SwitchLabelSyntax> labels = switchSection.Labels;
-
-            if (!labels.Any())
-            {
-                return;
-            }
-
-            StatementSyntax statement = statements.First();
-
-            if (!switchSection.SyntaxTree.IsSingleLineSpan(TextSpan.FromBounds(labels.Last().Span.End, statement.SpanStart)))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.FormatSwitchSectionStatementOnSeparateLine,
-                statement);
         }
     }
 }

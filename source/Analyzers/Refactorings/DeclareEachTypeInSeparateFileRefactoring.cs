@@ -14,26 +14,24 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<MemberDeclarationSyntax> members = compilationUnit.Members;
 
-            if (ContainsSingleNamespaceWithSingleNonNamespaceMember(members))
+            if (!ContainsSingleNamespaceWithSingleNonNamespaceMember(members))
             {
-                return;
-            }
-
-            using (IEnumerator<MemberDeclarationSyntax> en = ExtractTypeDeclarationToNewDocumentRefactoring.GetNonNestedTypeDeclarations(members).GetEnumerator())
-            {
-                if (en.MoveNext())
+                using (IEnumerator<MemberDeclarationSyntax> en = ExtractTypeDeclarationToNewDocumentRefactoring.GetNonNestedTypeDeclarations(members).GetEnumerator())
                 {
-                    MemberDeclarationSyntax firstMember = en.Current;
-
                     if (en.MoveNext())
                     {
-                        ReportDiagnostic(context, firstMember);
+                        MemberDeclarationSyntax firstMember = en.Current;
 
-                        do
+                        if (en.MoveNext())
                         {
-                            ReportDiagnostic(context, en.Current);
+                            ReportDiagnostic(context, firstMember);
 
-                        } while (en.MoveNext());
+                            do
+                            {
+                                ReportDiagnostic(context, en.Current);
+
+                            } while (en.MoveNext());
+                        }
                     }
                 }
             }
@@ -43,36 +41,35 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxToken token = ExtractTypeDeclarationToNewDocumentRefactoring.GetIdentifier(member);
 
-            if (token.IsKind(SyntaxKind.None))
+            if (!token.IsKind(SyntaxKind.None))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.DeclareEachTypeInSeparateFile,
+                    token);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.DeclareEachTypeInSeparateFile,
-                token);
         }
 
         private static bool ContainsSingleNamespaceWithSingleNonNamespaceMember(SyntaxList<MemberDeclarationSyntax> members)
         {
-            if (members.Count != 1)
+            if (members.Count == 1)
             {
-                return false;
+                MemberDeclarationSyntax member = members[0];
+
+                if (member.IsKind(SyntaxKind.NamespaceDeclaration))
+                {
+                    var namespaceDeclaration = (NamespaceDeclarationSyntax)member;
+
+                    members = namespaceDeclaration.Members;
+
+                    if (members.Count == 1
+                        && !members[0].IsKind(SyntaxKind.NamespaceDeclaration))
+                    {
+                        return true;
+                    }
+                }
             }
 
-            MemberDeclarationSyntax member = members[0];
-
-            if (!member.IsKind(SyntaxKind.NamespaceDeclaration))
-            {
-                return false;
-            }
-
-            var namespaceDeclaration = (NamespaceDeclarationSyntax)member;
-
-            members = namespaceDeclaration.Members;
-
-            return members.Count == 1
-                && !members[0].IsKind(SyntaxKind.NamespaceDeclaration);
+            return false;
         }
     }
 }

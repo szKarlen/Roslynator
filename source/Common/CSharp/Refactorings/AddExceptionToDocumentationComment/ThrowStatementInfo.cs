@@ -20,46 +20,38 @@ namespace Roslynator.CSharp.Refactorings.AddExceptionToDocumentationComment
         {
             SyntaxNode parent = Node.Parent;
 
-            if (parent == null)
+            if (parent != null)
             {
-                return null;
+                if (parent.IsKind(SyntaxKind.Block))
+                    parent = parent.Parent;
+
+                if (parent?.IsKind(SyntaxKind.IfStatement) == true)
+                {
+                    var ifStatement = (IfStatementSyntax)parent;
+
+                    ExpressionSyntax condition = ifStatement.Condition;
+
+                    if (condition?.IsKind(SyntaxKind.EqualsExpression) == true)
+                    {
+                        var equalsExpression = (BinaryExpressionSyntax)condition;
+
+                        ExpressionSyntax left = equalsExpression.Left;
+
+                        if (left != null)
+                        {
+                            ISymbol leftSymbol = semanticModel.GetSymbol(left, cancellationToken);
+
+                            if (leftSymbol?.IsParameter() == true
+                                && leftSymbol.ContainingSymbol?.Equals(DeclarationSymbol) == true)
+                            {
+                                return (IParameterSymbol)leftSymbol;
+                            }
+                        }
+                    }
+                }
             }
 
-            if (parent.IsKind(SyntaxKind.Block))
-                parent = parent.Parent;
-
-            if (parent?.IsKind(SyntaxKind.IfStatement) != true)
-            {
-                return null;
-            }
-
-            var ifStatement = (IfStatementSyntax)parent;
-
-            ExpressionSyntax condition = ifStatement.Condition;
-
-            if (condition?.IsKind(SyntaxKind.EqualsExpression) != true)
-            {
-                return null;
-            }
-
-            var equalsExpression = (BinaryExpressionSyntax)condition;
-
-            ExpressionSyntax left = equalsExpression.Left;
-
-            if (left == null)
-            {
-                return null;
-            }
-
-            ISymbol leftSymbol = semanticModel.GetSymbol(left, cancellationToken);
-
-            if (leftSymbol?.IsParameter() != true
-                || leftSymbol.ContainingSymbol?.Equals(DeclarationSymbol) != true)
-            {
-                return null;
-            }
-
-            return (IParameterSymbol)leftSymbol;
+            return null;
         }
     }
 }

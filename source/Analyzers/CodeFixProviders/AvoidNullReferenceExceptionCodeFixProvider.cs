@@ -28,28 +28,26 @@ namespace Roslynator.CSharp.CodeFixes
             if (!TryFindFirstAncestorOrSelf(root, context.Span, out ExpressionSyntax expression, predicate: f => f.IsKind(SyntaxKind.SimpleMemberAccessExpression, SyntaxKind.ElementAccessExpression)))
                 return;
 
-            if (IsPartOfLeftSideOfAssignment(expression))
+            if (!IsPartOfLeftSideOfAssignment(expression))
             {
-                return;
+                SyntaxKind kind = expression.Kind();
+
+                if (kind == SyntaxKind.SimpleMemberAccessExpression)
+                {
+                    expression = ((MemberAccessExpressionSyntax)expression).Expression;
+                }
+                else if (kind == SyntaxKind.ElementAccessExpression)
+                {
+                    expression = ((ElementAccessExpressionSyntax)expression).Expression;
+                }
+
+                CodeAction codeAction = CodeAction.Create(
+                    "Use conditional access",
+                    cancellationToken => AvoidNullReferenceExceptionRefactoring.RefactorAsync(context.Document, expression, cancellationToken),
+                    GetEquivalenceKey(DiagnosticIdentifiers.AvoidNullReferenceException));
+
+                context.RegisterCodeFix(codeAction, context.Diagnostics);
             }
-
-            SyntaxKind kind = expression.Kind();
-
-            if (kind == SyntaxKind.SimpleMemberAccessExpression)
-            {
-                expression = ((MemberAccessExpressionSyntax)expression).Expression;
-            }
-            else if (kind == SyntaxKind.ElementAccessExpression)
-            {
-                expression = ((ElementAccessExpressionSyntax)expression).Expression;
-            }
-
-            CodeAction codeAction = CodeAction.Create(
-                "Use conditional access",
-                cancellationToken => AvoidNullReferenceExceptionRefactoring.RefactorAsync(context.Document, expression, cancellationToken),
-                GetEquivalenceKey(DiagnosticIdentifiers.AvoidNullReferenceException));
-
-            context.RegisterCodeFix(codeAction, context.Diagnostics);
         }
 
         private static bool IsPartOfLeftSideOfAssignment(ExpressionSyntax expression)

@@ -21,120 +21,112 @@ namespace Roslynator.CSharp.Refactorings
         {
             INamedTypeSymbol stringBuilderSymbol = context.GetTypeByMetadataName(MetadataNames.System_Text_StringBuilder);
 
-            if (stringBuilderSymbol == null)
+            if (stringBuilderSymbol != null)
             {
-                return;
-            }
-
-            InvocationExpressionSyntax invocationExpression = invocationInfo.InvocationExpression;
-            MethodInfo methodInfo;
-            if (!context.SemanticModel.TryGetMethodInfo(invocationExpression, out methodInfo, context.CancellationToken)
-                || methodInfo.IsExtensionMethod
-                || methodInfo.ContainingType?.Equals(stringBuilderSymbol) != true)
-            {
-                return;
-            }
-
-            ImmutableArray<IParameterSymbol> parameters = methodInfo.Parameters;
-            SeparatedSyntaxList<ArgumentSyntax> arguments = invocationInfo.Arguments;
-
-            if (parameters.Length == 1
-                && arguments.Count == 1
-                && methodInfo.IsName("Append", "AppendLine"))
-            {
-                ArgumentSyntax argument = arguments.First();
-
-                ExpressionSyntax expression = argument.Expression;
-
-                SyntaxKind expressionKind = expression.Kind();
-
-                switch (expressionKind)
+                InvocationExpressionSyntax invocationExpression = invocationInfo.InvocationExpression;
+                MethodInfo methodInfo;
+                if (context.SemanticModel.TryGetMethodInfo(invocationExpression, out methodInfo, context.CancellationToken)
+                    && !methodInfo.IsExtensionMethod
+                    && methodInfo.ContainingType?.Equals(stringBuilderSymbol) == true)
                 {
-                    case SyntaxKind.InterpolatedStringExpression:
-                        {
-                            context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
-                            return;
-                        }
-                    case SyntaxKind.AddExpression:
-                        {
-                            StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo((BinaryExpressionSyntax)expression, context.SemanticModel, context.CancellationToken);
-                            if (concatenationInfo.Success)
-                            {
-                                context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
-                                return;
-                            }
+                    ImmutableArray<IParameterSymbol> parameters = methodInfo.Parameters;
+                    SeparatedSyntaxList<ArgumentSyntax> arguments = invocationInfo.Arguments;
 
-                            break;
-                        }
-                    default:
+                    if (parameters.Length == 1
+                        && arguments.Count == 1
+                        && methodInfo.IsName("Append", "AppendLine"))
+                    {
+                        ArgumentSyntax argument = arguments.First();
+
+                        ExpressionSyntax expression = argument.Expression;
+
+                        SyntaxKind expressionKind = expression.Kind();
+
+                        switch (expressionKind)
                         {
-                            if (expressionKind == SyntaxKind.InvocationExpression
-                                && IsFixable((InvocationExpressionSyntax)expression, context.SemanticModel, context.CancellationToken))
-                            {
-                                context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
-                                return;
-                            }
+                            case SyntaxKind.InterpolatedStringExpression:
+                                {
+                                    context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
+                                    return;
+                                }
+                            case SyntaxKind.AddExpression:
+                                {
+                                    StringConcatenationExpressionInfo concatenationInfo = SyntaxInfo.StringConcatenationExpressionInfo((BinaryExpressionSyntax)expression, context.SemanticModel, context.CancellationToken);
+                                    if (concatenationInfo.Success)
+                                    {
+                                        context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
+                                        return;
+                                    }
 
-                            if (methodInfo.IsName("Append")
-                                && parameters.Length == 1
-                                && parameters[0].Type.IsObject()
-                                && context.SemanticModel.GetTypeSymbol(argument.Expression, context.CancellationToken).IsValueType)
-                            {
-                                context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, argument);
-                                return;
-                            }
+                                    break;
+                                }
+                            default:
+                                {
+                                    if (expressionKind == SyntaxKind.InvocationExpression
+                                        && IsFixable((InvocationExpressionSyntax)expression, context.SemanticModel, context.CancellationToken))
+                                    {
+                                        context.ReportDiagnostic(DiagnosticDescriptors.OptimizeStringBuilderAppendCall, argument, methodInfo.Name);
+                                        return;
+                                    }
 
-                            break;
+                                    if (methodInfo.IsName("Append")
+                                        && parameters.Length == 1
+                                        && parameters[0].Type.IsObject()
+                                        && context.SemanticModel.GetTypeSymbol(argument.Expression, context.CancellationToken).IsValueType)
+                                    {
+                                        context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, argument);
+                                        return;
+                                    }
+
+                                    break;
+                                }
                         }
+                    }
+                    else if (parameters.Length > 1
+                        && methodInfo.IsName("Insert")
+                        && methodInfo.HasParameters(SpecialType.System_Int32, SpecialType.System_Object)
+                        && context.SemanticModel
+                            .GetTypeSymbol(arguments[1].Expression, context.CancellationToken)
+                            .IsValueType)
+                    {
+                        context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, arguments[1]);
+                    }
                 }
-            }
-            else if (parameters.Length > 1
-                && methodInfo.IsName("Insert")
-                && methodInfo.HasParameters(SpecialType.System_Int32, SpecialType.System_Object)
-                && context.SemanticModel
-                    .GetTypeSymbol(arguments[1].Expression, context.CancellationToken)
-                    .IsValueType)
-            {
-                context.ReportDiagnostic(DiagnosticDescriptors.AvoidBoxingOfValueType, arguments[1]);
             }
         }
 
         private static bool IsFixable(InvocationExpressionSyntax invocationExpression, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
             MemberInvocationExpressionInfo invocationInfo = SyntaxInfo.MemberInvocationExpressionInfo(invocationExpression);
-            if (!invocationInfo.Success)
+            if (invocationInfo.Success)
             {
-                return false;
-            }
-
-            MethodInfo methodInfo;
-            if (!semanticModel.TryGetMethodInfo(invocationInfo.InvocationExpression, out methodInfo, cancellationToken)
-                || !methodInfo.IsContainingType(SpecialType.System_String)
-                || !methodInfo.IsReturnType(SpecialType.System_String))
-            {
-                return false;
-            }
-
-            switch (methodInfo.Name)
-            {
-                case "Substring":
+                MethodInfo methodInfo;
+                if (semanticModel.TryGetMethodInfo(invocationInfo.InvocationExpression, out methodInfo, cancellationToken)
+                    && methodInfo.IsContainingType(SpecialType.System_String)
+                    && methodInfo.IsReturnType(SpecialType.System_String))
+                {
+                    switch (methodInfo.Name)
                     {
-                        if (methodInfo.HasParameters(SpecialType.System_Int32, SpecialType.System_Int32))
-                            return true;
+                        case "Substring":
+                            {
+                                if (methodInfo.HasParameters(SpecialType.System_Int32, SpecialType.System_Int32))
+                                    return true;
 
-                        break;
-                    }
-                case "Remove":
-                    {
-                        if (methodInfo.HasParameter(SpecialType.System_Int32))
-                            return true;
+                                break;
+                            }
+                        case "Remove":
+                            {
+                                if (methodInfo.HasParameter(SpecialType.System_Int32))
+                                    return true;
 
-                        break;
+                                break;
+                            }
+                        case "Format":
+                            {
+                                return true;
+                            }
                     }
-                case "Format":
-                    {
-                        return true;
-                    }
+                }
             }
 
             return false;

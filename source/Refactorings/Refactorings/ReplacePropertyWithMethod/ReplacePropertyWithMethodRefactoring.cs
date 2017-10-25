@@ -29,48 +29,40 @@ namespace Roslynator.CSharp.Refactorings.ReplacePropertyWithMethod
 
         public static void ComputeRefactoring(RefactoringContext context, PropertyDeclarationSyntax propertyDeclaration)
         {
-            if (!CanRefactor(context, propertyDeclaration))
+            if (CanRefactor(context, propertyDeclaration))
             {
-                return;
+                context.RegisterRefactoring(
+                    $"Replace '{propertyDeclaration.Identifier.ValueText}' with method",
+                    cancellationToken => RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                $"Replace '{propertyDeclaration.Identifier.ValueText}' with method",
-                cancellationToken => RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
         }
 
         public static bool CanRefactor(RefactoringContext context, PropertyDeclarationSyntax propertyDeclaration)
         {
             AccessorListSyntax accessorList = propertyDeclaration.AccessorList;
 
-            if (accessorList == null)
+            if (accessorList != null)
             {
-                return false;
-            }
+                SyntaxList<AccessorDeclarationSyntax> accessors = accessorList.Accessors;
 
-            SyntaxList<AccessorDeclarationSyntax> accessors = accessorList.Accessors;
+                if (accessors.Count == 1)
+                {
+                    AccessorDeclarationSyntax accessor = accessors.First();
 
-            if (accessors.Count != 1)
-            {
-                return false;
-            }
-
-            AccessorDeclarationSyntax accessor = accessors.First();
-
-            if (!accessor.IsKind(SyntaxKind.GetAccessorDeclaration))
-            {
-                return false;
-            }
-
-            if (accessor.BodyOrExpressionBody() != null)
-            {
-                return true;
-            }
-            else if (context.SupportsCSharp6
-                && accessor.IsAutoGetter()
-                && propertyDeclaration.Initializer?.Value != null)
-            {
-                return true;
+                    if (accessor.IsKind(SyntaxKind.GetAccessorDeclaration))
+                    {
+                        if (accessor.BodyOrExpressionBody() != null)
+                        {
+                            return true;
+                        }
+                        else if (context.SupportsCSharp6
+                            && accessor.IsAutoGetter()
+                            && propertyDeclaration.Initializer?.Value != null)
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
 
             return false;

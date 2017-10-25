@@ -14,16 +14,17 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task<bool> CanRefactorAsync(RefactoringContext context, SyntaxNode node)
         {
-            if (!node
+            if (node
                 .DescendantTrivia(context.Span, descendIntoTrivia: true)
                 .Any(f => f.IsEndOfLineTrivia()))
             {
-                return false;
+                SourceText sourceText = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
+
+                if (GetEmptyLines(sourceText, context.Root, context.Span).Any())
+                    return true;
             }
 
-            SourceText sourceText = await context.Document.GetTextAsync(context.CancellationToken).ConfigureAwait(false);
-
-            return GetEmptyLines(sourceText, context.Root, context.Span).Any();
+            return false;
         }
 
         public static async Task<Document> RefactorAsync(

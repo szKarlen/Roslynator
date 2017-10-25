@@ -10,38 +10,30 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, CaseSwitchLabelSyntax caseLabel)
         {
-            if (!context.IsAnyRefactoringEnabled(RefactoringIdentifiers.AddCastExpression, RefactoringIdentifiers.CallToMethod))
+            if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.AddCastExpression, RefactoringIdentifiers.CallToMethod))
             {
-                return;
+                ExpressionSyntax value = caseLabel.Value;
+
+                if (value?.Span.Contains(context.Span) == true)
+                {
+                    var switchStatement = caseLabel.Parent?.Parent as SwitchStatementSyntax;
+
+                    if (switchStatement != null)
+                    {
+                        ExpressionSyntax expression = switchStatement.Expression;
+
+                        if (expression?.IsMissing == false)
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+                            if (typeSymbol?.IsErrorType() == false)
+                                ModifyExpressionRefactoring.ComputeRefactoring(context, value, typeSymbol, semanticModel);
+                        }
+                    }
+                }
             }
-
-            ExpressionSyntax value = caseLabel.Value;
-
-            if (value?.Span.Contains(context.Span) != true)
-            {
-                return;
-            }
-
-            var switchStatement = caseLabel.Parent?.Parent as SwitchStatementSyntax;
-
-            if (switchStatement == null)
-            {
-                return;
-            }
-
-            ExpressionSyntax expression = switchStatement.Expression;
-
-            if (expression?.IsMissing != false)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, context.CancellationToken);
-
-            if (typeSymbol?.IsErrorType() == false)
-                ModifyExpressionRefactoring.ComputeRefactoring(context, value, typeSymbol, semanticModel);
         }
     }
 }

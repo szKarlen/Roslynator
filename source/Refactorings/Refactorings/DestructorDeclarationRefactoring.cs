@@ -8,17 +8,15 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, DestructorDeclarationSyntax destructorDeclaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
-                || destructorDeclaration.Body?.Span.Contains(context.Span) != true
-                || !context.SupportsCSharp6
-                || !UseExpressionBodiedMemberRefactoring.CanRefactor(destructorDeclaration))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
+                && destructorDeclaration.Body?.Span.Contains(context.Span) == true
+                && context.SupportsCSharp6
+                && UseExpressionBodiedMemberRefactoring.CanRefactor(destructorDeclaration))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Use expression-bodied member",
+                    cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, destructorDeclaration, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Use expression-bodied member",
-                cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, destructorDeclaration, cancellationToken));
         }
     }
 }

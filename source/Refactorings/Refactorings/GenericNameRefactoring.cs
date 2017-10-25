@@ -8,15 +8,13 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, GenericNameSyntax genericName)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractGenericType)
-                || !ExtractGenericTypeRefactoring.CanRefactor(context, genericName))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractGenericType)
+                && ExtractGenericTypeRefactoring.CanRefactor(context, genericName))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Extract generic type",
+                    cancellationToken => ExtractGenericTypeRefactoring.RefactorAsync(context.Document, genericName, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Extract generic type",
-                cancellationToken => ExtractGenericTypeRefactoring.RefactorAsync(context.Document, genericName, cancellationToken));
         }
     }
 }

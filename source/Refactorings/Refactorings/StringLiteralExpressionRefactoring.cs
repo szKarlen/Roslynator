@@ -115,21 +115,19 @@ namespace Roslynator.CSharp.Refactorings
                 }
             }
 
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.UseStringEmptyInsteadOfEmptyStringLiteral)
-                || !CanReplaceWithStringEmpty(literalExpression))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseStringEmptyInsteadOfEmptyStringLiteral)
+                && CanReplaceWithStringEmpty(literalExpression))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Replace \"\" with 'string.Empty'",
+                    cancellationToken =>
+                    {
+                        return ReplaceWithStringEmptyAsync(
+                            context.Document,
+                            literalExpression,
+                            cancellationToken);
+                    });
             }
-
-            context.RegisterRefactoring(
-                "Replace \"\" with 'string.Empty'",
-                cancellationToken =>
-                {
-                    return ReplaceWithStringEmptyAsync(
-                        context.Document,
-                        literalExpression,
-                        cancellationToken);
-                });
         }
 
         private static int GetStartIndex(LiteralExpressionSyntax literalExpression, TextSpan span)

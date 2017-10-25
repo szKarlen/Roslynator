@@ -55,19 +55,19 @@ namespace Roslynator.CSharp.CodeFixes
             Diagnostic diagnostic,
             SemanticModel semanticModel)
         {
-            if (expression?.IsMissing != false
-                || semanticModel.GetTypeSymbol(expression, context.CancellationToken)?.IsNullableOf(SpecialType.System_Boolean) != true)
+            if (expression?.IsMissing == false
+                && semanticModel.GetTypeSymbol(expression, context.CancellationToken)?.IsNullableOf(SpecialType.System_Boolean) == true)
             {
-                return false;
+                CodeAction codeAction = CodeAction.Create(
+                    AddComparisonWithBooleanLiteralRefactoring.GetTitle(expression),
+                    cancellationToken => AddComparisonWithBooleanLiteralRefactoring.RefactorAsync(context.Document, expression, cancellationToken),
+                    GetEquivalenceKey(diagnostic));
+
+                context.RegisterCodeFix(codeAction, diagnostic);
+                return true;
             }
 
-            CodeAction codeAction = CodeAction.Create(
-                AddComparisonWithBooleanLiteralRefactoring.GetTitle(expression),
-                cancellationToken => AddComparisonWithBooleanLiteralRefactoring.RefactorAsync(context.Document, expression, cancellationToken),
-                GetEquivalenceKey(diagnostic));
-
-            context.RegisterCodeFix(codeAction, diagnostic);
-            return true;
+            return false;
         }
     }
 }

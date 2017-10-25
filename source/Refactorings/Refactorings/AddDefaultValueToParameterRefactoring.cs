@@ -15,57 +15,46 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxNode parent = parameter.Parent as BaseParameterListSyntax;
 
-            if (parent == null)
+            if (parent != null)
             {
-                return;
+                parent = parent.Parent;
+
+                if (parent?.IsKind(
+                    SyntaxKind.SimpleLambdaExpression,
+                    SyntaxKind.ParenthesizedLambdaExpression,
+                    SyntaxKind.AnonymousMethodExpression) == false)
+                {
+                    TypeSyntax type = parameter.Type;
+
+                    if (type != null)
+                    {
+                        SyntaxToken identifier = parameter.Identifier;
+
+                        if (!identifier.IsMissing
+                            && context.Span.Start >= identifier.Span.Start)
+                        {
+                            EqualsValueClauseSyntax @default = parameter.Default;
+
+                            if (@default == null
+                                || @default.IsMissing
+                                || @default.Value == null
+                                || @default.Value.IsMissing)
+                            {
+                                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+                                if (typeSymbol?.IsErrorType() == false)
+                                {
+                                    context.RegisterRefactoring(
+                                        "Add default value",
+                                        cancellationToken => RefactorAsync(context.Document, parameter, typeSymbol, cancellationToken));
+                                }
+                            }
+                        }
+                    }
+                }
             }
-
-            parent = parent.Parent;
-
-            if (parent?.IsKind(
-                SyntaxKind.SimpleLambdaExpression,
-                SyntaxKind.ParenthesizedLambdaExpression,
-                SyntaxKind.AnonymousMethodExpression) != false)
-            {
-                return;
-            }
-
-            TypeSyntax type = parameter.Type;
-
-            if (type == null)
-            {
-                return;
-            }
-
-            SyntaxToken identifier = parameter.Identifier;
-
-            if (identifier.IsMissing
-                || context.Span.Start < identifier.Span.Start)
-            {
-                return;
-            }
-
-            EqualsValueClauseSyntax @default = parameter.Default;
-
-            if (@default?.IsMissing == false
-                && @default.Value != null
-                && !@default.Value.IsMissing)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
-
-            if (typeSymbol?.IsErrorType() != false)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Add default value",
-                cancellationToken => RefactorAsync(context.Document, parameter, typeSymbol, cancellationToken));
         }
 
         public static Task<Document> RefactorAsync(

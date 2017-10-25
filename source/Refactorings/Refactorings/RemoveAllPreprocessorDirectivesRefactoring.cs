@@ -6,14 +6,12 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllPreprocessorDirectives))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllPreprocessorDirectives))
             {
-                return;
+                context.RegisterRefactoring(
+                    "Remove all directives",
+                    cancellationToken => context.Document.RemoveDirectivesAsync(DirectiveRemoveOptions.All, context.CancellationToken));
             }
-
-            context.RegisterRefactoring(
-                "Remove all directives",
-                cancellationToken => context.Document.RemoveDirectivesAsync(DirectiveRemoveOptions.All, context.CancellationToken));
         }
     }
 }

@@ -26,33 +26,27 @@ namespace Roslynator.CSharp.Refactorings.DocumentationComment
             MemberDeclarationSyntax memberDeclaration,
             SeparatedSyntaxList<TypeParameterSyntax> typeParameters)
         {
-            if (!typeParameters.Any())
+            if (typeParameters.Any())
             {
-                return;
-            }
+                DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
 
-            DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
-
-            if (comment == null)
-            {
-                return;
-            }
-
-            ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "typeparam", "TYPEPARAM", "name");
-
-            if (values.IsDefault)
-            {
-                return;
-            }
-
-            foreach (TypeParameterSyntax typeParameter in typeParameters)
-            {
-                if (!typeParameter.IsMissing
-                    && !values.Contains(typeParameter.Identifier.ValueText))
+                if (comment != null)
                 {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AddTypeParameterToDocumentationComment,
-                        typeParameter.Identifier);
+                    ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "typeparam", "TYPEPARAM", "name");
+
+                    if (!values.IsDefault)
+                    {
+                        foreach (TypeParameterSyntax typeParameter in typeParameters)
+                        {
+                            if (!typeParameter.IsMissing
+                                && !values.Contains(typeParameter.Identifier.ValueText))
+                            {
+                                context.ReportDiagnostic(
+                                    DiagnosticDescriptors.AddTypeParameterToDocumentationComment,
+                                    typeParameter.Identifier);
+                            }
+                        }
+                    }
                 }
             }
         }

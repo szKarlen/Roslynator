@@ -27,33 +27,27 @@ namespace Roslynator.CSharp.Refactorings.DocumentationComment
             MemberDeclarationSyntax memberDeclaration,
             SeparatedSyntaxList<ParameterSyntax> parameters)
         {
-            if (!parameters.Any())
+            if (parameters.Any())
             {
-                return;
-            }
+                DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
 
-            DocumentationCommentTriviaSyntax comment = memberDeclaration.GetSingleLineDocumentationComment();
-
-            if (comment == null)
-            {
-                return;
-            }
-
-            ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "param", "PARAM", "name");
-
-            if (values.IsDefault)
-            {
-                return;
-            }
-
-            foreach (ParameterSyntax parameter in parameters)
-            {
-                if (!parameter.IsMissing
-                    && !values.Contains(parameter.Identifier.ValueText))
+                if (comment != null)
                 {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AddParameterToDocumentationComment,
-                        parameter.Identifier);
+                    ImmutableArray<string> values = DocumentationCommentRefactoring.GetAttributeValues(comment, "param", "PARAM", "name");
+
+                    if (!values.IsDefault)
+                    {
+                        foreach (ParameterSyntax parameter in parameters)
+                        {
+                            if (!parameter.IsMissing
+                                && !values.Contains(parameter.Identifier.ValueText))
+                            {
+                                context.ReportDiagnostic(
+                                    DiagnosticDescriptors.AddParameterToDocumentationComment,
+                                    parameter.Identifier);
+                            }
+                        }
+                    }
                 }
             }
         }

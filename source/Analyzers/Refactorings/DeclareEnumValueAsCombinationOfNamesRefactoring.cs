@@ -20,52 +20,50 @@ namespace Roslynator.CSharp.Refactorings
         {
             var enumSymbol = (INamedTypeSymbol)context.Symbol;
 
-            if (!enumSymbol.IsEnum()
-                || !enumSymbol.HasAttribute(flagsAttribute))
+            if (enumSymbol.IsEnum()
+                && enumSymbol.HasAttribute(flagsAttribute))
             {
-                return;
-            }
+                var infos = default(ImmutableArray<EnumFieldInfo>);
 
-            var infos = default(ImmutableArray<EnumFieldInfo>);
-
-            foreach (ISymbol member in enumSymbol.GetMembers())
-            {
-                if (member.IsField())
+                foreach (ISymbol member in enumSymbol.GetMembers())
                 {
-                    var fieldSymbol = (IFieldSymbol)member;
-
-                    if (!fieldSymbol.HasConstantValue)
-                        break;
-
-                    var info = new EnumFieldInfo(fieldSymbol);
-
-                    if (info.IsComposite())
+                    if (member.IsField())
                     {
-                        var declaration = (EnumMemberDeclarationSyntax)info.Symbol.GetSyntax(context.CancellationToken);
+                        var fieldSymbol = (IFieldSymbol)member;
 
-                        ExpressionSyntax valueExpression = declaration.EqualsValue?.Value;
+                        if (!fieldSymbol.HasConstantValue)
+                            break;
 
-                        if (valueExpression != null
-                            && (valueExpression.IsKind(SyntaxKind.NumericLiteralExpression)
-                                || valueExpression
-                                    .DescendantNodes()
-                                    .Any(f => f.IsKind(SyntaxKind.NumericLiteralExpression))))
+                        var info = new EnumFieldInfo(fieldSymbol);
+
+                        if (info.IsComposite())
                         {
-                            if (infos.IsDefault)
-                            {
-                                infos = EnumFieldInfo.CreateRange(enumSymbol);
+                            var declaration = (EnumMemberDeclarationSyntax)info.Symbol.GetSyntax(context.CancellationToken);
 
+                            ExpressionSyntax valueExpression = declaration.EqualsValue?.Value;
+
+                            if (valueExpression != null
+                                && (valueExpression.IsKind(SyntaxKind.NumericLiteralExpression)
+                                    || valueExpression
+                                        .DescendantNodes()
+                                        .Any(f => f.IsKind(SyntaxKind.NumericLiteralExpression))))
+                            {
                                 if (infos.IsDefault)
-                                    break;
-                            }
+                                {
+                                    infos = EnumFieldInfo.CreateRange(enumSymbol);
 
-                            List<EnumFieldInfo> values = info.Decompose(infos);
+                                    if (infos.IsDefault)
+                                        break;
+                                }
 
-                            if (values?.Count > 1)
-                            {
-                                context.ReportDiagnostic(
-                                    DiagnosticDescriptors.DeclareEnumValueAsCombinationOfNames,
-                                    valueExpression);
+                                List<EnumFieldInfo> values = info.Decompose(infos);
+
+                                if (values?.Count > 1)
+                                {
+                                    context.ReportDiagnostic(
+                                        DiagnosticDescriptors.DeclareEnumValueAsCombinationOfNames,
+                                        valueExpression);
+                                }
                             }
                         }
                     }

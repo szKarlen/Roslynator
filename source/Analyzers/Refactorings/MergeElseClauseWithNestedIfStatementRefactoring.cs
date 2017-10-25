@@ -17,36 +17,30 @@ namespace Roslynator.CSharp.Refactorings
         {
             StatementSyntax statement = elseClause.Statement;
 
-            if (statement?.IsKind(SyntaxKind.Block) != true)
+            if (statement?.IsKind(SyntaxKind.Block) == true)
             {
-                return;
+                var block = (BlockSyntax)statement;
+
+                SyntaxList<StatementSyntax> statements = block.Statements;
+
+                if (statements.Count == 1
+                    && statements[0].IsKind(SyntaxKind.IfStatement))
+                {
+                    var ifStatement = (IfStatementSyntax)statements[0];
+
+                    if (ifStatement.Else == null
+                        && CheckTrivia(elseClause, ifStatement))
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.MergeElseClauseWithNestedIfStatement,
+                            block);
+
+                        context.ReportBraces(
+                            DiagnosticDescriptors.MergeElseClauseWithNestedIfStatementFadeOut,
+                            block);
+                    }
+                }
             }
-
-            var block = (BlockSyntax)statement;
-
-            SyntaxList<StatementSyntax> statements = block.Statements;
-
-            if (statements.Count != 1
-                || !statements[0].IsKind(SyntaxKind.IfStatement))
-            {
-                return;
-            }
-
-            var ifStatement = (IfStatementSyntax)statements[0];
-
-            if (ifStatement.Else != null
-                || !CheckTrivia(elseClause, ifStatement))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.MergeElseClauseWithNestedIfStatement,
-                block);
-
-            context.ReportBraces(
-                DiagnosticDescriptors.MergeElseClauseWithNestedIfStatementFadeOut,
-                block);
         }
 
         private static bool CheckTrivia(ElseClauseSyntax elseClause, IfStatementSyntax ifStatement)

@@ -16,46 +16,37 @@ namespace Roslynator.CSharp.Refactorings
         {
             VariableDeclarationSyntax declaration = localDeclaration.Declaration;
 
-            if (declaration == null)
+            if (declaration != null)
             {
-                return;
+                SeparatedSyntaxList<VariableDeclaratorSyntax> variables = declaration.Variables;
+
+                if (variables.Any())
+                {
+                    VariableDeclaratorSyntax declarator = variables.FirstOrDefault(f => f.FullSpan.Contains(context.Span));
+
+                    if (declarator?.Identifier.IsMissing == false)
+                    {
+                        EqualsValueClauseSyntax initializer = declarator.Initializer;
+
+                        if (initializer == null
+                            || initializer.IsMissing
+                            || initializer.Value == null
+                            || initializer.Value.IsMissing)
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, context.CancellationToken);
+
+                            if (typeSymbol?.IsErrorType() == false)
+                            {
+                                context.RegisterRefactoring(
+                                    $"Initialize '{declarator.Identifier.ValueText}' with default value",
+                                    cancellationToken => RefactorAsync(context.Document, localDeclaration, declarator, typeSymbol, cancellationToken));
+                            }
+                        }
+                    }
+                }
             }
-
-            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = declaration.Variables;
-
-            if (!variables.Any())
-            {
-                return;
-            }
-
-            VariableDeclaratorSyntax declarator = variables.FirstOrDefault(f => f.FullSpan.Contains(context.Span));
-
-            if (declarator?.Identifier.IsMissing != false)
-            {
-                return;
-            }
-
-            EqualsValueClauseSyntax initializer = declarator.Initializer;
-
-            if (initializer?.IsMissing == false
-                && initializer.Value != null
-                && !initializer.Value.IsMissing)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(declaration.Type, context.CancellationToken);
-
-            if (typeSymbol?.IsErrorType() != false)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                $"Initialize '{declarator.Identifier.ValueText}' with default value",
-                cancellationToken => RefactorAsync(context.Document, localDeclaration, declarator, typeSymbol, cancellationToken));
         }
 
         public static Task<Document> RefactorAsync(

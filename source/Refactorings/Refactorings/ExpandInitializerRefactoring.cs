@@ -19,77 +19,71 @@ namespace Roslynator.CSharp.Refactorings
 
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, InitializerExpressionSyntax initializer)
         {
-            if (!initializer.IsKind(
+            if (initializer.IsKind(
                     SyntaxKind.ObjectInitializerExpression,
                     SyntaxKind.CollectionInitializerExpression)
-                || !initializer.Expressions.Any())
+                && initializer.Expressions.Any())
             {
-                return;
-            }
+                SyntaxNode parent = initializer.Parent;
 
-            SyntaxNode parent = initializer.Parent;
+                if (parent?.IsKind(SyntaxKind.ObjectCreationExpression) == true)
+                {
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-            if (parent?.IsKind(SyntaxKind.ObjectCreationExpression) != true)
-            {
-                return;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            if (!CanExpand(initializer, semanticModel, context.CancellationToken))
-            {
-                return;
-            }
-
-            parent = parent.Parent;
-
-            switch (parent?.Kind())
-            {
-                case SyntaxKind.SimpleAssignmentExpression:
+                    if (CanExpand(initializer, semanticModel, context.CancellationToken))
                     {
-                        var assignmentExpression = (AssignmentExpressionSyntax)parent;
+                        parent = parent.Parent;
 
-                        ExpressionSyntax left = assignmentExpression.Left;
-
-                        if (left != null)
+                        switch (parent?.Kind())
                         {
-                            parent = assignmentExpression.Parent;
-
-                            if (parent?.IsKind(SyntaxKind.ExpressionStatement) == true)
-                                RegisterRefactoring(context, (StatementSyntax)parent, initializer, left);
-                        }
-
-                        break;
-                    }
-                case SyntaxKind.EqualsValueClause:
-                    {
-                        var equalsValueClause = (EqualsValueClauseSyntax)parent;
-
-                        parent = equalsValueClause.Parent;
-
-                        if (parent?.IsKind(SyntaxKind.VariableDeclarator) == true)
-                        {
-                            parent = parent.Parent;
-
-                            if (parent?.IsKind(SyntaxKind.VariableDeclaration) == true)
-                            {
-                                parent = parent.Parent;
-
-                                if (parent?.IsKind(SyntaxKind.LocalDeclarationStatement) == true)
+                            case SyntaxKind.SimpleAssignmentExpression:
                                 {
-                                    var variableDeclarator = (VariableDeclaratorSyntax)equalsValueClause.Parent;
+                                    var assignmentExpression = (AssignmentExpressionSyntax)parent;
 
-                                    RegisterRefactoring(
-                                        context,
-                                        (StatementSyntax)parent,
-                                        initializer,
-                                        IdentifierName(variableDeclarator.Identifier.ValueText));
+                                    ExpressionSyntax left = assignmentExpression.Left;
+
+                                    if (left != null)
+                                    {
+                                        parent = assignmentExpression.Parent;
+
+                                        if (parent?.IsKind(SyntaxKind.ExpressionStatement) == true)
+                                            RegisterRefactoring(context, (StatementSyntax)parent, initializer, left);
+                                    }
+
+                                    break;
                                 }
-                            }
-                        }
+                            case SyntaxKind.EqualsValueClause:
+                                {
+                                    var equalsValueClause = (EqualsValueClauseSyntax)parent;
 
-                        break;
+                                    parent = equalsValueClause.Parent;
+
+                                    if (parent?.IsKind(SyntaxKind.VariableDeclarator) == true)
+                                    {
+                                        parent = parent.Parent;
+
+                                        if (parent?.IsKind(SyntaxKind.VariableDeclaration) == true)
+                                        {
+                                            parent = parent.Parent;
+
+                                            if (parent?.IsKind(SyntaxKind.LocalDeclarationStatement) == true)
+                                            {
+                                                var variableDeclarator = (VariableDeclaratorSyntax)equalsValueClause.Parent;
+
+                                                RegisterRefactoring(
+                                                    context,
+                                                    (StatementSyntax)parent,
+                                                    initializer,
+                                                    IdentifierName(variableDeclarator.Identifier.ValueText));
+                                            }
+                                        }
+                                    }
+
+                                    break;
+                                }
+                        }
                     }
+                }
             }
         }
 
@@ -100,20 +94,18 @@ namespace Roslynator.CSharp.Refactorings
             ExpressionSyntax expression)
         {
             StatementsInfo statementsInfo = SyntaxInfo.StatementsInfo(statement);
-            if (!statementsInfo.Success)
+            if (statementsInfo.Success)
             {
-                return;
+                context.RegisterRefactoring(
+                    Title,
+                    cancellationToken => RefactorAsync(
+                        context.Document,
+                        statementsInfo,
+                        statement,
+                        initializer,
+                        expression.WithoutTrivia(),
+                        cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                Title,
-                cancellationToken => RefactorAsync(
-                    context.Document,
-                    statementsInfo,
-                    statement,
-                    initializer,
-                    expression.WithoutTrivia(),
-                    cancellationToken));
         }
 
         private static bool CanExpand(
@@ -123,51 +115,49 @@ namespace Roslynator.CSharp.Refactorings
         {
             var objectCreationExpression = (ObjectCreationExpressionSyntax)initializer.Parent;
 
-            if (objectCreationExpression.Type == null)
+            if (objectCreationExpression.Type != null)
             {
-                return false;
-            }
+                ExpressionSyntax expression = initializer.Expressions[0];
 
-            ExpressionSyntax expression = initializer.Expressions[0];
-
-            if (expression.IsKind(SyntaxKind.SimpleAssignmentExpression))
-            {
-                var assignment = (AssignmentExpressionSyntax)expression;
-
-                ExpressionSyntax left = assignment.Left;
-
-                if (left.IsKind(SyntaxKind.ImplicitElementAccess))
+                if (expression.IsKind(SyntaxKind.SimpleAssignmentExpression))
                 {
-                    var implicitElementAccess = (ImplicitElementAccessSyntax)left;
+                    var assignment = (AssignmentExpressionSyntax)expression;
 
-                    BracketedArgumentListSyntax argumentList = implicitElementAccess.ArgumentList;
+                    ExpressionSyntax left = assignment.Left;
 
-                    if (argumentList?.Arguments.Any() == true)
+                    if (left.IsKind(SyntaxKind.ImplicitElementAccess))
                     {
-                        return HasAccessibleIndexer(
-                            argumentList.Arguments[0].Expression,
-                            objectCreationExpression,
-                            semanticModel,
-                            cancellationToken);
+                        var implicitElementAccess = (ImplicitElementAccessSyntax)left;
+
+                        BracketedArgumentListSyntax argumentList = implicitElementAccess.ArgumentList;
+
+                        if (argumentList?.Arguments.Any() == true)
+                        {
+                            return HasAccessibleIndexer(
+                                argumentList.Arguments[0].Expression,
+                                objectCreationExpression,
+                                semanticModel,
+                                cancellationToken);
+                        }
                     }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else if (expression.IsKind(SyntaxKind.ComplexElementInitializerExpression))
+                {
+                    var initializerExpression = (InitializerExpressionSyntax)expression;
+
+                    SeparatedSyntaxList<ExpressionSyntax> expressions = initializerExpression.Expressions;
+
+                    if (expressions.Any())
+                        return HasAccessibleIndexer(expressions[0], objectCreationExpression, semanticModel, cancellationToken);
                 }
                 else
                 {
-                    return true;
+                    return HasAccessibleAddMethod(expression, objectCreationExpression, semanticModel, cancellationToken);
                 }
-            }
-            else if (expression.IsKind(SyntaxKind.ComplexElementInitializerExpression))
-            {
-                var initializerExpression = (InitializerExpressionSyntax)expression;
-
-                SeparatedSyntaxList<ExpressionSyntax> expressions = initializerExpression.Expressions;
-
-                if (expressions.Any())
-                    return HasAccessibleIndexer(expressions[0], objectCreationExpression, semanticModel, cancellationToken);
-            }
-            else
-            {
-                return HasAccessibleAddMethod(expression, objectCreationExpression, semanticModel, cancellationToken);
             }
 
             return false;
@@ -181,26 +171,24 @@ namespace Roslynator.CSharp.Refactorings
         {
             var typeSymbol = semanticModel.GetSymbol(objectCreationExpression.Type, cancellationToken) as ITypeSymbol;
 
-            if (typeSymbol == null)
+            if (typeSymbol != null)
             {
-                return false;
-            }
-
-            foreach (ISymbol symbol in semanticModel.LookupSymbols(objectCreationExpression.SpanStart, typeSymbol, "Add"))
-            {
-                if (!symbol.IsStatic
-                    && symbol.IsMethod())
+                foreach (ISymbol symbol in semanticModel.LookupSymbols(objectCreationExpression.SpanStart, typeSymbol, "Add"))
                 {
-                    var methodSymbol = (IMethodSymbol)symbol;
-
-                    IParameterSymbol parameter = methodSymbol.Parameters.SingleOrDefault(throwException: false);
-
-                    if (parameter != null)
+                    if (!symbol.IsStatic
+                        && symbol.IsMethod())
                     {
-                        TypeInfo typeInfo = semanticModel.GetTypeInfo(expression, cancellationToken);
+                        var methodSymbol = (IMethodSymbol)symbol;
 
-                        if (parameter.Type.Equals(typeInfo.ConvertedType))
-                            return true;
+                        IParameterSymbol parameter = methodSymbol.Parameters.SingleOrDefault(throwException: false);
+
+                        if (parameter != null)
+                        {
+                            TypeInfo typeInfo = semanticModel.GetTypeInfo(expression, cancellationToken);
+
+                            if (parameter.Type.Equals(typeInfo.ConvertedType))
+                                return true;
+                        }
                     }
                 }
             }
@@ -216,28 +204,26 @@ namespace Roslynator.CSharp.Refactorings
         {
             var typeSymbol = semanticModel.GetSymbol(objectCreationExpression.Type, cancellationToken) as ITypeSymbol;
 
-            if (typeSymbol == null)
+            if (typeSymbol != null)
             {
-                return false;
-            }
+                int position = objectCreationExpression.SpanStart;
 
-            int position = objectCreationExpression.SpanStart;
-
-            foreach (ISymbol member in semanticModel.LookupSymbols(position, typeSymbol, "this[]"))
-            {
-                var propertySymbol = (IPropertySymbol)member;
-
-                if (!propertySymbol.IsReadOnly
-                    && semanticModel.IsAccessible(position, propertySymbol.SetMethod))
+                foreach (ISymbol member in semanticModel.LookupSymbols(position, typeSymbol, "this[]"))
                 {
-                    IParameterSymbol parameter = propertySymbol.Parameters.SingleOrDefault(throwException: false);
+                    var propertySymbol = (IPropertySymbol)member;
 
-                    if (parameter != null)
+                    if (!propertySymbol.IsReadOnly
+                        && semanticModel.IsAccessible(position, propertySymbol.SetMethod))
                     {
-                        TypeInfo typeInfo = semanticModel.GetTypeInfo(expression, cancellationToken);
+                        IParameterSymbol parameter = propertySymbol.Parameters.SingleOrDefault(throwException: false);
 
-                        if (parameter.Type.Equals(typeInfo.ConvertedType))
-                            return true;
+                        if (parameter != null)
+                        {
+                            TypeInfo typeInfo = semanticModel.GetTypeInfo(expression, cancellationToken);
+
+                            if (parameter.Type.Equals(typeInfo.ConvertedType))
+                                return true;
+                        }
                     }
                 }
             }

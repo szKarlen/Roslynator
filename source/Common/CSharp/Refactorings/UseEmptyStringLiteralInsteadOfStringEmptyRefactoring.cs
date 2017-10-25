@@ -22,19 +22,19 @@ namespace Roslynator.CSharp.Refactorings
             if (semanticModel == null)
                 throw new ArgumentNullException(nameof(semanticModel));
 
-            if (memberAccess.IsParentKind(SyntaxKind.SimpleMemberAccessExpression)
-                || memberAccess.Expression == null
-                || memberAccess.Name?.Identifier.ValueText != "Empty")
+            if (!memberAccess.IsParentKind(SyntaxKind.SimpleMemberAccessExpression)
+                && memberAccess.Expression != null
+                && memberAccess.Name?.Identifier.ValueText == "Empty")
             {
-                return false;
+                var fieldSymbol = semanticModel.GetSymbol(memberAccess.Name, cancellationToken) as IFieldSymbol;
+
+                return fieldSymbol?.IsPublic() == true
+                    && fieldSymbol.IsReadOnly
+                    && fieldSymbol.IsStatic
+                    && fieldSymbol.ContainingType?.IsString() == true;
             }
 
-            var fieldSymbol = semanticModel.GetSymbol(memberAccess.Name, cancellationToken) as IFieldSymbol;
-
-            return fieldSymbol?.IsPublic() == true
-                && fieldSymbol.IsReadOnly
-                && fieldSymbol.IsStatic
-                && fieldSymbol.ContainingType?.IsString() == true;
+            return false;
         }
 
         public static Task<Document> RefactorAsync(

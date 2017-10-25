@@ -33,28 +33,22 @@ namespace Roslynator.CSharp.Refactorings
         {
             if (body?
                 .DescendantNodes(body.Span, f => !f.IsNestedMethod())
-                .Any(f => f.IsKind(SyntaxKind.YieldReturnStatement)) != true)
+                .Any(f => f.IsKind(SyntaxKind.YieldReturnStatement)) == true)
             {
-                return;
+                var symbol = (IMethodSymbol)semanticModel.GetDeclaredSymbol(node, context.CancellationToken);
+
+                if (symbol?.IsErrorType() == false)
+                {
+                    ITypeSymbol type = GetElementType(symbol.ReturnType, semanticModel);
+
+                    if (type?.IsErrorType() == false)
+                    {
+                        context.RegisterRefactoring(
+                            "Use List<T> instead of yield",
+                            cancellationToken => RefactorAsync(context.Document, type, body, body.Statements, cancellationToken));
+                    }
+                }
             }
-
-            var symbol = (IMethodSymbol)semanticModel.GetDeclaredSymbol(node, context.CancellationToken);
-
-            if (symbol?.IsErrorType() != false)
-            {
-                return;
-            }
-
-            ITypeSymbol type = GetElementType(symbol.ReturnType, semanticModel);
-
-            if (type?.IsErrorType() != false)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Use List<T> instead of yield",
-                cancellationToken => RefactorAsync(context.Document, type, body, body.Statements, cancellationToken));
         }
 
         private static ITypeSymbol GetElementType(ITypeSymbol returnType, SemanticModel semanticModel)
@@ -146,14 +140,14 @@ namespace Roslynator.CSharp.Refactorings
 
         private static bool IsParameterCheck(StatementSyntax statement)
         {
-            if (!statement.IsKind(SyntaxKind.IfStatement))
+            if (statement.IsKind(SyntaxKind.IfStatement))
             {
-                return false;
+                var ifStatement = (IfStatementSyntax)statement;
+
+                return ifStatement.GetSingleStatementOrDefault()?.IsKind(SyntaxKind.ThrowStatement) == true;
             }
 
-            var ifStatement = (IfStatementSyntax)statement;
-
-            return ifStatement.GetSingleStatementOrDefault()?.IsKind(SyntaxKind.ThrowStatement) == true;
+            return false;
         }
 
         private class YieldRewriter : CSharpSyntaxRewriter

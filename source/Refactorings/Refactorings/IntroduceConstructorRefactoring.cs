@@ -18,21 +18,17 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, MemberDeclarationSyntax declaration)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceConstructor))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceConstructor))
             {
-                return;
+                List<MemberDeclarationSyntax> members = await GetAssignableMembersAsync(context, declaration).ConfigureAwait(false);
+
+                if (members?.Count > 0)
+                {
+                    context.RegisterRefactoring(
+                        "Introduce constructor",
+                        cancellationToken => RefactorAsync(context.Document, declaration, members, cancellationToken));
+                }
             }
-
-            List<MemberDeclarationSyntax> members = await GetAssignableMembersAsync(context, declaration).ConfigureAwait(false);
-
-            if (members == null || members.Count <= 0)
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Introduce constructor",
-                cancellationToken => RefactorAsync(context.Document, declaration, members, cancellationToken));
         }
 
         private static async Task<List<MemberDeclarationSyntax>> GetAssignableMembersAsync(
@@ -68,17 +64,15 @@ namespace Roslynator.CSharp.Refactorings
             RefactoringContext context,
             MemberDeclarationSyntax declaration)
         {
-            if (!context.Span.Contains(declaration.Span))
+            if (context.Span.Contains(declaration.Span))
             {
-                return false;
-            }
-
-            switch (declaration.Kind())
-            {
-                case SyntaxKind.PropertyDeclaration:
-                    return await CanPropertyBeAssignedFromConstructorAsync(context, (PropertyDeclarationSyntax)declaration).ConfigureAwait(false);
-                case SyntaxKind.FieldDeclaration:
-                    return await CanFieldBeAssignedFromConstructorAsync(context, (FieldDeclarationSyntax)declaration).ConfigureAwait(false);
+                switch (declaration.Kind())
+                {
+                    case SyntaxKind.PropertyDeclaration:
+                        return await CanPropertyBeAssignedFromConstructorAsync(context, (PropertyDeclarationSyntax)declaration).ConfigureAwait(false);
+                    case SyntaxKind.FieldDeclaration:
+                        return await CanFieldBeAssignedFromConstructorAsync(context, (FieldDeclarationSyntax)declaration).ConfigureAwait(false);
+                }
             }
 
             return false;
@@ -93,27 +87,25 @@ namespace Roslynator.CSharp.Refactorings
 
             ISymbol symbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, cancellationToken);
 
-            if (symbol?.IsStatic != false
-                || !propertyDeclaration.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration))
+            if (symbol?.IsStatic == false
+                && propertyDeclaration.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration))
             {
-                return false;
-            }
+                ArrowExpressionClauseSyntax expressionBody = propertyDeclaration.ExpressionBody;
 
-            ArrowExpressionClauseSyntax expressionBody = propertyDeclaration.ExpressionBody;
+                if (expressionBody != null)
+                {
+                    ExpressionSyntax expression = expressionBody?.Expression;
 
-            if (expressionBody != null)
-            {
-                ExpressionSyntax expression = expressionBody?.Expression;
+                    if (expression != null)
+                        return GetBackingFieldSymbol(expression, semanticModel, cancellationToken) != null;
+                }
+                else
+                {
+                    AccessorDeclarationSyntax getter = propertyDeclaration.Getter();
 
-                if (expression != null)
-                    return GetBackingFieldSymbol(expression, semanticModel, cancellationToken) != null;
-            }
-            else
-            {
-                AccessorDeclarationSyntax getter = propertyDeclaration.Getter();
-
-                if (getter != null)
-                    return CanPropertyBeAssignedFromConstructor(getter, semanticModel, cancellationToken);
+                    if (getter != null)
+                        return CanPropertyBeAssignedFromConstructor(getter, semanticModel, cancellationToken);
+                }
             }
 
             return false;
@@ -158,26 +150,24 @@ namespace Roslynator.CSharp.Refactorings
                 .Variables
                 .SingleOrDefault(throwException: false);
 
-            if (variable == null)
+            if (variable != null)
             {
-                return false;
+                MemberDeclarationSyntax parentMember = GetContainingMember(fieldDeclaration);
+
+                if (parentMember != null)
+                {
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                    ISymbol symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
+
+                    return symbol?.IsStatic == false
+                        && !parentMember
+                            .GetMembers()
+                            .Any(member => IsBackingField(member, symbol, context, semanticModel));
+                }
             }
 
-            MemberDeclarationSyntax parentMember = GetContainingMember(fieldDeclaration);
-
-            if (parentMember == null)
-            {
-                return false;
-            }
-
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            ISymbol symbol = semanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
-
-            return symbol?.IsStatic == false
-                && !parentMember
-                    .GetMembers()
-                    .Any(member => IsBackingField(member, symbol, context, semanticModel));
+            return false;
         }
 
         private static bool IsBackingField(
@@ -186,29 +176,27 @@ namespace Roslynator.CSharp.Refactorings
             RefactoringContext context,
             SemanticModel semanticModel)
         {
-            if (!member.IsKind(SyntaxKind.PropertyDeclaration)
-                || !context.Span.Contains(member.Span))
+            if (member.IsKind(SyntaxKind.PropertyDeclaration)
+                && context.Span.Contains(member.Span))
             {
-                return false;
-            }
+                var propertyDeclaration = (PropertyDeclarationSyntax)member;
 
-            var propertyDeclaration = (PropertyDeclarationSyntax)member;
+                ArrowExpressionClauseSyntax expressionBody = propertyDeclaration.ExpressionBody;
 
-            ArrowExpressionClauseSyntax expressionBody = propertyDeclaration.ExpressionBody;
+                if (expressionBody != null)
+                {
+                    ExpressionSyntax expression = expressionBody.Expression;
 
-            if (expressionBody != null)
-            {
-                ExpressionSyntax expression = expressionBody.Expression;
+                    return expression != null
+                        && symbol.Equals(GetBackingFieldSymbol(expression, semanticModel, context.CancellationToken));
+                }
+                else
+                {
+                    AccessorDeclarationSyntax getter = propertyDeclaration.Getter();
 
-                return expression != null
-                    && symbol.Equals(GetBackingFieldSymbol(expression, semanticModel, context.CancellationToken));
-            }
-            else
-            {
-                AccessorDeclarationSyntax getter = propertyDeclaration.Getter();
-
-                if (getter != null)
-                    return IsBackingField(getter, symbol, semanticModel, context.CancellationToken);
+                    if (getter != null)
+                        return IsBackingField(getter, symbol, semanticModel, context.CancellationToken);
+                }
             }
 
             return false;
@@ -246,15 +234,13 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!statement.IsKind(SyntaxKind.ReturnStatement))
+            if (statement.IsKind(SyntaxKind.ReturnStatement))
             {
-                return null;
+                var returnStatement = (ReturnStatementSyntax)statement;
+
+                if (returnStatement.Expression != null)
+                    return GetBackingFieldSymbol(returnStatement.Expression, semanticModel, cancellationToken);
             }
-
-            var returnStatement = (ReturnStatementSyntax)statement;
-
-            if (returnStatement.Expression != null)
-                return GetBackingFieldSymbol(returnStatement.Expression, semanticModel, cancellationToken);
 
             return null;
         }
@@ -264,20 +250,18 @@ namespace Roslynator.CSharp.Refactorings
             SemanticModel semanticModel,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!IsIdentifierNameOptionallyQualifiedWithThis(expression))
+            if (IsIdentifierNameOptionallyQualifiedWithThis(expression))
             {
-                return null;
+                ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
+
+                if (symbol?.IsStatic == false
+                    && symbol.IsField())
+                {
+                    return symbol;
+                }
             }
 
-            ISymbol symbol = semanticModel.GetSymbol(expression, cancellationToken);
-
-            if (symbol?.IsStatic != false
-                || !symbol.IsField())
-            {
-                return null;
-            }
-
-            return symbol;
+            return null;
         }
 
         private static bool IsIdentifierNameOptionallyQualifiedWithThis(ExpressionSyntax expression)

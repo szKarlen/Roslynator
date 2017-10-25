@@ -15,25 +15,21 @@ namespace Roslynator.CSharp.Refactorings
         {
             SyntaxList<StatementSyntax> statements = block.Statements;
 
-            if (statements.Any()
-                || (block.Parent is AccessorDeclarationSyntax)
-                || (block.Parent is AnonymousFunctionExpressionSyntax))
+            if (!statements.Any()
+                && !(block.Parent is AccessorDeclarationSyntax)
+                && !(block.Parent is AnonymousFunctionExpressionSyntax))
             {
-                return;
+                int startLine = block.OpenBraceToken.GetSpanStartLine();
+                int endLine = block.CloseBraceToken.GetSpanEndLine();
+
+                if ((endLine - startLine) != 1
+                    && block
+                        .DescendantTrivia(block.Span)
+                        .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+                {
+                    context.ReportDiagnostic(DiagnosticDescriptors.FormatEmptyBlock, block);
+                }
             }
-
-            int startLine = block.OpenBraceToken.GetSpanStartLine();
-            int endLine = block.CloseBraceToken.GetSpanEndLine();
-
-            if ((endLine - startLine) == 1
-                || !block
-                    .DescendantTrivia(block.Span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(DiagnosticDescriptors.FormatEmptyBlock, block);
         }
 
         public static Task<Document> RefactorAsync(

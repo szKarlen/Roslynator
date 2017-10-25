@@ -10,31 +10,23 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static void ComputeRefactorings(RefactoringContext context, LockStatementSyntax lockStatement)
         {
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceFieldToLockOn))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceFieldToLockOn))
             {
-                return;
+                ExpressionSyntax expression = lockStatement.Expression;
+
+                if (expression != null)
+                {
+                    if (expression.IsMissing || expression.IsKind(SyntaxKind.ThisExpression))
+                    {
+                        if (context.Span.IsContainedInSpanOrBetweenSpans(expression))
+                        {
+                            context.RegisterRefactoring(
+                                "Introduce field to lock on",
+                                cancellationToken => IntroduceFieldToLockOnRefactoring.RefactorAsync(context.Document, lockStatement, cancellationToken));
+                        }
+                    }
+                }
             }
-
-            ExpressionSyntax expression = lockStatement.Expression;
-
-            if (expression == null)
-            {
-                return;
-            }
-
-            if (!expression.IsMissing && !expression.IsKind(SyntaxKind.ThisExpression))
-            {
-                return;
-            }
-
-            if (!context.Span.IsContainedInSpanOrBetweenSpans(expression))
-            {
-                return;
-            }
-
-            context.RegisterRefactoring(
-                "Introduce field to lock on",
-                cancellationToken => IntroduceFieldToLockOnRefactoring.RefactorAsync(context.Document, lockStatement, cancellationToken));
         }
     }
 }

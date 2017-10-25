@@ -21,30 +21,24 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void Analyze(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
         {
-            if (expression?.IsKind(SyntaxKind.ObjectCreationExpression) != true)
+            if (expression?.IsKind(SyntaxKind.ObjectCreationExpression) == true)
             {
-                return;
+                var objectCreationExpression = (ObjectCreationExpressionSyntax)expression;
+
+                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(objectCreationExpression, context.CancellationToken);
+
+                if (typeSymbol != null)
+                {
+                    INamedTypeSymbol exceptionSymbol = context.GetTypeByMetadataName(MetadataNames.System_NotImplementedException);
+
+                    if (typeSymbol.Equals(exceptionSymbol))
+                    {
+                        context.ReportDiagnostic(
+                            DiagnosticDescriptors.ThrowingOfNewNotImplementedException,
+                            expression);
+                    }
+                }
             }
-
-            var objectCreationExpression = (ObjectCreationExpressionSyntax)expression;
-
-            ITypeSymbol typeSymbol = context.SemanticModel.GetTypeSymbol(objectCreationExpression, context.CancellationToken);
-
-            if (typeSymbol == null)
-            {
-                return;
-            }
-
-            INamedTypeSymbol exceptionSymbol = context.GetTypeByMetadataName(MetadataNames.System_NotImplementedException);
-
-            if (!typeSymbol.Equals(exceptionSymbol))
-            {
-                return;
-            }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.ThrowingOfNewNotImplementedException,
-                expression);
         }
     }
 }

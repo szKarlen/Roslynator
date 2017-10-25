@@ -12,22 +12,18 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExpressionSyntax expression = returnStatement.Expression;
 
-            if (expression == null)
+            if (expression != null)
             {
-                return;
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallToMethod))
+                    await ReturnExpressionRefactoring.ComputeRefactoringsAsync(context, expression).ConfigureAwait(false);
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStatementWithIfElse)
+                    && (context.Span.IsEmptyAndContainedInSpan(returnStatement.ReturnKeyword)
+                        || context.Span.IsBetweenSpans(returnStatement)))
+                {
+                    await ReplaceStatementWithIfStatementRefactoring.ReplaceReturnWithIfElse.ComputeRefactoringAsync(context, returnStatement).ConfigureAwait(false);
+                }
             }
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallToMethod))
-                await ReturnExpressionRefactoring.ComputeRefactoringsAsync(context, expression).ConfigureAwait(false);
-
-            if (!context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStatementWithIfElse)
-                || (!context.Span.IsEmptyAndContainedInSpan(returnStatement.ReturnKeyword)
-                    && !context.Span.IsBetweenSpans(returnStatement)))
-            {
-                return;
-            }
-
-            await ReplaceStatementWithIfStatementRefactoring.ReplaceReturnWithIfElse.ComputeRefactoringAsync(context, returnStatement).ConfigureAwait(false);
         }
     }
 }

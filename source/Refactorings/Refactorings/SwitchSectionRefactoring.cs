@@ -21,60 +21,58 @@ namespace Roslynator.CSharp.Refactorings
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.SplitSwitchLabels))
                 SplitSwitchLabelsRefactoring.ComputeRefactoring(context, switchSection);
 
-            if (!context.Span.IsEmpty
-                || !context.IsAnyRefactoringEnabled(
+            if (context.Span.IsEmpty
+                && context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.AddBracesToSwitchSection,
                     RefactoringIdentifiers.AddBracesToSwitchSections,
                     RefactoringIdentifiers.RemoveBracesFromSwitchSection,
                     RefactoringIdentifiers.RemoveBracesFromSwitchSections))
             {
-                return;
-            }
+                var switchStatement = (SwitchStatementSyntax)switchSection.Parent;
 
-            var switchStatement = (SwitchStatementSyntax)switchSection.Parent;
+                SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
 
-            SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
-
-            switch (CSharpAnalysis.AnalyzeBraces(switchSection))
-            {
-                case BracesAnalysisResult.AddBraces:
-                    {
-                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSection))
+                switch (CSharpAnalysis.AnalyzeBraces(switchSection))
+                {
+                    case BracesAnalysisResult.AddBraces:
                         {
-                            context.RegisterRefactoring(
-                                AddBracesToSwitchSectionRefactoring.Title,
-                                cancellationToken => AddBracesToSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken));
-                        }
+                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSection))
+                            {
+                                context.RegisterRefactoring(
+                                    AddBracesToSwitchSectionRefactoring.Title,
+                                    cancellationToken => AddBracesToSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken));
+                            }
 
-                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSections)
-                            && sections.Any(f => f != switchSection && AddBracesToSwitchSectionRefactoring.CanAddBraces(f)))
+                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSections)
+                                && sections.Any(f => f != switchSection && AddBracesToSwitchSectionRefactoring.CanAddBraces(f)))
+                            {
+                                context.RegisterRefactoring(
+                                    AddBracesToSwitchSectionsRefactoring.Title,
+                                    cancellationToken => AddBracesToSwitchSectionsRefactoring.RefactorAsync(context.Document, switchStatement, null, cancellationToken));
+                            }
+
+                            break;
+                        }
+                    case BracesAnalysisResult.RemoveBraces:
                         {
-                            context.RegisterRefactoring(
-                                AddBracesToSwitchSectionsRefactoring.Title,
-                                cancellationToken => AddBracesToSwitchSectionsRefactoring.RefactorAsync(context.Document, switchStatement, null, cancellationToken));
-                        }
+                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSection))
+                            {
+                                context.RegisterRefactoring(
+                                    RemoveBracesFromSwitchSectionRefactoring.Title,
+                                    cancellationToken => RemoveBracesFromSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken));
+                            }
 
-                        break;
-                    }
-                case BracesAnalysisResult.RemoveBraces:
-                    {
-                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSection))
-                        {
-                            context.RegisterRefactoring(
-                                RemoveBracesFromSwitchSectionRefactoring.Title,
-                                cancellationToken => RemoveBracesFromSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken));
-                        }
+                            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSections)
+                                && sections.Any(f => f != switchSection && RemoveBracesFromSwitchSectionRefactoring.CanRemoveBraces(f)))
+                            {
+                                context.RegisterRefactoring(
+                                    RemoveBracesFromSwitchSectionsRefactoring.Title,
+                                    cancellationToken => RemoveBracesFromSwitchSectionsRefactoring.RefactorAsync(context.Document, switchStatement, null, cancellationToken));
+                            }
 
-                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSections)
-                            && sections.Any(f => f != switchSection && RemoveBracesFromSwitchSectionRefactoring.CanRemoveBraces(f)))
-                        {
-                            context.RegisterRefactoring(
-                                RemoveBracesFromSwitchSectionsRefactoring.Title,
-                                cancellationToken => RemoveBracesFromSwitchSectionsRefactoring.RefactorAsync(context.Document, switchStatement, null, cancellationToken));
+                            break;
                         }
-
-                        break;
-                    }
+                }
             }
         }
     }

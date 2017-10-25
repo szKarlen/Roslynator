@@ -36,14 +36,12 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             AddExceptionToDocumentationCommentAnalysis analysis = AddExceptionToDocumentationCommentRefactoring.Analyze(throwStatement, context.SemanticModel, context.CancellationToken);
 
-            if (!analysis.Success)
+            if (analysis.Success)
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AddExceptionToDocumentationComment,
+                    throwStatement);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AddExceptionToDocumentationComment,
-                throwStatement);
         }
 
         private static void AnalyzeThrowExpression(SyntaxNodeAnalysisContext context)
@@ -52,14 +50,12 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
 
             AddExceptionToDocumentationCommentAnalysis analysis = AddExceptionToDocumentationCommentRefactoring.Analyze(throwExpression, context.SemanticModel, context.CancellationToken);
 
-            if (!analysis.Success)
+            if (analysis.Success)
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AddExceptionToDocumentationComment,
+                    throwExpression);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.AddExceptionToDocumentationComment,
-                throwExpression);
         }
     }
 }

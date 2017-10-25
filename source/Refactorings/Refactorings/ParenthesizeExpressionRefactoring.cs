@@ -14,21 +14,19 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static bool CanRefactor(RefactoringContext context, ExpressionSyntax expression)
         {
-            if (!AreParenthesesRedundantOrInvalid(expression)
-                || expression.IsParentKind(SyntaxKind.SimpleMemberAccessExpression))
+            if (AreParenthesesRedundantOrInvalid(expression)
+                && !expression.IsParentKind(SyntaxKind.SimpleMemberAccessExpression))
             {
-                return false;
-            }
-
-            try
-            {
-                Refactor(context.Root, expression);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
-                Debug.Fail($"{nameof(ParenthesizeExpressionRefactoring)}\r\n{expression.Kind()}");
+                try
+                {
+                    Refactor(context.Root, expression);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
+                    Debug.Fail($"{nameof(ParenthesizeExpressionRefactoring)}\r\n{expression.Kind()}");
+                }
             }
 
             return false;

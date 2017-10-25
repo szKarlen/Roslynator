@@ -104,18 +104,16 @@ namespace Roslynator.CSharp.Refactorings
         {
             ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(whenNotNull, cancellationToken);
 
-            if (typeSymbol?.IsErrorType() != false
-                || (!typeSymbol.IsReferenceType && !typeSymbol.IsValueType)
-                || !semanticModel.IsDefaultValue(typeSymbol, whenNull, cancellationToken)
-                || RefactoringHelper.ContainsOutArgumentWithLocal(whenNotNull, semanticModel, cancellationToken)
-                || conditionalExpressionInfo.ConditionalExpression.IsInExpressionTree(semanticModel, cancellationToken))
+            if (typeSymbol?.IsErrorType() == false
+                && (typeSymbol.IsReferenceType || typeSymbol.IsValueType)
+                && semanticModel.IsDefaultValue(typeSymbol, whenNull, cancellationToken)
+                && !RefactoringHelper.ContainsOutArgumentWithLocal(whenNotNull, semanticModel, cancellationToken)
+                && !conditionalExpressionInfo.ConditionalExpression.IsInExpressionTree(semanticModel, cancellationToken))
             {
-                return;
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.UseConditionalAccessInsteadOfConditionalExpression,
+                    conditionalExpressionInfo.ConditionalExpression);
             }
-
-            context.ReportDiagnostic(
-                DiagnosticDescriptors.UseConditionalAccessInsteadOfConditionalExpression,
-                conditionalExpressionInfo.ConditionalExpression);
         }
 
         public static async Task<Document> RefactorAsync(

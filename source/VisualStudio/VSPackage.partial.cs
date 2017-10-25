@@ -140,34 +140,28 @@ namespace Roslynator.VisualStudio
         {
             var dte = GetService(typeof(DTE)) as DTE;
 
-            if (dte == null)
+            if (dte != null)
             {
-                return;
+                string path = dte.Solution.FullName;
+
+                if (!string.IsNullOrEmpty(path))
+                {
+                    string directoryPath = Path.GetDirectoryName(path);
+
+                    if (!string.IsNullOrEmpty(directoryPath))
+                    {
+                        _watcher = new FileSystemWatcher(directoryPath, ConfigFileSettings.FileName)
+                        {
+                            EnableRaisingEvents = true,
+                            IncludeSubdirectories = false
+                        };
+
+                        _watcher.Changed += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
+                        _watcher.Created += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
+                        _watcher.Deleted += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
+                    }
+                }
             }
-
-            string path = dte.Solution.FullName;
-
-            if (string.IsNullOrEmpty(path))
-            {
-                return;
-            }
-
-            string directoryPath = Path.GetDirectoryName(path);
-
-            if (string.IsNullOrEmpty(directoryPath))
-            {
-                return;
-            }
-
-            _watcher = new FileSystemWatcher(directoryPath, ConfigFileSettings.FileName)
-            {
-                EnableRaisingEvents = true,
-                IncludeSubdirectories = false
-            };
-
-            _watcher.Changed += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
-            _watcher.Created += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
-            _watcher.Deleted += (object sender, FileSystemEventArgs e) => UpdateSettingsAfterConfigFileChanged();
         }
 
         public int OnAfterOpenProject(IVsHierarchy pHierarchy, int fAdded)

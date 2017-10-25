@@ -41,17 +41,15 @@ namespace Roslynator.CSharp.Refactorings
 
         private static void ComputeRefactorings(RefactoringContext context, MemberDeclarationSyntax memberDeclaration, SyntaxToken identifier)
         {
-            if (!identifier.Span.Contains(context.Span)
-                || !memberDeclaration.IsParentKind(SyntaxKind.NamespaceDeclaration, SyntaxKind.CompilationUnit)
-                || !context.IsRootCompilationUnit
-                || !ExtractTypeDeclarationToNewDocumentRefactoring.GetNonNestedTypeDeclarations((CompilationUnitSyntax)context.Root).Skip(1).Any())
+            if (identifier.Span.Contains(context.Span)
+                && memberDeclaration.IsParentKind(SyntaxKind.NamespaceDeclaration, SyntaxKind.CompilationUnit)
+                && context.IsRootCompilationUnit
+                && ExtractTypeDeclarationToNewDocumentRefactoring.GetNonNestedTypeDeclarations((CompilationUnitSyntax)context.Root).Skip(1).Any())
             {
-                return;
+                context.RegisterRefactoring(
+                    ExtractTypeDeclarationToNewDocumentRefactoring.GetTitle(identifier.ValueText),
+                    cancellationToken => ExtractTypeDeclarationToNewDocumentRefactoring.RefactorAsync(context.Document, memberDeclaration, cancellationToken));
             }
-
-            context.RegisterRefactoring(
-                ExtractTypeDeclarationToNewDocumentRefactoring.GetTitle(identifier.ValueText),
-                cancellationToken => ExtractTypeDeclarationToNewDocumentRefactoring.RefactorAsync(context.Document, memberDeclaration, cancellationToken));
         }
     }
 }

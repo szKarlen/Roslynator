@@ -89,33 +89,27 @@ namespace Roslynator.CSharp.CodeFixes
         {
             var methodSymbol = symbol as IMethodSymbol;
 
-            if (methodSymbol == null)
+            if (methodSymbol != null)
             {
-                return;
+                ImmutableArray<IParameterSymbol> parameters = methodSymbol.Parameters;
+
+                if (parameters.Length <= 16)
+                {
+                    ITypeSymbol returnType = methodSymbol.ReturnType;
+
+                    if (SupportsExplicitDeclaration(returnType, parameters))
+                    {
+                        INamedTypeSymbol typeSymbol = ConstructActionOrFunc(returnType, parameters, semanticModel);
+
+                        CodeAction codeAction = CodeAction.Create(
+                            $"Change type to '{SymbolDisplay.GetMinimalString(typeSymbol, semanticModel, variableDeclarator.SpanStart)}'",
+                            cancellationToken => RefactorAsync(context.Document, (VariableDeclarationSyntax)variableDeclarator.Parent, typeSymbol, semanticModel, cancellationToken),
+                            GetEquivalenceKey(diagnostic, SymbolDisplay.GetString(typeSymbol)));
+
+                        context.RegisterCodeFix(codeAction, diagnostic);
+                    }
+                }
             }
-
-            ImmutableArray<IParameterSymbol> parameters = methodSymbol.Parameters;
-
-            if (parameters.Length > 16)
-            {
-                return;
-            }
-
-            ITypeSymbol returnType = methodSymbol.ReturnType;
-
-            if (!SupportsExplicitDeclaration(returnType, parameters))
-            {
-                return;
-            }
-
-            INamedTypeSymbol typeSymbol = ConstructActionOrFunc(returnType, parameters, semanticModel);
-
-            CodeAction codeAction = CodeAction.Create(
-                $"Change type to '{SymbolDisplay.GetMinimalString(typeSymbol, semanticModel, variableDeclarator.SpanStart)}'",
-                cancellationToken => RefactorAsync(context.Document, (VariableDeclarationSyntax)variableDeclarator.Parent, typeSymbol, semanticModel, cancellationToken),
-                GetEquivalenceKey(diagnostic, SymbolDisplay.GetString(typeSymbol)));
-
-            context.RegisterCodeFix(codeAction, diagnostic);
         }
 
         private static bool SupportsExplicitDeclaration(ITypeSymbol returnType, ImmutableArray<IParameterSymbol> parameters)
