@@ -60,23 +60,39 @@ namespace Roslynator.CSharp.Syntax
             SyntaxNode node,
             bool allowMissing = false)
         {
-            return Create(node as ExpressionStatementSyntax, allowMissing);
+            switch (node)
+            {
+                case ExpressionStatementSyntax expressionStatement:
+                    return Create(expressionStatement, allowMissing);
+                case InvocationExpressionSyntax invocationExpression:
+                    return Create(invocationExpression, allowMissing);
+            }
+
+            return Default;
         }
 
         internal static MemberInvocationStatementInfo Create(
             ExpressionStatementSyntax expressionStatement,
             bool allowMissing = false)
         {
-            return CreateCore(expressionStatement, allowMissing);
-        }
-
-        internal static MemberInvocationStatementInfo CreateCore(
-            ExpressionStatementSyntax expressionStatement,
-            bool allowMissing = false)
-        {
             if (!(expressionStatement?.Expression is InvocationExpressionSyntax invocationExpression))
                 return Default;
 
+            return CreateCore(invocationExpression, allowMissing);
+        }
+
+        internal static MemberInvocationStatementInfo Create(
+            InvocationExpressionSyntax invocationExpression,
+            bool allowMissing = false)
+        {
+            if (invocationExpression?.Parent?.IsKind(SyntaxKind.ExpressionStatement) != true)
+                return Default;
+
+            return CreateCore(invocationExpression, allowMissing);
+        }
+
+        private static MemberInvocationStatementInfo CreateCore(InvocationExpressionSyntax invocationExpression, bool allowMissing)
+        {
             if (!(invocationExpression.Expression is MemberAccessExpressionSyntax memberAccessExpression))
                 return Default;
 
