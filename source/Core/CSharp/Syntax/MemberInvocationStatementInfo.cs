@@ -36,7 +36,7 @@ namespace Roslynator.CSharp.Syntax
             get { return ArgumentList?.Arguments ?? default(SeparatedSyntaxList<ArgumentSyntax>); }
         }
 
-        public ExpressionStatementSyntax ExpressionStatement
+        public ExpressionStatementSyntax Statement
         {
             get { return (ExpressionStatementSyntax)InvocationExpression?.Parent; }
         }
@@ -107,7 +107,7 @@ namespace Roslynator.CSharp.Syntax
 
         public override string ToString()
         {
-            return ExpressionStatement?.ToString() ?? base.ToString();
+            return Statement?.ToString() ?? base.ToString();
         }
     }
 }
