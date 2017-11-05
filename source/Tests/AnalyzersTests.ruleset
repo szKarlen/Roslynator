@@ -329,7 +329,7 @@
     <Rule Id="RCS1069" Action="Info" />
     <Rule Id="RCS1070" Action="Info" />
     <Rule Id="RCS1071" Action="Info" />
-    <Rule Id="RCS1073" Action="Warning" />
+    <Rule Id="RCS1073" Action="Info" />
     <Rule Id="RCS1073FadeOut" Action="Hidden" />
     <Rule Id="RCS1074" Action="Info" />
     <Rule Id="RCS1077" Action="Warning" />
@@ -360,6 +360,7 @@
     <Rule Id="RCS1153" Action="Warning" />
     <Rule Id="RCS1176" Action="Info" />
     <Rule Id="RCS1177" Action="Info" />
+    <Rule Id="RCS1181" Action="Info" />
     <Rule Id="RCS1184" Action="Info" />
     <Rule Id="RCS1185" Action="Info" />
     <Rule Id="RCS1186" Action="Info" />

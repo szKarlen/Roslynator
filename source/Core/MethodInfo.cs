@@ -222,7 +222,7 @@ namespace Roslynator
                 && Symbol.ReturnType.IsConstructedFromIEnumerableOfT()
                 && IsName("Cast")
                 && Symbol.Arity == 1
-                && Symbol.Parameters.SingleOrDefault(throwException: false)?.Type.IsIEnumerable() == true
+                && Symbol.Parameters.SingleOrDefault(shouldThrow: false)?.Type.IsIEnumerable() == true
                 && Symbol
                     .ContainingType?
                     .Equals(SemanticModel.GetTypeByMetadataName(MetadataNames.System_Linq_Enumerable)) == true;
@@ -263,7 +263,7 @@ namespace Roslynator
         }
 
         internal bool IsLinqExtensionOfIEnumerableOfTWithPredicate(
-            string name,
+            string name = null,
             bool allowImmutableArrayExtension = false)
         {
             return IsLinqExtensionOfIEnumerableOfTWithPredicate(name, parameterCount: 2, allowImmutableArrayExtension: allowImmutableArrayExtension);
@@ -276,7 +276,7 @@ namespace Roslynator
         {
             if (IsValid
                 && Symbol.IsPublic()
-                && IsName(name))
+                && IsNullOrName(name))
             {
                 INamedTypeSymbol containingType = Symbol.ContainingType;
 

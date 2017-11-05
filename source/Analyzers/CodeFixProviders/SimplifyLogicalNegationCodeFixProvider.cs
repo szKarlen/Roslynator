@@ -11,26 +11,26 @@ using Roslynator.CSharp.Refactorings;
 
 namespace Roslynator.CSharp.CodeFixes
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ReplaceIfStatementWithReturnStatementCodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(SimplifyLogicalNegationCodeFixProvider))]
     [Shared]
-    public class ReplaceIfStatementWithReturnStatementCodeFixProvider : BaseCodeFixProvider
+    public class SimplifyLogicalNegationCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(DiagnosticIdentifiers.ReplaceIfStatementWithReturnStatement); }
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.SimplifyLogicalNegation); }
         }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             SyntaxNode root = await context.GetSyntaxRootAsync().ConfigureAwait(false);
 
-            if (!TryFindFirstDescendantOrSelf(root, context.Span, out IfStatementSyntax ifStatement))
+            if (!TryFindFirstAncestorOrSelf(root, context.Span, out PrefixUnaryExpressionSyntax prefixUnaryExpression))
                 return;
 
             CodeAction codeAction = CodeAction.Create(
-                "Replace if-else with return",
-                cancellationToken => ReplaceIfStatementWithReturnStatementRefactoring.RefactorAsync(context.Document, ifStatement, cancellationToken),
-                GetEquivalenceKey(DiagnosticIdentifiers.ReplaceIfStatementWithReturnStatement));
+                "Simplify logical negation",
+                cancellationToken => SimplifyLogicalNegationRefactoring.RefactorAsync(context.Document, prefixUnaryExpression, cancellationToken),
+                GetEquivalenceKey(DiagnosticIdentifiers.SimplifyLogicalNegation));
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);
         }

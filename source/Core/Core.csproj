@@ -43,6 +43,7 @@
   <ItemGroup>
     <Compile Include="CSharp\Helpers\AllowedAccessibilityHelper.cs" />
     <Compile Include="CSharp\Helpers\ChangeAccessibilityHelper.cs" />
+    <Compile Include="CSharp\SyntaxWalkers\AssignedExpressionWalker.cs" />
     <Compile Include="CSharp\Syntax\AccessibilityInfo.cs" />
     <Compile Include="CSharp\Analysis\BracesAnalysisResult.cs" />
     <Compile Include="CSharp\CodeFixes\AbstractCodeFixProvider.cs" />
@@ -51,6 +52,7 @@
     <Compile Include="CSharp\Helpers\DetermineParameterTypeHelper.cs" />
     <Compile Include="CSharp\Syntax\AsExpressionInfo.cs" />
     <Compile Include="CSharp\Helpers\LogicalNegationHelper.cs" />
+    <Compile Include="CSharp\Syntax\ConditionalReturnStatementInfo.cs" />
     <Compile Include="CSharp\Syntax\OverrideInfo.cs" />
     <Compile Include="CSharp\Refactorings\RefactoringIdentifierSet.cs" />
     <Compile Include="CSharp\Refactorings\RefactoringSettings.cs" />

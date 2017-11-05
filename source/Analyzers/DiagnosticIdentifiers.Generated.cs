@@ -70,7 +70,7 @@ namespace Roslynator.CSharp
         public const string AvoidUsageOfWhileStatementToCreateInfiniteLoop = "RCS1065";
         public const string RemoveEmptyFinallyClause = "RCS1066";
         public const string RemoveArgumentListFromObjectCreation = "RCS1067";
-        public const string SimplifyLogicalNotExpression = "RCS1068";
+        public const string SimplifyLogicalNegation = "RCS1068";
         public const string RemoveUnnecessaryCaseLabel = "RCS1069";
         public const string RemoveRedundantDefaultSwitchSection = "RCS1070";
         public const string RemoveRedundantBaseConstructorCall = "RCS1071";
@@ -200,5 +200,6 @@ namespace Roslynator.CSharp
         public const string ReorderTypeParameterConstraints = "RCS1209";
         public const string ReturnTaskInsteadOfNull = "RCS1210";
         public const string RemoveUnnecessaryElseClause = "RCS1211";
+        public const string RemoveRedundantAssignment = "RCS1212";
     }
 }
