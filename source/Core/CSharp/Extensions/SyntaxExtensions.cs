@@ -562,9 +562,7 @@ namespace Roslynator.CSharp
             if (elseClause == null)
                 throw new ArgumentNullException(nameof(elseClause));
 
-            var ifStatement = elseClause.Parent as IfStatementSyntax;
-
-            if (ifStatement != null)
+            if (elseClause.Parent is IfStatementSyntax ifStatement)
                 return ifStatement.GetTopmostIf();
 
             return null;
@@ -1634,9 +1632,9 @@ namespace Roslynator.CSharp
             return false;
         }
 
-        internal static MemberDeclarationSyntax WithNewSingleLineDocumentationComment(
-            this MemberDeclarationSyntax member,
-            DocumentationCommentGeneratorSettings settings = null)
+        internal static TMember WithNewSingleLineDocumentationComment<TMember>(
+            this TMember member,
+            DocumentationCommentGeneratorSettings settings = null) where TMember : MemberDeclarationSyntax
         {
             if (member == null)
                 throw new ArgumentNullException(nameof(member));
@@ -1654,11 +1652,11 @@ namespace Roslynator.CSharp
             return member.WithLeadingTrivia(newLeadingTrivia);
         }
 
-        internal static MemberDeclarationSyntax WithBaseOrNewSingleLineDocumentationComment(
-            this MemberDeclarationSyntax member,
+        internal static TMember WithBaseOrNewSingleLineDocumentationComment<TMember>(
+            this TMember member,
             SemanticModel semanticModel,
             DocumentationCommentGeneratorSettings settings = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken)) where TMember : MemberDeclarationSyntax
         {
             if (member == null)
                 throw new ArgumentNullException(nameof(member));
@@ -1674,10 +1672,10 @@ namespace Roslynator.CSharp
             return WithNewSingleLineDocumentationComment(member, settings);
         }
 
-        public static MemberDeclarationSyntax WithDocumentationComment(
-            this MemberDeclarationSyntax member,
+        public static TMember WithDocumentationComment<TMember>(
+            this TMember member,
             SyntaxTrivia comment,
-            bool indent = false)
+            bool indent = false) where TMember : MemberDeclarationSyntax
         {
             if (member == null)
                 throw new ArgumentNullException(nameof(member));
@@ -2095,8 +2093,7 @@ namespace Roslynator.CSharp
             if (statement == null)
                 throw new ArgumentNullException(nameof(statement));
 
-            SyntaxList<StatementSyntax> statements;
-            if (statement.TryGetContainingList(out statements))
+            if (statement.TryGetContainingList(out SyntaxList<StatementSyntax> statements))
             {
                 int index = statements.IndexOf(statement);
 
@@ -2112,8 +2109,7 @@ namespace Roslynator.CSharp
             if (statement == null)
                 throw new ArgumentNullException(nameof(statement));
 
-            SyntaxList<StatementSyntax> statements;
-            if (statement.TryGetContainingList(out statements))
+            if (statement.TryGetContainingList(out SyntaxList<StatementSyntax> statements))
             {
                 int index = statements.IndexOf(statement);
 
@@ -2580,12 +2576,11 @@ namespace Roslynator.CSharp
         {
             foreach (SyntaxTrivia trivia in node.DescendantTrivia(descendIntoTrivia: true))
             {
-                if (trivia.IsDirective && trivia.HasStructure)
+                if (trivia.IsDirective
+                    && trivia.HasStructure
+                    && (trivia.GetStructure() is DirectiveTriviaSyntax directive))
                 {
-                    var directive = trivia.GetStructure() as DirectiveTriviaSyntax;
-
-                    if (directive != null)
-                        yield return directive;
+                    yield return directive;
                 }
             }
         }
@@ -2981,12 +2976,11 @@ namespace Roslynator.CSharp
         {
             SyntaxNode parent = node.Parent;
 
-            if (parent == null && ascendOutOfTrivia)
+            if (parent == null
+                && ascendOutOfTrivia
+                && (node is IStructuredTriviaSyntax structuredTrivia))
             {
-                var structuredTrivia = node as IStructuredTriviaSyntax;
-
-                if (structuredTrivia != null)
-                    parent = structuredTrivia.ParentTrivia.Token.Parent;
+                parent = structuredTrivia.ParentTrivia.Token.Parent;
             }
 
             return parent;
@@ -2999,9 +2993,7 @@ namespace Roslynator.CSharp
         {
             foreach (SyntaxNode descendant in node.DescendantNodesAndSelf(descendIntoChildren: descendIntoChildren, descendIntoTrivia: descendIntoTrivia))
             {
-                var tnode = descendant as TNode;
-
-                if (tnode != null)
+                if (descendant is TNode tnode)
                     return tnode;
             }
 
@@ -3016,9 +3008,7 @@ namespace Roslynator.CSharp
         {
             foreach (SyntaxNode descendant in node.DescendantNodesAndSelf(span, descendIntoChildren: descendIntoChildren, descendIntoTrivia: descendIntoTrivia))
             {
-                var tnode = descendant as TNode;
-
-                if (tnode != null)
+                if (descendant is TNode tnode)
                     return tnode;
             }
 

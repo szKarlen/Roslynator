@@ -65,12 +65,10 @@ namespace Roslynator
 
                     for (int j = 0; j < members.Length; j++)
                     {
-                        if (members[j] is TSymbol)
+                        if ((members[j] is TSymbol tmember)
+                            && symbol.Equals(containingType.FindImplementationForInterfaceMember(tmember)))
                         {
-                            var tmember = (TSymbol)members[j];
-
-                            if (symbol.Equals(containingType.FindImplementationForInterfaceMember(tmember)))
-                                return tmember;
+                            return tmember;
                         }
                     }
                 }
@@ -1138,7 +1136,7 @@ namespace Roslynator
             }
         }
 
-        public static bool Implements(this ITypeSymbol typeSymbol, SpecialType interfaceSpecialType)
+        public static bool Implements(this ITypeSymbol typeSymbol, SpecialType specialType)
         {
             if (typeSymbol == null)
                 throw new ArgumentNullException(nameof(typeSymbol));
@@ -1147,14 +1145,14 @@ namespace Roslynator
 
             for (int i = 0; i < allInterfaces.Length; i++)
             {
-                if (allInterfaces[i].ConstructedFrom.SpecialType == interfaceSpecialType)
+                if (allInterfaces[i].ConstructedFrom.SpecialType == specialType)
                     return true;
             }
 
             return false;
         }
 
-        public static bool ImplementsAny(this ITypeSymbol typeSymbol, SpecialType interfaceSpecialType1, SpecialType interfaceSpecialType2)
+        public static bool ImplementsAny(this ITypeSymbol typeSymbol, SpecialType specialType1, SpecialType specialType2)
         {
             if (typeSymbol == null)
                 throw new ArgumentNullException(nameof(typeSymbol));
@@ -1163,14 +1161,14 @@ namespace Roslynator
 
             for (int i = 0; i < allInterfaces.Length; i++)
             {
-                if (allInterfaces[i].ConstructedFrom.IsSpecialType(interfaceSpecialType1, interfaceSpecialType2))
+                if (allInterfaces[i].ConstructedFrom.IsSpecialType(specialType1, specialType2))
                     return true;
             }
 
             return false;
         }
 
-        public static bool ImplementsAny(this ITypeSymbol typeSymbol, SpecialType interfaceSpecialType1, SpecialType interfaceSpecialType2, SpecialType interfaceSpecialType3)
+        public static bool ImplementsAny(this ITypeSymbol typeSymbol, SpecialType specialType1, SpecialType specialType2, SpecialType specialType3)
         {
             if (typeSymbol == null)
                 throw new ArgumentNullException(nameof(typeSymbol));
@@ -1179,7 +1177,7 @@ namespace Roslynator
 
             for (int i = 0; i < allInterfaces.Length; i++)
             {
-                if (allInterfaces[i].ConstructedFrom.IsSpecialType(interfaceSpecialType1, interfaceSpecialType2, interfaceSpecialType3))
+                if (allInterfaces[i].ConstructedFrom.IsSpecialType(specialType1, specialType2, specialType3))
                     return true;
             }
 
