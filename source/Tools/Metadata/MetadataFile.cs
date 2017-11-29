@@ -51,7 +51,7 @@ namespace Roslynator.Metadata
                     element.Attribute("Title").Value,
                     element.AttributeValueAsBooleanOrDefault("IsEnabledByDefault", true),
                     element.AttributeValueAsBooleanOrDefault("IsObsolete", false),
-                    element.Element("Scope")?.Value,
+                    element.Element("Span")?.Value,
                     element.Element("Syntaxes")
                         .Elements("Syntax")
                         .Select(f => new SyntaxDescriptor(f.Value))

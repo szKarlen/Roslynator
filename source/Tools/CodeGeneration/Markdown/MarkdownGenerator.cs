@@ -52,8 +52,8 @@ namespace Roslynator.CodeGeneration.Markdown
                     sw.WriteLine("");
                     sw.WriteLine($"* **Syntax**: {string.Join(", ", info.Syntaxes.Select(f => f.Name.EscapeMarkdown()))}");
 
-                    if (!string.IsNullOrEmpty(info.Scope))
-                        sw.WriteLine($"* **Scope**: {info.Scope.EscapeMarkdown()}");
+                    if (!string.IsNullOrEmpty(info.Span))
+                        sw.WriteLine($"* **Span**: {info.Span.EscapeMarkdown()}");
 
                     sw.WriteLine("");
 
@@ -98,8 +98,8 @@ namespace Roslynator.CodeGeneration.Markdown
                 sw.WriteLine($"Title | {refactoring.Title.EscapeMarkdown()}");
                 sw.WriteLine($"Syntax | {string.Join(", ", refactoring.Syntaxes.Select(f => f.Name.EscapeMarkdown()))}");
 
-                if (!string.IsNullOrEmpty(refactoring.Scope))
-                    sw.WriteLine($"Scope | {refactoring.Scope.EscapeMarkdown()}");
+                if (!string.IsNullOrEmpty(refactoring.Span))
+                    sw.WriteLine($"Span | {refactoring.Span.EscapeMarkdown()}");
 
                 sw.WriteLine($"Enabled by Default | {GetBooleanAsText(refactoring.IsEnabledByDefault)}");
 
