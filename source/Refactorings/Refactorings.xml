@@ -1241,4 +1241,10 @@
     </Syntaxes>
     <Scope>equals token</Scope>
   </Refactoring>
+  <Refactoring Id="RR0195" Identifier="ReplaceLinqWithForEach" Title="Replace LINQ with foreach">
+    <Syntaxes>
+      <Syntax>invocation expression</Syntax>
+    </Syntaxes>
+    <Scope>method name</Scope>
+  </Refactoring>
 </Refactorings>

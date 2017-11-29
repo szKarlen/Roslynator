@@ -145,6 +145,7 @@ namespace Roslynator.CSharp.Refactorings
         public const string ReplaceInterpolatedStringWithConcatenation = Prefix + "0193";
         public const string ReplaceInterpolatedStringWithInterpolationExpression = Prefix + "0135";
         public const string ReplaceInterpolatedStringWithStringLiteral = Prefix + "0136";
+        public const string ReplaceLinqWithForEach = Prefix + "0195";
         public const string ReplaceMethodGroupWithLambda = Prefix + "0137";
         public const string ReplaceMethodWithProperty = Prefix + "0138";
         public const string ReplaceNullLiteralExpressionWithDefaultExpression = Prefix + "0139";

@@ -12,10 +12,11 @@ namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceStringContainsWithStringIndexOfRefactoring
     {
-        public static async Task ComputeRefactoringAsync(RefactoringContext context, InvocationExpressionSyntax invocation)
+        public static void ComputeRefactoring(
+            RefactoringContext context,
+            InvocationExpressionSyntax invocation,
+            SemanticModel semanticModel)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
             if (semanticModel.TryGetMethodInfo(invocation, out MethodInfo info, context.CancellationToken)
                 && info.IsName("Contains")
                 && info.IsContainingType(SpecialType.System_String)

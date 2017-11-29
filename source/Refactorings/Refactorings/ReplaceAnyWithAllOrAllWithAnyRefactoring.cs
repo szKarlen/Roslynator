@@ -10,10 +10,11 @@ namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceAnyWithAllOrAllWithAnyRefactoring
     {
-        public static async Task ComputeRefactoringAsync(RefactoringContext context, InvocationExpressionSyntax invocation)
+        public static void ComputeRefactoring(
+            RefactoringContext context,
+            InvocationExpressionSyntax invocation,
+            SemanticModel semanticModel)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
             if (!ComputeRefactoring(context, invocation, semanticModel, "Any", "All"))
                 ComputeRefactoring(context, invocation, semanticModel, "All", "Any");
         }

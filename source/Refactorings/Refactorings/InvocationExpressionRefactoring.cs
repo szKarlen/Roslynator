@@ -30,10 +30,25 @@ namespace Roslynator.CSharp.Refactorings
                             await UseElementAccessInsteadOfEnumerableMethodRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
 
                         if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceAnyWithAllOrAllWithAny))
-                            await ReplaceAnyWithAllOrAllWithAnyRefactoring.ComputeRefactoringAsync(context, invocationExpression).ConfigureAwait(false);
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ReplaceAnyWithAllOrAllWithAnyRefactoring.ComputeRefactoring(context, invocationExpression, semanticModel);
+                        }
+
+                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceLinqWithForEach))
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ReplaceLinqWithForEachRefactoring.ComputeRefactoring(context, invocationExpression, semanticModel);
+                        }
 
                         if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStringContainsWithStringIndexOf))
-                            await ReplaceStringContainsWithStringIndexOfRefactoring.ComputeRefactoringAsync(context, invocationExpression).ConfigureAwait(false);
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ReplaceStringContainsWithStringIndexOfRefactoring.ComputeRefactoring(context, invocationExpression, semanticModel);
+                        }
                     }
 
                     if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallExtensionMethodAsInstanceMethod))
