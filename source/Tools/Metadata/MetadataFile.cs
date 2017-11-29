@@ -61,7 +61,13 @@ namespace Roslynator.Metadata
                             .Elements("Image")
                             .Select(f => new ImageDescriptor(f.Value))
                             .ToList()
-                        : new List<ImageDescriptor>());
+                        : new List<ImageDescriptor>(),
+                    (element.Element("Samples") != null)
+                        ? element.Element("Samples")?
+                            .Elements("Sample")
+                            .Select(f => new SampleDescriptor(f.Element("Before").Value, f.Element("After").Value))
+                            .ToList()
+                        : new List<SampleDescriptor>());
             }
         }
 

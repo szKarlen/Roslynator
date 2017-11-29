@@ -57,16 +57,45 @@ namespace Roslynator.CodeGeneration.Markdown
 
                     sw.WriteLine("");
 
-                    WriteRefactoringImages(sw, info);
+                    WriteRefactoringSamples(sw, info);
                 }
 
                 return sw.ToString();
             }
         }
 
-        private static void WriteRefactoringImages(StringWriter sw, RefactoringDescriptor refactoring)
+        private static void WriteRefactoringSamples(StringWriter sw, RefactoringDescriptor refactoring)
         {
-            if (refactoring.Images.Count > 0)
+            if (refactoring.Samples.Count > 0)
+            {
+                bool isFirst = true;
+
+                foreach (SampleDescriptor sample in refactoring.Samples)
+                {
+                    if (!isFirst)
+                    {
+                        sw.WriteLine();
+                    }
+                    else
+                    {
+                        isFirst = false;
+                    }
+
+                    sw.WriteLine("#### Before");
+                    sw.WriteLine();
+                    sw.WriteLine("```csharp");
+                    sw.WriteLine(sample.Before);
+                    sw.WriteLine("```");
+                    sw.WriteLine();
+
+                    sw.WriteLine("#### After");
+                    sw.WriteLine();
+                    sw.WriteLine("```csharp");
+                    sw.WriteLine(sample.After);
+                    sw.WriteLine("```");
+                }
+            }
+            else if (refactoring.Images.Count > 0)
             {
                 bool isFirst = true;
 
@@ -107,7 +136,7 @@ namespace Roslynator.CodeGeneration.Markdown
                 sw.WriteLine("### Usage");
                 sw.WriteLine("");
 
-                WriteRefactoringImages(sw, refactoring);
+                WriteRefactoringSamples(sw, refactoring);
 
                 sw.WriteLine("");
 

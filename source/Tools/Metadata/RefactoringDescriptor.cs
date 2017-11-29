@@ -16,7 +16,8 @@ namespace Roslynator.Metadata
             bool isObsolete,
             string span,
             IList<SyntaxDescriptor> syntaxes,
-            IList<ImageDescriptor> images)
+            IList<ImageDescriptor> images,
+            IList<SampleDescriptor> samples)
         {
             Id = id;
             Identifier = identifier;
@@ -26,6 +27,7 @@ namespace Roslynator.Metadata
             Span = span;
             Syntaxes = new ReadOnlyCollection<SyntaxDescriptor>(syntaxes);
             Images = new ReadOnlyCollection<ImageDescriptor>(images);
+            Samples = new ReadOnlyCollection<SampleDescriptor>(samples);
         }
 
         public string Id { get; }
@@ -43,6 +45,8 @@ namespace Roslynator.Metadata
         public ReadOnlyCollection<SyntaxDescriptor> Syntaxes { get; }
 
         public ReadOnlyCollection<ImageDescriptor> Images { get; }
+
+        public ReadOnlyCollection<SampleDescriptor> Samples { get; }
 
         public IEnumerable<ImageDescriptor> ImagesOrDefaultImage()
         {

@@ -1240,5 +1240,11 @@
       <Syntax>local variable declaration</Syntax>
     </Syntaxes>
     <Span>equals token</Span>
-  </Refactoring>
+    <Samples>
+      <Sample>
+        <Before>var s = GetValue();</Before>
+        <After>string s;
+s = GetValue();</After>
+      </Sample>
+    </Samples>  </Refactoring>
 </Refactorings>
