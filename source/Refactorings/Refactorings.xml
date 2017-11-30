@@ -902,27 +902,27 @@
 
 if (ch == 10 || ch == 13)
 {
-	return;
+    return;
 }
 else
 {
-	stringBuilder.Append(ch);
+    stringBuilder.Append(ch);
 }]]></Before>
         <After><![CDATA[var ch = stringReader.Read();
 
 switch (ch)
 {
-	case 10:
-	case 13:
-		{
-			return;
-		}
+    case 10:
+    case 13:
+        {
+            return;
+        }
 
-	default:
-		{
-			stringBuilder.Append(ch);
-			break;
-		}
+    default:
+        {
+            stringBuilder.Append(ch);
+            break;
+        }
 }]]></After>
       </Sample>
     </Samples>
@@ -1268,9 +1268,9 @@ switch (ch)
 {
 }]]></Before>
         <After><![CDATA[private void Foo<T1, T2, T3>()
-	where T1 : class
-	where T2 : class
-	where T3 : class
+    where T1 : class
+    where T2 : class
+    where T3 : class
 {
 }
 ]]></After>
@@ -1285,12 +1285,12 @@ switch (ch)
       <Sample>
         <Before><![CDATA[foreach (object item in items)
 {
-	yield return item;
+    yield return item;
 }
 ]]></Before>
         <After><![CDATA[for (int i = items.Count - 1; i >= 0; i--)
 {
-	yield return items[i];
+    yield return items[i];
 }
 ]]></After>
       </Sample>
@@ -1305,35 +1305,35 @@ switch (ch)
       <Sample>
         <Before><![CDATA[if (condition1)
 {
-	Foo1();
+    Foo1();
 
-	if (condition2)
-	{
-		Foo2();
+    if (condition2)
+    {
+        Foo2();
 
-		if (condition3)
-		{
-			Foo3();
-		}
-	}
+        if (condition3)
+        {
+            Foo3();
+        }
+    }
 }]]></Before>
         <After><![CDATA[if (!condition1)
 {
-	return;
+    return;
 }
 
 Foo1();
 
 if (!condition2)
 {
-	return;
+    return;
 }
 
 Foo2();
 
 if (!condition3)
 {
-	return;
+    return;
 }
 
 Foo3();]]></After>

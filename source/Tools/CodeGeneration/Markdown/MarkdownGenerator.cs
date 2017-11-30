@@ -74,7 +74,7 @@ namespace Roslynator.CodeGeneration.Markdown
                 {
                     if (!isFirst)
                     {
-                        sw.WriteLine();
+                        sw.WriteLine("_____");
                     }
                     else
                     {
