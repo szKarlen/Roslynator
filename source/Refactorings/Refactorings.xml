@@ -828,6 +828,16 @@
       <Syntax>do statement</Syntax>
     </Syntaxes>
     <Span>do keyword</Span>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[do
+{
+} while (condition);]]></Before>
+        <After><![CDATA[while (condition)
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0124" Identifier="ReplaceEqualsExpressionWithStringEquals" Title="Replace equals expression with string.Equals">
     <Syntaxes>
@@ -886,6 +896,36 @@
       <Syntax>if statement</Syntax>
     </Syntaxes>
     <Span>top if keyword or selected if statement</Span>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var ch = stringReader.Read();
+
+if (ch == 10 || ch == 13)
+{
+	return;
+}
+else
+{
+	stringBuilder.Append(ch);
+}]]></Before>
+        <After><![CDATA[var ch = stringReader.Read();
+
+switch (ch)
+{
+	case 10:
+	case 13:
+		{
+			return;
+		}
+
+	default:
+		{
+			stringBuilder.Append(ch);
+			break;
+		}
+}]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0134" Identifier="ReplaceIncrementOperatorWithDecrementOperator" Title="Replace increment operator with decrement operator">
     <Syntaxes>
@@ -977,6 +1017,16 @@
       <Syntax>while statement</Syntax>
     </Syntaxes>
     <Span>while keyword</Span>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[while (condition)
+{
+}]]></Before>
+        <After><![CDATA[do
+{
+} while (condition);]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0151" Identifier="ReplaceWhileWithFor" Title="Replace while statement with for statement">
     <Syntaxes>
@@ -1192,6 +1242,16 @@
     <Syntaxes>
       <Syntax>object creation expression</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = new object();]]></Before>
+        <After><![CDATA[object x = null;]]></After>
+      </Sample>
+      <Sample>
+        <Before><![CDATA[var arr = new object[0];]]></Before>
+        <After><![CDATA[object[] arr = null;]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0186" Identifier="ChangeAccessibility" Title="Change accessibility">
     <Syntaxes>
@@ -1202,17 +1262,83 @@
     <Syntaxes>
       <Syntax>type parameter constraint clause</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[private void Foo<T1, T2, T3>() where T1 : class where T2 : class where T3 : class
+{
+}]]></Before>
+        <After><![CDATA[private void Foo<T1, T2, T3>()
+	where T1 : class
+	where T2 : class
+	where T3 : class
+{
+}
+]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0188" Identifier="ReplaceForEachWithForAndReverseLoop" Title="Replace foreach with for and reverse loop" IsEnabledByDefault="false">
     <Syntaxes>
       <Syntax>foreach statement</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[foreach (object item in items)
+{
+	yield return item;
+}
+]]></Before>
+        <After><![CDATA[for (int i = items.Count - 1; i >= 0; i--)
+{
+	yield return items[i];
+}
+]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0189" Identifier="ReduceIfNesting" Title="Reduce if nesting">
     <Syntaxes>
       <Syntax>if statement</Syntax>
     </Syntaxes>
     <Span>if keyword</Span>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[if (condition1)
+{
+	Foo1();
+
+	if (condition2)
+	{
+		Foo2();
+
+		if (condition3)
+		{
+			Foo3();
+		}
+	}
+}]]></Before>
+        <After><![CDATA[if (!condition1)
+{
+	return;
+}
+
+Foo1();
+
+if (!condition2)
+{
+	return;
+}
+
+Foo2();
+
+if (!condition3)
+{
+	return;
+}
+
+Foo3();]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0190" Identifier="ReplaceIfElseWithIfReturn" Title="Replace if-else with if-return">
     <Syntaxes>
@@ -1224,16 +1350,42 @@
     <Syntaxes>
       <Syntax>collection initializer</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var dic = new Dictionary<int, string>() { { 0, "0" } };]]></Before>
+        <After><![CDATA[var dic = new Dictionary<int, string>() { [0] = "0" };]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0192" Identifier="ReplaceCommentWithDocumentationComment" Title="Replace comment with documentation comment">
     <Syntaxes>
       <Syntax>single-line comment</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[// comment
+public class Foo
+{
+}]]></Before>
+        <After><![CDATA[/// <summary>
+/// comment
+/// </summary>
+public class Foo
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0193" Identifier="ReplaceInterpolatedStringWithConcatenation" Title="Replace interpolated string with concatenation">
     <Syntaxes>
       <Syntax>interpolated string</Syntax>
     </Syntaxes>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[string s = $"a{b}c";]]></Before>
+        <After><![CDATA[string s = "a" + b + "c";]]></After>
+      </Sample>
+    </Samples>
   </Refactoring>
   <Refactoring Id="RR0194" Identifier="SplitDeclarationAndInitialization" Title="Split declaration and initialization">
     <Syntaxes>
@@ -1242,9 +1394,10 @@
     <Span>equals token</Span>
     <Samples>
       <Sample>
-        <Before>var s = GetValue();</Before>
-        <After>string s;
-s = GetValue();</After>
+        <Before><![CDATA[var s = GetValue();]]></Before>
+        <After><![CDATA[string s;
+s = GetValue();]]></After>
       </Sample>
-    </Samples>  </Refactoring>
+    </Samples>
+  </Refactoring>
 </Refactorings>
