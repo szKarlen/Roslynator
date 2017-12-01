@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using Roslynator.Metadata;
 using Roslynator.Utilities;
+using System.Collections.ObjectModel;
 
 namespace Roslynator.CodeGeneration.Markdown
 {
@@ -38,7 +39,7 @@ namespace Roslynator.CodeGeneration.Markdown
             }
         }
 
-        public static string CreateRefactoringsMarkDown(IEnumerable<RefactoringDescriptor> refactorings, IComparer<string> comparer)
+        public static string CreateRefactoringsMarkdown(IEnumerable<RefactoringDescriptor> refactorings, IComparer<string> comparer)
         {
             using (var sw = new StringWriter())
             {
@@ -47,15 +48,15 @@ namespace Roslynator.CodeGeneration.Markdown
                 foreach (RefactoringDescriptor info in refactorings
                     .OrderBy(f => f.Title, comparer))
                 {
-                    sw.WriteLine("");
+                    sw.WriteLine();
                     sw.WriteLine($"#### {info.Title.EscapeMarkdown()} ({info.Id})");
-                    sw.WriteLine("");
+                    sw.WriteLine();
                     sw.WriteLine($"* **Syntax**: {string.Join(", ", info.Syntaxes.Select(f => f.Name.EscapeMarkdown()))}");
 
                     if (!string.IsNullOrEmpty(info.Span))
                         sw.WriteLine($"* **Span**: {info.Span.EscapeMarkdown()}");
 
-                    sw.WriteLine("");
+                    sw.WriteLine();
 
                     WriteRefactoringSamples(sw, info);
                 }
@@ -68,32 +69,7 @@ namespace Roslynator.CodeGeneration.Markdown
         {
             if (refactoring.Samples.Count > 0)
             {
-                bool isFirst = true;
-
-                foreach (SampleDescriptor sample in refactoring.Samples)
-                {
-                    if (!isFirst)
-                    {
-                        sw.WriteLine("_____");
-                    }
-                    else
-                    {
-                        isFirst = false;
-                    }
-
-                    sw.WriteLine("#### Before");
-                    sw.WriteLine();
-                    sw.WriteLine("```csharp");
-                    sw.WriteLine(sample.Before);
-                    sw.WriteLine("```");
-                    sw.WriteLine();
-
-                    sw.WriteLine("#### After");
-                    sw.WriteLine();
-                    sw.WriteLine("```csharp");
-                    sw.WriteLine(sample.After);
-                    sw.WriteLine("```");
-                }
+                WriteSamples(sw, refactoring.Samples);
             }
             else if (refactoring.Images.Count > 0)
             {
@@ -104,22 +80,52 @@ namespace Roslynator.CodeGeneration.Markdown
                     if (!isFirst)
                         sw.WriteLine();
 
-                    sw.WriteLine(CreateImageMarkDown(refactoring, image.Name));
+                    sw.WriteLine(CreateImageMarkdown(refactoring, image.Name));
                     isFirst = false;
                 }
             }
             else
             {
-                sw.WriteLine(CreateImageMarkDown(refactoring, refactoring.Identifier));
+                sw.WriteLine(CreateImageMarkdown(refactoring, refactoring.Identifier));
             }
         }
 
-        public static string CreateRefactoringMarkDown(RefactoringDescriptor refactoring)
+        private static void WriteSamples(StringWriter sw, IEnumerable<SampleDescriptor> samples)
+        {
+            bool isFirst = true;
+
+            foreach (SampleDescriptor sample in samples)
+            {
+                if (!isFirst)
+                {
+                    sw.WriteLine("_____");
+                }
+                else
+                {
+                    isFirst = false;
+                }
+
+                sw.WriteLine("#### Before");
+                sw.WriteLine();
+                sw.WriteLine("```csharp");
+                sw.WriteLine(sample.Before);
+                sw.WriteLine("```");
+                sw.WriteLine();
+
+                sw.WriteLine("#### After");
+                sw.WriteLine();
+                sw.WriteLine("```csharp");
+                sw.WriteLine(sample.After);
+                sw.WriteLine("```");
+            }
+        }
+
+        public static string CreateRefactoringMarkdown(RefactoringDescriptor refactoring)
         {
             using (var sw = new StringWriter())
             {
                 sw.WriteLine($"## {refactoring.Title}");
-                sw.WriteLine("");
+                sw.WriteLine();
 
                 sw.WriteLine("Property | Value");
                 sw.WriteLine("--- | --- ");
@@ -132,13 +138,13 @@ namespace Roslynator.CodeGeneration.Markdown
 
                 sw.WriteLine($"Enabled by Default | {GetBooleanAsText(refactoring.IsEnabledByDefault)}");
 
-                sw.WriteLine("");
+                sw.WriteLine();
                 sw.WriteLine("### Usage");
-                sw.WriteLine("");
+                sw.WriteLine();
 
                 WriteRefactoringSamples(sw, refactoring);
 
-                sw.WriteLine("");
+                sw.WriteLine();
 
                 sw.WriteLine("[full list of refactorings](Refactorings.md)");
 
@@ -146,13 +152,13 @@ namespace Roslynator.CodeGeneration.Markdown
             }
         }
 
-        public static string CreateAnalyzerMarkDown(AnalyzerDescriptor analyzer)
+        public static string CreateAnalyzerMarkdown(AnalyzerDescriptor analyzer)
         {
             using (var sw = new StringWriter())
             {
                 string title = analyzer.Title.TrimEnd('.').EscapeMarkdown();
                 sw.WriteLine($"#{((analyzer.IsObsolete) ? " [deprecated]" : "")} {analyzer.Id}: {title}");
-                sw.WriteLine("");
+                sw.WriteLine();
 
                 sw.WriteLine("Property | Value");
                 sw.WriteLine("--- | --- ");
@@ -163,8 +169,18 @@ namespace Roslynator.CodeGeneration.Markdown
                 sw.WriteLine($"Supports Fade-Out | {GetBooleanAsText(analyzer.SupportsFadeOut)}");
                 sw.WriteLine($"Supports Fade-Out Analyzer | {GetBooleanAsText(analyzer.SupportsFadeOutAnalyzer)}");
 
-                sw.WriteLine();
+                ReadOnlyCollection<SampleDescriptor> samples = analyzer.Samples;
 
+                if (samples.Count > 0)
+                {
+                    sw.WriteLine();
+                    sw.WriteLine("### Examples");
+                    sw.WriteLine();
+
+                    WriteSamples(sw, samples);
+                }
+
+                sw.WriteLine();
                 sw.WriteLine("## How to Suppress");
                 sw.WriteLine();
 
@@ -192,6 +208,33 @@ namespace Roslynator.CodeGeneration.Markdown
                 sw.WriteLine();
 
                 return sw.ToString();
+            }
+        }
+
+        private static void WriteAnalyzerSample(StringWriter sw, RefactoringDescriptor refactoring)
+        {
+            ReadOnlyCollection<SampleDescriptor> samples = refactoring.Samples;
+
+            if (samples.Count > 0)
+            {
+                WriteSamples(sw, samples);
+            }
+            else if (refactoring.Images.Count > 0)
+            {
+                bool isFirst = true;
+
+                foreach (ImageDescriptor image in refactoring.Images)
+                {
+                    if (!isFirst)
+                        sw.WriteLine();
+
+                    sw.WriteLine(CreateImageMarkdown(refactoring, image.Name));
+                    isFirst = false;
+                }
+            }
+            else
+            {
+                sw.WriteLine(CreateImageMarkdown(refactoring, refactoring.Identifier));
             }
         }
 
@@ -312,7 +355,7 @@ namespace Roslynator.CodeGeneration.Markdown
             }
         }
 
-        public static string CreateAnalyzersByCategoryMarkDown(IEnumerable<AnalyzerDescriptor> analyzers, IComparer<string> comparer)
+        public static string CreateAnalyzersByCategoryMarkdown(IEnumerable<AnalyzerDescriptor> analyzers, IComparer<string> comparer)
         {
             using (var sw = new StringWriter())
             {
@@ -344,7 +387,7 @@ namespace Roslynator.CodeGeneration.Markdown
             }
         }
 
-        private static string CreateImageMarkDown(RefactoringDescriptor refactoring, string fileName)
+        private static string CreateImageMarkdown(RefactoringDescriptor refactoring, string fileName)
         {
             return $"![{refactoring.Title.EscapeMarkdown()}](../../images/refactorings/{fileName.EscapeMarkdown()}.png)";
         }

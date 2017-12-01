@@ -2099,6 +2099,25 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[if (condition)
+{
+    return WhenTrue();
+}
+else // RCS1211
+{
+    return WhenFalse();
+}
+]]></Before>
+        <After><![CDATA[if (condition)
+{
+    return WhenTrue();
+}
+
+return WhenFalse();]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="RemoveRedundantAssignment">
     <Id>RCS1212</Id>
@@ -2109,5 +2128,22 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[bool Foo()
+{
+    // ...
+
+    f = false; // RCS1212
+    return f;
+}]]></Before>
+        <After><![CDATA[bool Foo()
+{
+    // ...
+
+    return false;
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
 </Analyzers>
