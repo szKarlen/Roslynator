@@ -157,6 +157,11 @@ namespace Roslynator.Utilities.Markdown
                 .AppendLineIf(!string.IsNullOrEmpty(value), value, escape: true);
         }
 
+        public static StringBuilder AppendHeader(this StringBuilder sb, HeaderInfo headerInfo)
+        {
+            return headerInfo.Append(sb);
+        }
+
         public static StringBuilder AppendUnorderedListItem2(this StringBuilder sb, string value = null, string indentation = "\t")
         {
             return AppendUnorderedListItem(sb, value, indentation, 2);

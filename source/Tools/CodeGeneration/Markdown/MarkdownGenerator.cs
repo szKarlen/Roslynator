@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Roslynator.Metadata;
-using Roslynator.Utilities;
 using Roslynator.Utilities.Markdown;
 
 namespace Roslynator.CodeGeneration.Markdown
@@ -98,7 +97,7 @@ namespace Roslynator.CodeGeneration.Markdown
         {
             if (refactoring.Samples.Count > 0)
             {
-                WriteSamples(sb, refactoring.Samples, 4);
+                WriteSamples(sb, refactoring.Samples, new HeaderInfo("Before", 4), new HeaderInfo("After", 4));
             }
             else if (refactoring.Images.Count > 0)
             {
@@ -119,7 +118,7 @@ namespace Roslynator.CodeGeneration.Markdown
             }
         }
 
-        private static void WriteSamples(StringBuilder sb, IEnumerable<SampleDescriptor> samples, int headerLevel)
+        private static void WriteSamples(StringBuilder sb, IEnumerable<SampleDescriptor> samples, HeaderInfo beforeHeader, HeaderInfo afterHeader)
         {
             bool isFirst = true;
 
@@ -134,14 +133,17 @@ namespace Roslynator.CodeGeneration.Markdown
                     isFirst = false;
                 }
 
-                sb.AppendHeader("Before", headerLevel);
+                sb.AppendHeader(beforeHeader);
                 sb.AppendLine();
                 sb.AppendCSharpCodeBlock(sample.Before);
-                sb.AppendLine();
 
-                sb.AppendHeader("After", headerLevel);
-                sb.AppendLine();
-                sb.AppendCSharpCodeBlock(sample.After);
+                if (!string.IsNullOrEmpty(sample.After))
+                {
+                    sb.AppendLine();
+                    sb.AppendHeader(afterHeader);
+                    sb.AppendLine();
+                    sb.AppendCSharpCodeBlock(sample.After);
+                }
             }
         }
 
@@ -199,7 +201,7 @@ namespace Roslynator.CodeGeneration.Markdown
                 sb.AppendHeader2("Examples");
                 sb.AppendLine();
 
-                WriteSamples(sb, samples, 3);
+                WriteSamples(sb, samples, new HeaderInfo("Code with Diagnostic", 3), new HeaderInfo("Fixed Code", 3));
             }
 
             sb.AppendLine();

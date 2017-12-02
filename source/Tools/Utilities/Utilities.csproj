@@ -135,6 +135,7 @@
   <ItemGroup>
     <Compile Include="Markdown\Alignment.cs" />
     <Compile Include="FileHelper.cs" />
+    <Compile Include="Markdown\HeaderInfo.cs" />
     <Compile Include="Markdown\IAppendable.cs" />
     <Compile Include="Markdown\ImageInfo.cs" />
     <Compile Include="Markdown\LinkInfo.cs" />
