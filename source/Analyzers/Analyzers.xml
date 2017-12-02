@@ -1989,6 +1989,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = items.OrderBy(f => f.Surname).OrderBy(f => f.Name); // RCS1200]]></Before>
+        <After><![CDATA[var x = items.OrderBy(f => f.Surname).ThenBy(f => f.Name);]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseMethodChaining">
     <Id>RCS1201</Id>
@@ -1999,6 +2005,22 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[sb = new StringBuilder();
+
+sb.Append("a"); // RCS1201
+sb.Append("b");
+sb.Append("c");
+]]></Before>
+        <After><![CDATA[sb = new StringBuilder();
+
+sb.Append("a")
+    .Append("b")
+    .Append("c");
+]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="AvoidNullReferenceException">
     <Id>RCS1202</Id>
@@ -2009,6 +2031,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[string s = items.FirstOrDefault().ToString(); // RCS1202]]></Before>
+        <After><![CDATA[string s = items.FirstOrDefault()?.ToString();]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseAttributeUsageAttribute">
     <Id>RCS1203</Id>
@@ -2019,6 +2047,17 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[public class FooAttribute : Attribute // RCS1203
+{
+}]]></Before>
+        <After><![CDATA[[AttributeUsageAttribute(AttributeTargets.All, AllowMultiple = false)]
+public class FooAttribute : Attribute
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseEventArgsEmpty">
     <Id>RCS1204</Id>
@@ -2029,6 +2068,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = new EventArgs(); // RCS1204]]></Before>
+        <After><![CDATA[var x = EventArgs.Empty;]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="ReorderNamedArguments">
     <Id>RCS1205</Id>
@@ -2039,6 +2084,26 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[using (var sm = new StreamReader(
+    stream: default(Stream),
+    encoding: Encoding.UTF8,
+    bufferSize: 0, // RCS1205
+    leaveOpen: false,
+    detectEncodingFromByteOrderMarks: true))
+{
+}]]></Before>
+        <After><![CDATA[using (var sm = new StreamReader(
+    stream: default(Stream),
+    encoding: Encoding.UTF8,
+    detectEncodingFromByteOrderMarks: true,
+    bufferSize: 0,
+    leaveOpen: false))
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseConditionalAccessInsteadOfConditionalExpression">
     <Id>RCS1206</Id>
@@ -2049,6 +2114,24 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = new Foo();
+
+// ...
+
+        string s = (x != null) ? x.ToString() : null; // RCS1206]]></Before>
+        <After><![CDATA[string s = x?.ToString();]]></After>
+      </Sample>
+      <Sample>
+        <Before><![CDATA[int? x = null;
+
+// ...
+
+int i = (x != null) ? x.Value.GetHashCode() : 0; // RCS1206]]></Before>
+        <After><![CDATA[int i = x?.GetHashCode() ?? 0;]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseMethodGroupInsteadOfAnonymousFunction">
     <Id>RCS1207</Id>
@@ -2059,6 +2142,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>true</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = items.Select(f => Foo(f)); // RCS1207]]></Before>
+        <After><![CDATA[var x = items.Select(Foo);]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="ReduceIfNesting">
     <Id>RCS1208</Id>
@@ -2069,6 +2158,44 @@
     <IsEnabledByDefault>false</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[if (condition1) // RCS1208
+{
+    Foo1();
+
+    if (condition2)
+    {
+        Foo2();
+
+        if (condition3)
+        {
+            Foo3();
+        }
+    }
+}]]></Before>
+        <After><![CDATA[if (!condition1)
+{
+    return;
+}
+
+Foo1();
+
+if (!condition2)
+{
+    return;
+}
+
+Foo2();
+
+if (!condition3)
+{
+    return;
+}
+
+Foo3();]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="ReorderTypeParameterConstraints">
     <Id>RCS1209</Id>
@@ -2089,6 +2216,20 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[Task<object> FooAsync()
+{
+    return null; // RCS1210
+}
+]]></Before>
+        <After><![CDATA[Task<object> FooAsync()
+{
+    return Task.FromResult<object>(null);
+}
+]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="RemoveUnnecessaryElseClause">
     <Id>RCS1211</Id>
