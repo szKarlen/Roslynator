@@ -2,9 +2,9 @@
 
 using System.Text;
 
-namespace Roslynator.Utilities
+namespace Roslynator.Utilities.Markdown
 {
-    public static class MarkdownHelper
+    public static class MarkdownEscaper
     {
         public static string Escape(string value)
         {
