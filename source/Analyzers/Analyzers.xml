@@ -1889,6 +1889,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[string s = "a" + "b"; // RCS1190]]></Before>
+        <After><![CDATA[string s = "ab";]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="DeclareEnumValueAsCombinationOfNames">
     <Id>RCS1191</Id>
@@ -1899,6 +1905,28 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[[Flags]
+public enum Foo
+{
+    None = 0,
+    A = 1,
+    B = 2,
+    C = 4,
+    ABC = 7 // RCS1191
+}]]></Before>
+        <After><![CDATA[[Flags]
+public enum Foo
+{
+    None = 0,
+    A = 1,
+    B = 2,
+    C = 4,
+    ABC = A | B | C
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseRegularStringLiteralInsteadOfVerbatimStringLiteral">
     <Id>RCS1192</Id>
@@ -1909,6 +1937,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>true</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[string s = @"x"; // RCS1192]]></Before>
+        <After><![CDATA[string s = "x";]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="OverridingMemberCannotChangeParamsModifier">
     <Id>RCS1193</Id>
@@ -1919,6 +1953,29 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[public class Base
+{
+    public virtual void Foo(params object[] values)
+    {
+    }
+}
+
+public class Derived : Base
+{
+    public override void Foo(object[] values) // RCS1193
+    {
+    }
+}]]></Before>
+        <After><![CDATA[public class Derived : Base
+{
+    public override void Foo(params object[] values)
+    {
+    }
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="ImplementExceptionConstructors">
     <Id>RCS1194</Id>
@@ -1929,6 +1986,27 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[public class FooException : Exception // RCS1194
+{
+}]]></Before>
+        <After><![CDATA[public class FooException : Exception
+{
+    public FooException() : base()
+    {
+    }
+
+    public FooException(string message) : base(message)
+    {
+    }
+
+    public FooException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="UseExclusiveOrOperator">
     <Id>RCS1195</Id>
@@ -1939,6 +2017,16 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[if ((x && !y) || (!x && y)) // RCS1195
+{
+}]]></Before>
+        <After><![CDATA[if (x ^ y)
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="CallExtensionMethodAsInstanceMethod">
     <Id>RCS1196</Id>
@@ -1949,6 +2037,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[var x = Enumerable.Select(items, f => f.ToString()) // RCS1196]]></Before>
+        <After><![CDATA[var x = items.Select(f => f.ToString());]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="OptimizeStringBuilderAppendCall">
     <Id>RCS1197</Id>
@@ -1959,6 +2053,12 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[sb.Append(s + "x"); // RCS1197]]></Before>
+        <After><![CDATA[sb.Append(s).Append("x");]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="AvoidBoxingOfValueType">
     <Id>RCS1198</Id>
@@ -1969,6 +2069,17 @@
     <IsEnabledByDefault>false</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[string s = null;
+int i = 0;
+
+// ...
+
+string x = s + i; // RCS1198]]></Before>
+        <After><![CDATA[string x = s + i.ToString();]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="SimplifyBooleanExpression">
     <Id>RCS1199</Id>
@@ -1979,6 +2090,20 @@
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[bool? x = null;
+
+// ...
+
+if (x.HasValue && x.Value) // RCS1199
+{
+}]]></Before>
+        <After><![CDATA[if (x == true)
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="CallThenByInsteadOfOrderBy">
     <Id>RCS1200</Id>
@@ -2206,6 +2331,22 @@ Foo3();]]></After>
     <IsEnabledByDefault>true</IsEnabledByDefault>
     <SupportsFadeOut>false</SupportsFadeOut>
     <SupportsFadeOutAnalyzer>false</SupportsFadeOutAnalyzer>
+    <Samples>
+      <Sample>
+        <Before><![CDATA[public class Foo<T1, T2, T3>
+    where T3 : class // RCS1209
+    where T2 : class
+    where T1 : class
+{
+}]]></Before>
+        <After><![CDATA[public class Foo<T1, T2, T3>
+    where T1 : class
+    where T2 : class
+    where T3 : class
+{
+}]]></After>
+      </Sample>
+    </Samples>
   </Analyzer>
   <Analyzer Identifier="ReturnTaskInsteadOfNull">
     <Id>RCS1210</Id>

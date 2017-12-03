@@ -53,7 +53,7 @@
     <Compile Include="MakeClassStatic2.cs" />
     <Compile Include="AddOrRemoveRegionName.cs" />
     <Compile Include="MergeElseClauseWithNestedIfStatement.cs" />
-    <Compile Include="MergeStringExpressions.cs" />
+    <Compile Include="JoinStringExpressions.cs" />
     <Compile Include="OverridingMemberCannotChangeParamsModifier.cs" />
     <Compile Include="OptimizeStringBuilderAppendCall.cs" />
     <Compile Include="ReduceIfNesting.cs" />
