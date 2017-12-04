@@ -34,7 +34,7 @@ namespace Roslynator.Metadata
                     (element.Element("Samples") != null)
                         ? element.Element("Samples")?
                             .Elements("Sample")
-                            .Select(f => new SampleDescriptor(f.Element("Before").Value, f.Element("After").Value))
+                            .Select(f => new SampleDescriptor(f.Element("Before").Value, f.Element("After")?.Value))
                             .ToList()
                         : new List<SampleDescriptor>());
             }

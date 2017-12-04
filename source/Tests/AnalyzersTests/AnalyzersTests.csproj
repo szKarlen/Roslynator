@@ -47,9 +47,12 @@
     <Compile Include="AddBraces.cs" />
     <Compile Include="AddBracesToSwitchSectionWithMultipleStatements.cs" />
     <Compile Include="AvoidBoxingOfValueType.cs" />
+    <Compile Include="AvoidMultilineExpressionBody.cs" />
     <Compile Include="CallThenByInsteadOfOrderBy.cs" />
     <Compile Include="DeclareEnumValueAsCombinationOfNames.cs" />
     <Compile Include="CallExtensionMethodAsInstanceMethod.cs" />
+    <Compile Include="FormatBinaryOperatorOnNextLine.cs" />
+    <Compile Include="FormatEachEnumMemberOnSeparateLine.cs" />
     <Compile Include="MakeClassStatic2.cs" />
     <Compile Include="AddOrRemoveRegionName.cs" />
     <Compile Include="MergeElseClauseWithNestedIfStatement.cs" />
@@ -57,11 +60,15 @@
     <Compile Include="OverridingMemberCannotChangeParamsModifier.cs" />
     <Compile Include="OptimizeStringBuilderAppendCall.cs" />
     <Compile Include="ReduceIfNesting.cs" />
+    <Compile Include="RemoveArgumentListFromAttribute.cs" />
+    <Compile Include="RemoveEmptyElseClause.cs" />
     <Compile Include="RemoveEmptyInitializer.cs" />
     <Compile Include="RemoveRedundantAssignment.cs" />
     <Compile Include="RemoveRedundantAutoPropertyInitialization.cs" />
+    <Compile Include="RemoveRedundantCommaInInitializer.cs" />
     <Compile Include="RemoveRedundantDefaultSwitchSection.cs" />
     <Compile Include="MarkFieldAsConst.cs" />
+    <Compile Include="RemoveRedundantEmptyStatement.cs" />
     <Compile Include="RemoveUnnecessaryElseClause.cs" />
     <Compile Include="ReorderNamedArguments.cs" />
     <Compile Include="ReorderTypeParameterConstraints.cs" />
@@ -74,10 +81,11 @@
     <Compile Include="ImplementExceptionConstructors.cs" />
     <Compile Include="AvoidSingleLineBlock.cs" />
     <Compile Include="ReturnTaskInsteadOfNull.cs" />
+    <Compile Include="SimplifyLambdaExpression.cs" />
+    <Compile Include="SimplifyNestedUsingStatement.cs" />
     <Compile Include="UseConstantInsteadOfField.cs" />
     <Compile Include="UseMethodGroupInsteadOfAnonymousFunction.cs" />
     <Compile Include="SimplifyBooleanExpression.cs" />
-    <Compile Include="SimplifyLambdaExpressionRefactoring.cs" />
     <Compile Include="StaticMemberInGenericClassShouldUseTypeParameter.cs" />
     <Compile Include="AvoidChainOfAssignments.cs" />
     <Compile Include="BitwiseOperationOnEnumWithoutFlagsAttribute.cs" />
@@ -119,7 +127,6 @@
     <Compile Include="UseRegexInstanceInsteadOfStaticMethod.cs" />
     <Compile Include="UseRegularStringLiteralInsteadOfVerbatimStringLiteral.cs" />
     <Compile Include="UseReturnInsteadOfAssignment.cs" />
-    <Compile Include="ValueTypeCheckedForNull.cs" />
     <Compile Include="UnconstrainedTypeParameterCheckedForNull.cs" />
     <Compile Include="SimplifyCoalesceExpression.cs" />
     <Compile Include="CombineEnumerableWhereMethodChain.cs" />
@@ -129,7 +136,6 @@
     <Compile Include="AvoidUsageOfForStatementToCreateInfiniteLoop.cs" />
     <Compile Include="AddStaticModifierToAllPartialClassDeclarations.cs" />
     <Compile Include="DefaultSwitchLabelShouldBeLastLabelInSection.cs" />
-    <Compile Include="AvoidMultilineExpressionBodyRefactoring.cs" />
     <Compile Include="EnumMemberShouldDeclareExplicitValue.cs" />
     <Compile Include="FormatAccessorList.cs" />
     <Compile Include="FormatEachStatementOnSeparateLine.cs" />
@@ -217,6 +223,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UseStringLengthInsteadOfComparisonWithEmptyString.cs" />
     <Compile Include="UseVarInsteadOfExplicitType.cs" />
+    <Compile Include="ValueTypeObjectIsNeverEqualToNull.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

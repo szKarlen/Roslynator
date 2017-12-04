@@ -201,7 +201,7 @@ namespace Roslynator.CodeGeneration.Markdown
                 sb.AppendHeader2("Examples");
                 sb.AppendLine();
 
-                WriteSamples(sb, samples, new HeaderInfo("Code with Diagnostic", 3), new HeaderInfo("Fixed Code", 3));
+                WriteSamples(sb, samples, new HeaderInfo("Code with Diagnostic", 3), new HeaderInfo("Code with Fix", 3));
             }
 
             sb.AppendLine();
