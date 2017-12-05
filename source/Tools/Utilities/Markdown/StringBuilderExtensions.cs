@@ -31,7 +31,7 @@ namespace Roslynator.Utilities.Markdown
                 .Append('~', 2);
         }
 
-        public static StringBuilder AppendTableHeader(this StringBuilder sb, params ColumnInfo[] columns)
+        public static StringBuilder AppendTableHeader(this StringBuilder sb, params MarkdownTableHeader[] columns)
         {
             if (columns == null)
                 return sb;
@@ -157,9 +157,9 @@ namespace Roslynator.Utilities.Markdown
                 .AppendLineIf(!string.IsNullOrEmpty(value), value, escape: true);
         }
 
-        public static StringBuilder AppendHeader(this StringBuilder sb, HeaderInfo headerInfo)
+        public static StringBuilder AppendHeader(this StringBuilder sb, MarkdownHeader header)
         {
-            return headerInfo.Append(sb);
+            return header.Append(sb);
         }
 
         public static StringBuilder AppendUnorderedListItem2(this StringBuilder sb, string value = null, string indentation = "\t")
@@ -255,7 +255,7 @@ namespace Roslynator.Utilities.Markdown
 
             for (int i = 0; i < value.Length; i++)
             {
-                if (MarkdownEscaper.ShouldBeEscaped(value[i]))
+                if (MarkdownUtility.ShouldBeEscaped(value[i]))
                 {
                     sb.Append(value, lastIndex, i - lastIndex);
                     sb.Append('\\');

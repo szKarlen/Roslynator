@@ -135,16 +135,16 @@
   <ItemGroup>
     <Compile Include="Markdown\Alignment.cs" />
     <Compile Include="FileHelper.cs" />
-    <Compile Include="Markdown\HeaderInfo.cs" />
+    <Compile Include="Markdown\MarkdownHeader.cs" />
     <Compile Include="Markdown\IAppendable.cs" />
-    <Compile Include="Markdown\ImageInfo.cs" />
-    <Compile Include="Markdown\LinkInfo.cs" />
-    <Compile Include="Markdown\MarkdownEscaper.cs" />
+    <Compile Include="Markdown\MarkdownImage.cs" />
+    <Compile Include="Markdown\MarkdownLink.cs" />
+    <Compile Include="Markdown\MarkdownUtility.cs" />
     <Compile Include="Markdown\MarkdownText.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Markdown\StringBuilderExtensions.cs" />
     <Compile Include="Markdown\StringExtensions.cs" />
-    <Compile Include="Markdown\ColumnInfo.cs" />
+    <Compile Include="Markdown\MarkdownTableHeader.cs" />
     <Compile Include="Utf8StringWriter.cs" />
   </ItemGroup>
   <ItemGroup>

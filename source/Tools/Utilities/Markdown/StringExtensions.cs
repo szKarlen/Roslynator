@@ -6,7 +6,7 @@ namespace Roslynator.Utilities.Markdown
     {
         public static string EscapeMarkdown(this string value)
         {
-            return MarkdownEscaper.Escape(value);
+            return MarkdownUtility.Escape(value);
         }
     }
 }

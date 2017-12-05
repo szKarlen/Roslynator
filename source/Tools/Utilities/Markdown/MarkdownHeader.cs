@@ -5,9 +5,9 @@ using System.Text;
 
 namespace Roslynator.Utilities.Markdown
 {
-    public struct HeaderInfo : IAppendable
+    public struct MarkdownHeader : IAppendable
     {
-        public HeaderInfo(string text, int level)
+        public MarkdownHeader(string text, int level)
         {
             if (level < 1
                 || level > 6)

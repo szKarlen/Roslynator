@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Roslynator.Utilities.Markdown
 {
-    public static class MarkdownEscaper
+    public static class MarkdownUtility
     {
         public static string Escape(string value)
         {

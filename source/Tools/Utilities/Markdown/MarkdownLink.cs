@@ -4,9 +4,9 @@ using System.Text;
 
 namespace Roslynator.Utilities.Markdown
 {
-    public struct ImageInfo : IAppendable
+    public struct MarkdownLink : IAppendable
     {
-        public ImageInfo(string text, string url)
+        public MarkdownLink(string text, string url)
         {
             Text = text;
             Url = url;
@@ -22,7 +22,7 @@ namespace Roslynator.Utilities.Markdown
                 return sb.AppendEscape(Text);
 
             return sb
-                .Append("![")
+                .Append("[")
                 .AppendEscape(Text)
                 .Append("](")
                 .Append(Url)
@@ -34,7 +34,7 @@ namespace Roslynator.Utilities.Markdown
             if (string.IsNullOrEmpty(Url))
                 return Text.EscapeMarkdown();
 
-            return $"![{Text.EscapeMarkdown()}]({Url})";
+            return $"[{Text.EscapeMarkdown()}]({Url})";
         }
     }
 }

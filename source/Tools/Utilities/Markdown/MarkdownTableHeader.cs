@@ -2,9 +2,9 @@
 
 namespace Roslynator.Utilities.Markdown
 {
-    public struct ColumnInfo
+    public struct MarkdownTableHeader
     {
-        public ColumnInfo(string name, Alignment alignment = Alignment.Left)
+        public MarkdownTableHeader(string name, Alignment alignment = Alignment.Left)
         {
             Name = name;
             Alignment = alignment;
@@ -14,9 +14,9 @@ namespace Roslynator.Utilities.Markdown
 
         public Alignment Alignment { get; }
 
-        public static implicit operator ColumnInfo(string value)
+        public static implicit operator MarkdownTableHeader(string value)
         {
-            return new ColumnInfo(value);
+            return new MarkdownTableHeader(value);
         }
 
         public override string ToString()
