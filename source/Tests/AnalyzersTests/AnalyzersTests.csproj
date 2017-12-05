@@ -44,13 +44,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractTypeShouldNotHavePublicConstructors.cs" />
+    <Compile Include="AddArgumentListToObjectCreation.cs" />
     <Compile Include="AddBraces.cs" />
     <Compile Include="AddBracesToSwitchSectionWithMultipleStatements.cs" />
+    <Compile Include="AddEmptyLineBetweenDeclarations.cs" />
     <Compile Include="AvoidBoxingOfValueType.cs" />
+    <Compile Include="AvoidEmptyCatchClauseThatCatchesSystemException.cs" />
     <Compile Include="AvoidMultilineExpressionBody.cs" />
+    <Compile Include="AvoidSemicolonAtEndOfDeclaration.cs" />
+    <Compile Include="CallAnyInsteadOfCount.cs" />
     <Compile Include="CallThenByInsteadOfOrderBy.cs" />
+    <Compile Include="DeclareEachAttributeSeparately.cs" />
     <Compile Include="DeclareEnumValueAsCombinationOfNames.cs" />
     <Compile Include="CallExtensionMethodAsInstanceMethod.cs" />
+    <Compile Include="DefaultLabelShouldBeLastLabelInSwitchSection.cs" />
     <Compile Include="FormatBinaryOperatorOnNextLine.cs" />
     <Compile Include="FormatEachEnumMemberOnSeparateLine.cs" />
     <Compile Include="MakeClassStatic2.cs" />
@@ -59,16 +66,24 @@
     <Compile Include="JoinStringExpressions.cs" />
     <Compile Include="OverridingMemberCannotChangeParamsModifier.cs" />
     <Compile Include="OptimizeStringBuilderAppendCall.cs" />
+    <Compile Include="ParenthesizeConditionInConditionalExpression.cs" />
     <Compile Include="ReduceIfNesting.cs" />
     <Compile Include="RemoveArgumentListFromAttribute.cs" />
+    <Compile Include="RemoveArgumentListFromObjectCreation.cs" />
     <Compile Include="RemoveEmptyElseClause.cs" />
+    <Compile Include="RemoveEmptyFinallyClause.cs" />
     <Compile Include="RemoveEmptyInitializer.cs" />
+    <Compile Include="RemoveEmptyNamespaceDeclaration.cs" />
+    <Compile Include="RemoveEnumDefaultUnderlyingType.cs" />
+    <Compile Include="RemoveOriginalExceptionFromThrowStatement.cs" />
     <Compile Include="RemoveRedundantAssignment.cs" />
     <Compile Include="RemoveRedundantAutoPropertyInitialization.cs" />
+    <Compile Include="RemoveRedundantBaseConstructorCall.cs" />
     <Compile Include="RemoveRedundantCommaInInitializer.cs" />
     <Compile Include="RemoveRedundantDefaultSwitchSection.cs" />
     <Compile Include="MarkFieldAsConst.cs" />
     <Compile Include="RemoveRedundantEmptyStatement.cs" />
+    <Compile Include="RemoveUnnecessaryCaseLabel.cs" />
     <Compile Include="RemoveUnnecessaryElseClause.cs" />
     <Compile Include="ReorderNamedArguments.cs" />
     <Compile Include="ReorderTypeParameterConstraints.cs" />
@@ -80,10 +95,15 @@
     <Compile Include="FormatConditionalExpressionOperatorsOnNextLine.cs" />
     <Compile Include="ImplementExceptionConstructors.cs" />
     <Compile Include="AvoidSingleLineBlock.cs" />
+    <Compile Include="ReplaceForEachWithFor.cs" />
     <Compile Include="ReturnTaskInsteadOfNull.cs" />
     <Compile Include="SimplifyLambdaExpression.cs" />
     <Compile Include="SimplifyNestedUsingStatement.cs" />
+    <Compile Include="SplitVariableDeclaration.cs" />
+    <Compile Include="StaticMemberInGenericTypeShouldUseTypeParameter.cs" />
+    <Compile Include="UseBitwiseOperationInsteadOfCallingHasFlag.cs" />
     <Compile Include="UseConstantInsteadOfField.cs" />
+    <Compile Include="UseEmptyStringLiteralInsteadOfStringEmpty.cs" />
     <Compile Include="UseMethodGroupInsteadOfAnonymousFunction.cs" />
     <Compile Include="SimplifyBooleanExpression.cs" />
     <Compile Include="StaticMemberInGenericClassShouldUseTypeParameter.cs" />
@@ -155,7 +175,6 @@
     <Compile Include="FormatDocumentationSummary\FormatDocumentationSummaryOnMultipleLines.cs" />
     <Compile Include="FormatDocumentationSummary\FormatDocumentationSummaryOnSingleLine.cs" />
     <Compile Include="MergeLocalDeclarationWithAssignment.cs" />
-    <Compile Include="MergeLocalDeclarationWithReturnStatement.cs" />
     <Compile Include="MergeSwitchSectionsWithEquivalentContent.cs" />
     <Compile Include="RemoveBraces.cs" />
     <Compile Include="RemoveEmptyDestructor.cs" />
@@ -206,7 +225,6 @@
     <Compile Include="ReplaceIfStatementWithAssignment.cs" />
     <Compile Include="UseBitwiseOperationInsteadOfHasFlag.cs" />
     <Compile Include="ReplacePropertyWithAutoProperty.cs" />
-    <Compile Include="UseCSharp6DictionaryInitializer.cs" />
     <Compile Include="UsePostfixUnaryOperatorInsteadOfAssignment.cs" />
     <Compile Include="CallConfigureAwait.cs" />
     <Compile Include="AvoidUsageOfUsingAliasDirective.cs" />
